@@ -8,7 +8,7 @@ import {
   Droplets, Clock, ShieldCheck, Truck, Wrench, PhoneCall, MapPin,
   CheckCircle2, Sparkles, ArrowRight, Star,
 } from 'lucide-react';
-import { APP_NAME } from '@/lib/version';
+import { APP_NAME, VERSION } from '@/lib/version';
 
 const WHATSAPP = 'https://api.whatsapp.com/send?phone=5521996699191&text=Estava%20no%20seu%20site.%20Quero%20mais%20informa%C3%A7%C3%B5es.';
 
@@ -218,7 +218,7 @@ export default function Home() {
             <a href={WHATSAPP} target="_blank" rel="noreferrer" className="hover:text-cyan-300">WhatsApp</a>
           </div>
         </div>
-        <p className="mt-8 text-center text-xs text-white/35">© RR Desentupidora · VibeDoCode · <span className="font-mono opacity-70">v0.1.01</span></p>
+        <p className="mt-8 text-center text-xs text-white/35">© RR Desentupidora · VibeDoCode · <span className="font-mono opacity-70">{new Date().getFullYear()} · {VERSION}</span></p>
       </footer>
     </main>
   );

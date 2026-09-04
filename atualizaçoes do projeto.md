@@ -1,3 +1,6 @@
+### V0.02.01 (2026-09-04) - Rodape: exibe versao dinamica
+- **Release:** Site + Hub RRD.
+
 ### V0.02.00 (2026-09-04) - Site institucional premium em padrao dark navy/cyan com efeitos e animacoes (proposta Sistema OMD)
 - **Release:** Site + Hub RRD.
 
