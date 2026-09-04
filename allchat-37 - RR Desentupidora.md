@@ -79,3 +79,34 @@ V0.03.00 · 2026-09-04
 ### Versão
 V0.03.01 · 2026-09-04
 
+---
+
+## Sessão 2026-09-04 — Expansão Comercial das 3 Seções Dedicadas (V0.04.00)
+
+### Resumo
+Com base nas orientações comerciais do Hermes e do Vanderson, recuperamos e reorganizamos todo o acervo de conteúdo útil e técnico da RR em 3 seções dedicadas com o mesmo padrão visual "Efeito UAU":
+
+1. **Hidrojateamento Profissional (`#hidrojateamento`):**
+   - Apresentação completa da tecnologia de alta pressão (até 1.500 BAR) e 100% ecológica sem química.
+   - Grid com 4 Aplicações (Tubulações/Dutos, Drenos/Esgotos, Superfícies/Equipamentos, Resíduos Comerciais/Industriais).
+   - Benefícios de preservação hidráulica, redução de custos de manutenção e certificações NR-33/NR-35.
+   - Visual fotográfico HD (`/assets/hidro.png`) e CTA direto para WhatsApp.
+
+2. **Especialistas em Caixa de Gordura (`#caixa-de-gordura`):**
+   - 4 Sinais de Alerta para contratação urgente (Transbordamento/Refluxo, Mau Cheiro, Escoamento Lento, Pragas).
+   - Processo técnico em 4 etapas (Inspeção, Sucção a Vácuo, Rasparia & Hidro, Descarte INEA com Laudo Ambiental).
+   - Quadro explicativo de Manutenção Preventiva vs Emergencial para restaurantes, condomínios e residências.
+
+3. **VACOL Compacto (`#vacol-compacto`):**
+   - Apresentação do diferencial exclusivo da frota própria RR para garagens subterrâneas (subsolos) e ruas estreitas de Niterói/São Gonçalo.
+   - Grid de 6 vantagens exclusivas (Acesso a locais restritos, Zero bloqueio de vias, Agilidade, Alta potência de sucção, Operação silenciosa, Multisserviços).
+
+4. **Navegação & Deploy:**
+   - Header e Drawer Mobile atualizados com os links de ancoragem direta.
+   - Build estático verificado com sucesso (`npm run build` 5/5 páginas).
+   - Release `V0.04.00` enviada para o GitHub e deploy verificado em produção no Coolify (`https://rrd.vibedocode.pro`).
+
+### Versão
+V0.04.00 · 2026-09-04
+
+
