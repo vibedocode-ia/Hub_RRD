@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+:root {
+  --rr-navy: #0a2a5e;
+  --rr-blue: #1250b0;
+  --rr-cyan: #0fb6d0;
+  --rr-white: #ffffff;
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+.text-rr-navy { color: var(--rr-navy); }
+.bg-rr-navy { background-color: var(--rr-navy); }
+.bg-rr-blue { background-color: var(--rr-blue); }
+.bg-rr-cyan { background-color: var(--rr-cyan); }
+.bg-rr-gradient { background: linear-gradient(135deg, #0a2a5e 0%, #1250b0 55%, #0fb6d0 100%); }
