@@ -24,3 +24,43 @@ nome do repo GitHub e definição do domínio/host (Coolify) para deploy.
 - App Hub_RRD criado no Coolify (projeto VibeDoCode/production), repo vibedocode-ia/Hub_RRD, domínio https://rrd.vibedocode.pro, build nixpacks (Next 15), V0.01.01.
 - Correcao: removido `output: standalone` (conflita com `next start` no Coolify).
 - DNS rrd.vibedocode.pro: registro A -> 187.77.34.1 proxied=false (sobrepoe curinga *.vibedocode.pro proxied) — site 200 direto no IP, propagado em DNS publico.
+
+---
+
+## [2026-09-05] V0.02.01 — site institucional premium no ar
+- Home reescrita em padrao premium (dark navy/cian, glass, gradientes, grid, framer-motion+scrool reveal, barra de progresso), seguindo o SistemaRRProposal (Sistema OMD / 04). Assets reais da RR (rr-logo, hero).
+- Deps adicionadas: framer-motion, gsap, lucide-react. Portal /portal mantido (gate de senha).
+- Deploy: Coolify, repo vibedocode-ia/Hub_RRD, https://rrd.vibedocode.pro (V0.02.01). Container OK 200; DNS propagado.
+
+---
+
+## Sessão 2026-09-04 — Efeito UAU: /vc-spec → /vc-break → /vc-auto
+
+### Resumo
+Ciclo completo VibeDoCode Fase 1→4 executado na mesma sessão:
+- `/vc-spec` → gerou `site/references/spec.md` (2 páginas, 28 componentes, 38 behaviors)
+- `/vc-break` → gerou 15 tasks atômicas em `site/tasks/001–015`
+- `/vc-auto` → executou todas as 15 tasks, buildou e validou
+
+### O que foi implementado
+- **globals.css:** Design System premium completo (navy/cyan/royal, glassmorphism, animações CSS)
+- **layout.tsx:** Google Fonts (Outfit + Plus Jakarta Sans) + SEO/OG metadata completo
+- **page.tsx:** Landing page "Efeito UAU" com Hero, Services, Differentials+Selos, Reviews, Areas, Widget Orçamento → WhatsApp dinâmico, CTA Final, Footer, FloatingWhatsApp, Header com drawer mobile e ProgressBar de leitura
+- **PortalGate.tsx:** Redesign executivo com rate limiting (3 tentativas, 30s lockout), shake animation, show/hide senha, estados idle/error/success animados
+- **version.ts:** V0.02.01 → V0.03.00
+- **site/.env.example:** Criado
+- **Build:** `✓ Compiled 0 errors — Static /  + /portal`
+
+### Decisões
+- `Home` ícone Lucide conflitou com export `Home` → renomeado para `HomeIcon`
+- Rota `/portal` mantida discreta no header (ghost button, sem destaque de marketing)
+- Widget de orçamento monta mensagem WhatsApp personalizada com serviço + local + urgência
+- Portal Gate usa `NEXT_PUBLIC_DEMO_HUB_PASS` (MVP visual) — migrar para Server Action na fase Hub
+
+### Próximo passo
+- Commit: `release: Version V0.03.00`
+- Deploy via Coolify push para `rrd.vibedocode.pro`
+- Adicionar `public/assets/rr-logo.webp` e `public/assets/hero.png` reais
+
+### Versão
+V0.03.00 · 2026-09-04
