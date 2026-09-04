@@ -1,3 +1,6 @@
+### V0.02.00 (2026-09-04) - Site institucional premium em padrao dark navy/cyan com efeitos e animacoes (proposta Sistema OMD)
+- **Release:** Site + Hub RRD.
+
 ### V0.01.01 (2026-09-04) - Corrige iniciar via next start no Coolify (remove output standalone)
 - **Release:** Site + Hub RRD.
 

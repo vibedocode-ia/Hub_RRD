@@ -1,17 +1,70 @@
 @import "tailwindcss";
 
+/* ════════════ THEME RR PREMIUM · navy / royal / cyan (padrão proposta Sistema OMD) ════════════ */
 :root {
-  --rr-navy: #0a2a5e;
-  --rr-blue: #1250b0;
-  --rr-cyan: #0fb6d0;
-  --rr-white: #ffffff;
+  --rr-bg: #050d1a;
+  --rr-navy: #071c3a;
+  --rr-blue: #1918eb;
+  --rr-cyan: #10acf0;
+  --rr-white: #f1f5fb;
+  --rr-muted: #8ea4bf;
+  --rr-border: rgba(120, 160, 210, 0.16);
 }
 
 html { scroll-behavior: smooth; }
-body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 
-.text-rr-navy { color: var(--rr-navy); }
-.bg-rr-navy { background-color: var(--rr-navy); }
-.bg-rr-blue { background-color: var(--rr-blue); }
-.bg-rr-cyan { background-color: var(--rr-cyan); }
-.bg-rr-gradient { background: linear-gradient(135deg, #0a2a5e 0%, #1250b0 55%, #0fb6d0 100%); }
+body {
+  margin: 0;
+  background: var(--rr-bg);
+  color: var(--rr-white);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* reveal on scroll (framer-motion aplica via opacity; fallback css) */
+.animate { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s cubic-bezier(.22,1,.36,1); }
+.animate.in { opacity: 1; transform: none; }
+
+/* ── superfície / glass ── */
+.glass {
+  background: linear-gradient(145deg, rgba(12,30,60,.9), rgba(7,20,43,.72));
+  border: 1px solid var(--rr-border);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 80px -48px rgba(0,0,0,.65);
+}
+.glass-strong {
+  background:
+    radial-gradient(circle at top right, hsla(199,89%,55%,.13), transparent 26%),
+    radial-gradient(circle at bottom left, hsla(241,87%,54%,.13), transparent 28%),
+    linear-gradient(145deg, rgba(16,36,64,.94), rgba(7,24,48,.86));
+  border: 1px solid var(--rr-border);
+}
+
+/* ── grid background ── */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, hsla(220,30%,55%,.10) 1px, transparent 1px),
+    linear-gradient(to bottom, hsla(220,30%,55%,.10) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+/* ── hero overlay ── */
+.hero-overlay {
+  background: linear-gradient(180deg, rgba(5,13,26,.86) 0%, rgba(6,16,31,.55) 40%, #050d1a 100%);
+}
+
+/* ── accented gradient text ── */
+.grad-text {
+  background: linear-gradient(120deg, #3ec7f8, #7d6fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── buttons ── */
+.btn-cyan {
+  background: linear-gradient(135deg, #10acf0, #1918eb);
+  box-shadow: 0 10px 30px -8px rgba(16,172,240,.6);
+}
+.btn-ghost { border:1px solid var(--rr-border); background: rgba(255,255,255,.03); }
