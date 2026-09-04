@@ -7,7 +7,7 @@ import { motion, useInView, useScroll, useSpring, AnimatePresence } from 'framer
 import {
   Droplets, Clock, ShieldCheck, Truck, Wrench, PhoneCall, MapPin,
   CheckCircle2, Sparkles, ArrowRight, Star, Menu, X, Zap, Building2,
-  Home as HomeIcon, Factory,
+  Home as HomeIcon, Factory, AlertTriangle, Gauge, Waves, ShieldAlert, Check, ChevronRight,
 } from 'lucide-react';
 import { VERSION } from '@/lib/version';
 
@@ -137,11 +137,13 @@ export default function LandingPage() {
   }
 
   const navLinks = [
-    { href: '#servicos',    label: 'Serviços' },
-    { href: '#porque',      label: 'Diferenciais' },
-    { href: '#avaliacoes',  label: 'Avaliações' },
-    { href: '#areas',       label: 'Áreas' },
-    { href: '#contato',     label: 'Contato' },
+    { href: '#servicos',         label: 'Serviços' },
+    { href: '#hidrojateamento',  label: 'Hidrojateamento' },
+    { href: '#caixa-de-gordura', label: 'Caixa de Gordura' },
+    { href: '#vacol-compacto',   label: 'VACOL Compacto' },
+    { href: '#porque',           label: 'Diferenciais' },
+    { href: '#avaliacoes',       label: 'Avaliações' },
+    { href: '#areas',            label: 'Áreas' },
   ];
 
   return (
@@ -370,6 +372,223 @@ export default function LandingPage() {
                 <p className="mt-2 text-white/58 text-sm leading-relaxed">{s.d}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════ HIDROJATEAMENTO PROFISSIONAL ════════════════════════ */}
+      <Section id="hidrojateamento" className="py-24 bg-[#060e1d] border-t border-cyan-500/10">
+        <div className="mx-auto max-w-7xl px-5">
+          <div className="grid lg:grid-cols-2 gap-14 items-center">
+            {/* Esquerda: Visual & Badge */}
+            <motion.div variants={fade} className="relative">
+              <div className="absolute -inset-2 rounded-[2.5rem] bg-gradient-to-tr from-cyan-500/20 via-blue-600/10 to-transparent blur-2xl pointer-events-none" />
+              <div className="glass-strong relative rounded-3xl overflow-hidden border border-cyan-400/25 p-2">
+                <Image
+                  src="/assets/hidro.png"
+                  alt="Hidrojateamento Profissional RR Desentupidora"
+                  width={900} height={700}
+                  className="w-full h-[420px] object-cover rounded-2xl"
+                  unoptimized
+                />
+                <div className="absolute bottom-6 left-6 right-6 flex flex-wrap items-center justify-between gap-3">
+                  <div className="glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-cyan-300/20">
+                    <Gauge className="h-5 w-5 text-cyan-400 animate-pulse" />
+                    <div>
+                      <div className="text-xs font-bold text-cyan-300">Alta Pressão</div>
+                      <div className="text-[11px] text-white/70">Até 1.500 BAR</div>
+                    </div>
+                  </div>
+                  <div className="glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-emerald-400/20">
+                    <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                    <div>
+                      <div className="text-xs font-bold text-emerald-300">100% Ecológico</div>
+                      <div className="text-[11px] text-white/70">Sem Química Nociva</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Direita: Conteúdo */}
+            <div>
+              <motion.div variants={fade}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-1 text-xs font-bold text-cyan-300 tracking-wider uppercase mb-3">
+                  <Waves className="h-3.5 w-3.5" /> Limpeza Rápida, Potente e Ecológica
+                </span>
+                <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+                  Hidrojateamento <span className="grad-text">Profissional</span>
+                </h2>
+                <p className="mt-4 text-white/75 text-base leading-relaxed">
+                  Remoção de sujeiras pesadas e incrustações profundas com jatos d&apos;água de alta pressão — mais eficiência, sem danificar tubulações e sem risco de retorno do problema.
+                </p>
+              </motion.div>
+
+              {/* Aplicações */}
+              <motion.div variants={fade} custom={1} className="mt-8 grid sm:grid-cols-2 gap-4">
+                {[
+                  { t: 'Tubulações e Dutos', d: 'Desobstrução profunda de redes hidráulicas e manilhas prediais.' },
+                  { t: 'Drenos e Esgotos', d: 'Remoção de raízes, crostas minerais e gordura petrificada.' },
+                  { t: 'Superfícies e Equipamentos', d: 'Higienização pesada de pisos industriais, caixas e tanques.' },
+                  { t: 'Resíduos Comerciais', d: 'Manutenção de alta performance para condomínios e empresas.' },
+                ].map((app, i) => (
+                  <div key={i} className="glass rounded-2xl p-4 border border-cyan-500/15">
+                    <div className="flex items-center gap-2 text-cyan-300 font-semibold text-sm" style={{ fontFamily: 'var(--font-outfit)' }}>
+                      <CheckCircle2 className="h-4 w-4 text-[#10acf0] shrink-0" />
+                      {app.t}
+                    </div>
+                    <p className="mt-1 text-xs text-white/60 leading-normal">{app.d}</p>
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* Benefícios e CTA */}
+              <motion.div variants={fade} custom={2} className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+                <ul className="space-y-1.5 text-xs text-white/75">
+                  <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-cyan-400" /> Preserva a integridade do encanamento</li>
+                  <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-cyan-400" /> Reduz custos de manutenção preventiva</li>
+                  <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-cyan-400" /> Homologado pelo INEA e atendimento 24h</li>
+                </ul>
+                <a
+                  href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Gostaria de solicitar um orçamento para Hidrojateamento Profissional na minha propriedade.')}`}
+                  target="_blank" rel="noreferrer"
+                  className="btn-cyan text-white px-6 py-3.5 rounded-full font-semibold text-sm inline-flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                >
+                  <PhoneCall className="h-4 w-4" /> Orçamento Hidrojato
+                </a>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════ ESPECIALISTAS EM CAIXA DE GORDURA ════════════════════════ */}
+      <Section id="caixa-de-gordura" className="py-24 bg-[#050c18]">
+        <div className="mx-auto max-w-7xl px-5">
+          <motion.div variants={fade} className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1 text-xs font-bold text-amber-300 tracking-wider uppercase mb-3">
+              <ShieldAlert className="h-3.5 w-3.5" /> Proteção Sanitária & Descarte INEA
+            </span>
+            <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+              Especialistas em <span className="grad-text">Caixa de Gordura</span>
+            </h2>
+            <p className="mt-3 text-white/70 text-base">
+              Limpeza técnica especializada, sucção a vácuo completa e destinação ecológica homologada para residências, condomínios e estabelecimentos comerciais.
+            </p>
+          </motion.div>
+
+          {/* Grid: Sinais de Alerta */}
+          <div className="mb-14">
+            <h3 className="text-lg font-bold text-white/90 mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-outfit)' }}>
+              <AlertTriangle className="h-5 w-5 text-amber-400" /> Sinais de que sua caixa de gordura precisa de limpeza urgente:
+            </h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                { t: 'Transbordamento & Refluxo', d: 'Água voltando pela pia da cozinha ou vazando pela tampa da caixa de gordura.', badge: 'Risco Crítico' },
+                { t: 'Mau Cheiro Recorrente', d: 'Odor forte e desagradável impregnando a cozinha ou área externa mesmo limpa.', badge: 'Atenção' },
+                { t: 'Escoamento Muito Lento', d: 'Água da cuba demorando minutos para descer após lavagem de utensílios.', badge: 'Alerta' },
+                { t: 'Presença de Pragas', d: 'Surgimento frequente de baratas e moscas atraídas pela gordura acumulada.', badge: 'Sanitário' },
+              ].map((s, i) => (
+                <motion.div key={i} variants={fade} custom={i} className="glass glass-hover rounded-2xl p-6 border border-amber-500/15 relative">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20 mb-3 inline-block">
+                    {s.badge}
+                  </span>
+                  <h4 className="font-semibold text-white text-base" style={{ fontFamily: 'var(--font-outfit)' }}>{s.t}</h4>
+                  <p className="mt-2 text-xs text-white/60 leading-relaxed">{s.d}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Processo Técnico 4 Etapas */}
+          <div className="glass-strong rounded-3xl p-8 border border-cyan-400/20">
+            <h3 className="text-xl font-extrabold text-white mb-8 text-center" style={{ fontFamily: 'var(--font-outfit)' }}>
+              Nosso Processo de Sucção & Limpeza Técnica em 4 Passos
+            </h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { step: '01', t: 'Inspeção Técnica', d: 'Diagnóstico preciso da camada de gordura e capacidade da caixa.' },
+                { step: '02', t: 'Sucção a Vácuo', d: 'Remoção total da crosta pastosa e resíduos sem sujeira no local.' },
+                { step: '03', t: 'Rasparia & Hidro', d: 'Raspagem das paredes internas e jato d\'água nas tubulações.' },
+                { step: '04', t: 'Descarte INEA', d: 'Destinação final autorizada em estação de tratamento ambiental.' },
+              ].map((p, i) => (
+                <div key={i} className="relative p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="text-2xl font-black text-[#10acf0] mb-2" style={{ fontFamily: 'var(--font-outfit)' }}>{p.step}</div>
+                  <div className="font-bold text-sm text-white">{p.t}</div>
+                  <div className="mt-1 text-xs text-white/60 leading-relaxed">{p.d}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Rodapé da Seção com Manutenção Preventiva & CTA */}
+            <div className="mt-10 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-sm text-white/70 max-w-xl">
+                <strong className="text-white">Manutenção Preventiva vs Emergencial:</strong> Evite multas da Vigilância Sanitária em restaurantes e paradas inesperadas. Atendemos residências, condomínios e comércios com contratos periódicos sob medida.
+              </div>
+              <a
+                href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Preciso de limpeza e sucção técnica de Caixa de Gordura.')}`}
+                target="_blank" rel="noreferrer"
+                className="btn-cyan text-white px-7 py-4 rounded-full font-semibold text-sm inline-flex items-center gap-2 shrink-0 shadow-lg shadow-cyan-500/20"
+              >
+                <PhoneCall className="h-4 w-4" /> Agendar Limpeza de Caixa
+              </a>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* ═══════════════════════════════ VACOL COMPACTO ════════════════════════ */}
+      <Section id="vacol-compacto" className="py-24 bg-[#061022] border-t border-cyan-500/10">
+        <div className="mx-auto max-w-7xl px-5">
+          <div className="grid lg:grid-cols-12 gap-10 items-center">
+            {/* Esquerda (5 cols) */}
+            <motion.div variants={fade} className="lg:col-span-5">
+              <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-1 text-xs font-bold text-cyan-300 tracking-wider uppercase mb-3">
+                <Truck className="h-3.5 w-3.5" /> Frota Própria Especializada
+              </span>
+              <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+                VACOL <span className="grad-text">Compacto</span>
+              </h2>
+              <p className="mt-2 text-cyan-300 font-semibold text-lg">Solução Ágil em Qualquer Lugar</p>
+              <p className="mt-4 text-white/70 text-base leading-relaxed">
+                Desentupimento e limpeza em locais de difícil acesso, com a praticidade de uma caminhonete customizada e a mesma potência de sucção de um caminhão grande.
+              </p>
+
+              <div className="mt-6 p-4 rounded-2xl glass border border-cyan-300/20">
+                <div className="text-xs font-bold text-white/90 uppercase tracking-wider mb-2">Por que o VACOL Compacto é imbatível?</div>
+                <p className="text-xs text-white/65 leading-relaxed">
+                  Caminhões tradicionais de grande porte não conseguem entrar em garagens subterrâneas com teto baixo nem manobrar em ruas estreitas de Niterói e São Gonçalo. O VACOL Compacto resolve no local exato sem bloquear a rua.
+                </p>
+              </div>
+
+              <a
+                href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Preciso de atendimento com o VACOL Compacto para local de difícil acesso.')}`}
+                target="_blank" rel="noreferrer"
+                className="mt-8 btn-cyan text-white px-7 py-4 rounded-full font-semibold text-sm inline-flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+              >
+                <PhoneCall className="h-4 w-4" /> Chamar VACOL Compacto 24h
+              </a>
+            </motion.div>
+
+            {/* Direita (7 cols) — Grid de Vantagens */}
+            <motion.div variants={fade} custom={1} className="lg:col-span-7 grid sm:grid-cols-2 gap-4">
+              {[
+                { icon: Building2, t: 'Garagens Subterrâneas', d: 'Acessa subsolos de condomínios com teto baixo onde caminhões grandes não entram.' },
+                { icon: MapPin, t: 'Zero Bloqueio de Vias', d: 'Estaciona com facilidade em ruas estreitas de Niterói e SG sem interromper o trânsito.' },
+                { icon: Zap, t: 'Agilidade de Atendimento', d: 'Menor tempo de deslocamento e montagem ultra rápida das tubulações de sucção.' },
+                { icon: Gauge, t: 'Alta Potência de Sucção', d: 'Desempenho de vácuo de alta capacidade adequado para fossas e caixas de gordura.' },
+                { icon: ShieldCheck, t: 'Menos Transtorno', d: 'Operação limpa e silenciosa, sem causar impactos para moradores e estabelecimentos.' },
+                { icon: Factory, t: 'Multisserviços Urbano', d: 'Atende residências, comércios, restaurantes, clínicas e condomínios com eficiência.' },
+              ].map((v, i) => (
+                <div key={i} className="glass glass-hover rounded-2xl p-5 border border-cyan-500/15">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mb-3">
+                    <v.icon className="h-5 w-5 text-[#10acf0]" />
+                  </div>
+                  <h3 className="font-bold text-white text-sm" style={{ fontFamily: 'var(--font-outfit)' }}>{v.t}</h3>
+                  <p className="mt-1 text-xs text-white/60 leading-relaxed">{v.d}</p>
+                </div>
+              ))}
+            </motion.div>
           </div>
         </div>
       </Section>

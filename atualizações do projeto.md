@@ -1,6 +1,32 @@
 # Atualizações do Projeto — RR Desentupidora
 > Seguir norma VibeDoCode: `V[MAJOR].[MINOR].[PATCH]`
 
+## V0.04.00 — 2026-09-04 — Expansão Comercial: Seções Dedicadas de Hidrojateamento, Caixa de Gordura e VACOL Compacto
+
+**Commit:** `release: Version V0.04.00`
+**Tipo:** MINOR — Incorporação completa do acervo técnico/comercial nas seções dedicadas da Landing Page
+
+### O que mudou
+- **Hidrojateamento Profissional (`#hidrojateamento`):**
+  - Seção técnica premium dedicada com badge de alta pressão (1.500 BAR) e 100% ecológica
+  - Aplicações (Tubulações/Dutos, Drenos/Esgotos, Superfícies/Equipamentos, Resíduos Comerciais/Industriais)
+  - Benefícios (sem química, redução de custos de manutenção, homologação INEA, certificações NR-33/NR-35)
+  - Visual fotográfico HD (`/assets/hidro.png`) e CTA direto para orçamento via WhatsApp
+- **Especialistas em Caixa de Gordura (`#caixa-de-gordura`):**
+  - Seção com 4 Sinais de Alerta (Transbordamento, Mau Cheiro, Escoamento Lento, Pragas)
+  - Processo de sucção e limpeza em 4 passos (Inspeção, Sucção a Vácuo, Rasparia & Hidro, Descarte INEA com Laudo Ambiental)
+  - Quadro explicativo Manutenção Preventiva vs Emergencial para restaurantes, condomínios e residências
+- **VACOL Compacto (`#vacol-compacto`):**
+  - Apresentação do diferencial exclusivo da frota própria RR para garagens subterrâneas (subsolos) e ruas estreitas de Niterói/São Gonçalo
+  - Grid de 6 vantagens (Acesso a locais restritos, Zero bloqueio de vias, Agilidade, Alta potência de sucção, Menos transtorno, Multisserviços)
+- **Navegação:**
+  - Header e Drawer Mobile atualizados com os links diretos para as 3 novas seções
+- **Build & Versão:**
+  - `npm run build` static compilado com sucesso (5/5 páginas)
+  - Versão atualizada para `V0.04.00` em `version.ts` e `package.json`
+
+---
+
 ## V0.03.01 — 2026-09-04 — Geração de Assets Visuais High-Res & Deploy Ready
 
 **Commit:** `release: Version V0.03.01`
