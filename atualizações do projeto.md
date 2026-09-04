@@ -1,6 +1,29 @@
 # Atualizações do Projeto — RR Desentupidora
 > Seguir norma VibeDoCode: `V[MAJOR].[MINOR].[PATCH]`
 
+## V0.05.00 — 2026-09-04 — Marca Oficial RR, Galeria da Frota Real KON & Medidor Circular de Scroll
+
+**Commit:** `release: Version V0.05.00`
+**Tipo:** MINOR — Identidade oficial (Logo Horizontal + Favicon), Galeria da Frota Real (`#frota`) e Botão Voltar ao Topo com indicador de scroll
+
+### O que mudou
+- **Identidade Oficial da Marca:**
+  - `site/public/assets/logo-horizontal.png`: Aplicada no Header, Footer e PortalGate com suporte retina/HD
+  - `site/public/favicon.jpg`: Configurado via `metadata.icons` em `layout.tsx`
+- **Seção "Nossa Frota Própria & Operação Real" (`#frota`):**
+  - Galeria visual com 6 fotografias reais da operação RR em Niterói extraídas da pasta `Criativos do KON`
+  - Apresentação de caminhões heavy-duty, equipe uniformizada, veículos compactos e equipamentos de hidrojateamento
+- **Botão Voltar ao Topo + Medidor Circular de Scroll:**
+  - Componente flutuante no canto inferior direito com anel de progresso em SVG preenchido de 0% a 100% conforme a rolagem do usuário
+  - Suporte a rolagem suave (`smooth scroll`) de volta ao topo e indicador com porcentagem no hover
+- **Navegação & Menu:**
+  - Header e Drawer Mobile atualizados com o atalho `Frota Real` (`#frota`)
+- **Build & Versão:**
+  - `npm run build` static compilado com sucesso (5/5 páginas)
+  - Versão atualizada para `V0.05.00` em `version.ts` e `package.json`
+
+---
+
 ## V0.04.00 — 2026-09-04 — Expansão Comercial: Seções Dedicadas de Hidrojateamento, Caixa de Gordura e VACOL Compacto
 
 **Commit:** `release: Version V0.04.00`

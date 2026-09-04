@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, useInView, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import {
   Droplets, Clock, ShieldCheck, Truck, Wrench, PhoneCall, MapPin,
-  CheckCircle2, Sparkles, ArrowRight, Star, Menu, X, Zap, Building2,
+  CheckCircle2, Sparkles, ArrowRight, ArrowUp, Star, Menu, X, Zap, Building2,
   Home as HomeIcon, Factory, AlertTriangle, Gauge, Waves, ShieldAlert, Check, ChevronRight,
 } from 'lucide-react';
 import { VERSION } from '@/lib/version';
@@ -102,9 +102,14 @@ const WA_SERVICES = [
    PAGE COMPONENT
 ══════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  /* ── scroll progress bar ── */
+  /* ── scroll progress bar & percent ── */
   const { scrollY, scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 26 });
+  const [scrollPercent, setScrollPercent] = useState(0);
+  useEffect(() => {
+    const unsub = scrollYProgress.on('change', (v) => setScrollPercent(Math.round(v * 100)));
+    return unsub;
+  }, [scrollYProgress]);
 
   /* ── header opacity on scroll ── */
   const [scrolled, setScrolled] = useState(false);
@@ -141,6 +146,7 @@ export default function LandingPage() {
     { href: '#hidrojateamento',  label: 'Hidrojateamento' },
     { href: '#caixa-de-gordura', label: 'Caixa de Gordura' },
     { href: '#vacol-compacto',   label: 'VACOL Compacto' },
+    { href: '#frota',            label: 'Frota Real' },
     { href: '#porque',           label: 'Diferenciais' },
     { href: '#avaliacoes',       label: 'Avaliações' },
     { href: '#areas',            label: 'Áreas' },
@@ -167,12 +173,9 @@ export default function LandingPage() {
       >
         <div className="mx-auto max-w-7xl px-5 py-3 flex items-center justify-between gap-4">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <Image src="/assets/rr-logo.webp" alt="RR Desentupidora" width={44} height={44} className="h-10 w-auto" unoptimized priority />
-            <span className="font-semibold tracking-tight text-[#f1f5fb]" style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>
-              RR Desentupidora
-            </span>
-          </div>
+          <a href="#" className="flex items-center gap-3" aria-label="RR Desentupidora Home">
+            <Image src="/assets/logo-horizontal.png" alt="RR Desentupidora" width={180} height={44} className="h-9 md:h-10 w-auto object-contain" unoptimized priority />
+          </a>
 
           {/* Nav desktop */}
           <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
@@ -593,6 +596,68 @@ export default function LandingPage() {
         </div>
       </Section>
 
+      {/* ═══════════════════════════════ FROTA REAL & OPERAÇÃO ════════════════════════ */}
+      <Section id="frota" className="py-24 bg-[#050b16] border-t border-cyan-500/10">
+        <div className="mx-auto max-w-7xl px-5">
+          <motion.div variants={fade} className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-1 text-xs font-bold text-cyan-300 tracking-wider uppercase mb-3">
+              <Truck className="h-3.5 w-3.5" /> Estrutura Própria & Operação Real
+            </span>
+            <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+              Conheça Nossa <span className="grad-text">Frota & Equipe em Campo</span>
+            </h2>
+            <p className="mt-3 text-white/70 text-base">
+              Fotos autênticas do nosso maquinário, caminhões de grande porte, veículo compacto VACOL e equipe homologada operando diariamente em Niterói e São Gonçalo.
+            </p>
+          </motion.div>
+
+          {/* Grid de Fotos Reais */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { src: '/assets/real/photo_1_2026-07-18_11-27-37.jpg', t: 'Caminhões de Sucção Heavy-Duty', d: 'Grande capacidade de vácuo para fossas residenciais, industriais e caixas de gordura condominiais.' },
+              { src: '/assets/real/photo_17_2026-07-18_11-27-37.jpg', t: 'Equipe Técnica Uniformizada', d: 'Profissionais experientes, treinados e certificados pelas normas NR-33 e NR-35.' },
+              { src: '/assets/real/photo_24_2026-07-18_11-27-38.jpg', t: 'Unidade de Hidrojateamento HD', d: 'Pressão ajustável computadorizada para desobstrução sem danificar as redes subterrâneas.' },
+              { src: '/assets/real/photo_27_2026-07-18_11-27-38.jpg', t: 'Pronta Resposta 24h/7d', d: 'Veículos posicionados estrategicamente em Niterói para atendimento imediato.' },
+              { src: '/assets/real/photo_22_2026-07-18_11-27-37.jpg', t: 'Equipamentos de Sucção Limpa', d: 'Operação higiênica e sem vazamentos para residências, restaurantes e hospitais.' },
+              { src: '/assets/real/photo_20_2026-07-18_11-27-37.jpg', t: 'Atendimento Comercial e Predial', d: 'Contratos de manutenção preventiva periódica para condomínios e estabelecimentos.' },
+            ].map((f, i) => (
+              <motion.div key={i} variants={fade} custom={i} className="glass glass-hover rounded-3xl overflow-hidden border border-white/10 flex flex-col">
+                <div className="relative h-56 w-full overflow-hidden bg-black/40">
+                  <Image src={f.src} alt={f.t} width={600} height={400} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" unoptimized />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-transparent to-transparent opacity-80" />
+                </div>
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-base" style={{ fontFamily: 'var(--font-outfit)' }}>{f.t}</h3>
+                    <p className="mt-2 text-xs text-white/60 leading-relaxed">{f.d}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Destaque de Garantia de Qualidade da Frota */}
+          <div className="mt-12 p-6 rounded-2xl glass border border-cyan-400/20 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="font-bold text-white text-sm" style={{ fontFamily: 'var(--font-outfit)' }}>Equipamentos Homologados & Manutenção em Dia</div>
+                <div className="text-xs text-white/60">Garantia de eficiência e zero surpresas no momento do atendimento emergencial</div>
+              </div>
+            </div>
+            <a
+              href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Vi as fotos da frota da RR e gostaria de solicitar um orçamento para o meu imóvel.')}`}
+              target="_blank" rel="noreferrer"
+              className="btn-cyan text-white px-6 py-3 rounded-full font-semibold text-xs inline-flex items-center gap-2"
+            >
+              <PhoneCall className="h-4 w-4" /> Solicitar Atendimento
+            </a>
+          </div>
+        </div>
+      </Section>
+
       {/* ═══════════════════════════════ POR QUÊ ════════════════════════ */}
       <Section id="porque" className="py-24 bg-[#060f20] border-y border-white/5">
         <div className="mx-auto max-w-7xl px-5 grid lg:grid-cols-2 gap-14 items-start">
@@ -843,8 +908,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-5 grid gap-8 md:grid-cols-3 text-sm">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
-              <Image src="/assets/rr-logo.webp" width={28} height={28} className="h-7 w-auto" alt="RR" unoptimized />
-              <span className="font-semibold text-white" style={{ fontFamily: 'var(--font-outfit)' }}>RR Desentupidora</span>
+              <Image src="/assets/logo-horizontal.png" width={160} height={36} className="h-8 w-auto object-contain" alt="RR Desentupidora" unoptimized />
             </div>
             <p className="text-white/45 leading-relaxed">Desentupimento com tecnologia, agilidade e cuidado.</p>
           </div>
@@ -863,6 +927,43 @@ export default function LandingPage() {
           <span className="font-mono opacity-70">{VERSION}</span>
         </p>
       </footer>
+
+      {/* ── Floating Voltar ao Topo com Medidor de Scroll ── */}
+      <AnimatePresence>
+        {showFloat && (
+          <motion.div
+            initial={{ opacity: 0, scale: .8, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: .8, y: 10 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+            className="fixed bottom-24 right-6 z-50 flex items-center"
+          >
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="group relative flex items-center justify-center w-12 h-12 rounded-full glass glass-hover border border-cyan-400/30 text-cyan-300 shadow-2xl transition-all hover:scale-105"
+              aria-label="Voltar ao topo"
+              title={`Voltar ao topo (${scrollPercent}%)`}
+            >
+              {/* SVG Scroll Progress Ring */}
+              <svg className="absolute inset-0 w-full h-full -rotate-90 p-0.5" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.12)" strokeWidth="3" fill="none" />
+                <circle
+                  cx="24" cy="24" r="20"
+                  stroke="#10acf0" strokeWidth="3" fill="none"
+                  strokeDasharray={125.6}
+                  strokeDashoffset={125.6 - (125.6 * Math.min(100, Math.max(0, scrollPercent))) / 100}
+                  strokeLinecap="round"
+                  className="transition-all duration-150 ease-out"
+                />
+              </svg>
+              <ArrowUp className="h-5 w-5 text-cyan-300 group-hover:-translate-y-0.5 transition-transform" />
+              <span className="absolute -left-20 bg-[#050d1a]/95 text-[#10acf0] border border-cyan-400/20 text-[10px] font-bold px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md">
+                {scrollPercent}% · Topo
+              </span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══════════════════════════════ FLOATING WA ════════════════════ */}
       <AnimatePresence>

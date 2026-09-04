@@ -85,7 +85,7 @@ export default function PortalGate() {
       <div className="w-full max-w-md">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8">
-          <Image src="/assets/rr-logo.webp" alt="RR" width={64} height={64} className="h-16 w-auto mx-auto mb-4" unoptimized />
+          <Image src="/assets/logo-horizontal.png" alt="RR Desentupidora" width={220} height={54} className="h-12 w-auto mx-auto mb-4 object-contain" unoptimized priority />
           <h1 className="text-xl font-bold text-[#f1f5fb]" style={{ fontFamily: 'var(--font-outfit)' }}>RR Desentupidora</h1>
           <p className="text-xs text-white/40 mt-1 uppercase tracking-widest">Hub RRD · Acesso Restrito</p>
         </motion.div>
