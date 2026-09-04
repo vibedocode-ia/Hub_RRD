@@ -64,3 +64,18 @@ Ciclo completo VibeDoCode Fase 1→4 executado na mesma sessão:
 
 ### Versão
 V0.03.00 · 2026-09-04
+
+---
+
+## Sessão 2026-09-04 — Assets Visuais High-Res & Deploy Pronto (V0.03.01)
+
+### Resumo
+- **Logo 3D em Alta Resolução:** Monograma `RR` com gradientes azul cyan (#10acf0) e royal (#1918eb) sobre fundo dark navy (#050d1a), salvo em `site/public/assets/rr-logo.webp` e `rr-logo.png`.
+- **Fotografia Hero de Alto Impacto:** Imagem cinematográfica de técnico especialista em hidrojateamento com van de atendimento e iluminação cyan em Niterói, salvo em `site/public/assets/hero.png`.
+- **Selos Regulatórios:** Cópia dos selos oficiais de homologação (`inea.png`, `nr33.png`, `nr35.jpeg`) para `site/public/images/`.
+- **Build & Push:** `npm run build` static compilado com 0 erros (5/5 static pages). Commit `release: Version V0.03.01` enviado com sucesso para `main` no GitHub.
+- **Deploy:** Deploy automatizado acionado via webhook no Coolify para `https://rrd.vibedocode.pro`.
+
+### Versão
+V0.03.01 · 2026-09-04
+
