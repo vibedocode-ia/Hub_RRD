@@ -1,6 +1,22 @@
 # Atualizações do Projeto — RR Desentupidora
 > Seguir norma VibeDoCode: `V[MAJOR].[MINOR].[PATCH]`
 
+## V0.05.01 — 2026-09-04 — Fotografias da Frota Limpas (Sem Banners de Anúncio) + Logo Oficial Aplicada
+
+**Commit:** `release: Version V0.05.01`
+**Tipo:** PATCH — Recriação/Tratamento das fotografias da frota KON com remoção de textos publicitários e estampagem da marca oficial RR em alta definição
+
+### O que mudou
+- **Fotografias de Frota Limpas (`site/public/assets/clean/`):**
+  - Processadas as 6 principais fotografias operacionais da pasta `Criativos do KON` via script de corte inteligente e tratamento de contraste
+  - Removidos banners e textos publicitários sobrepostos das imagens originais, isolando os caminhões heavy-duty, veículos compactos VACOL, equipamentos de sucção e equipe uniformizada
+  - Estampagem da marca oficial `Logo Horizontal RR` sobreposta com alta definição e acabamento webp
+- **Navegação & Build:**
+  - `page.tsx` atualizado para exibir as novas imagens limpas na seção `Frota Real` (`#frota`)
+  - `npm run build` static validado com 0 erros (5/5 páginas)
+
+---
+
 ## V0.05.00 — 2026-09-04 — Marca Oficial RR, Galeria da Frota Real KON & Medidor Circular de Scroll
 
 **Commit:** `release: Version V0.05.00`
