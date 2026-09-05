@@ -24,6 +24,7 @@ export const SofiaDispatchSchema = z.object({
   estimatedAmount: z.string().optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).default('NORMAL'),
   intentDetected: z.string().default('CRIAR_ORCAMENTO'),
+  correlationId: z.string().optional(),
 });
 
 export type SofiaDispatchPayload = z.infer<typeof SofiaDispatchSchema>;

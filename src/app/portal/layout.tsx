@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import LogoutButton from './components/LogoutButton';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Hub RR — Gestão Operacional 24h',
 };

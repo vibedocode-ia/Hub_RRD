@@ -1,3 +1,6 @@
+### V0.10.01 (2026-09-04) - Patch de segurança e integração Sofia Multi Cliente
+- **Release:** Site + Hub RRD.
+
 # Atualizações do Projeto — RR Desentupidora
 > Seguir norma VibeDoCode: `V[MAJOR].[MINOR].[PATCH]`
 

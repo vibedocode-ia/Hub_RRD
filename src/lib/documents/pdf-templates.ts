@@ -35,12 +35,27 @@ export interface OrdemServicoData {
   warrantyTerms?: string;
 }
 
+import { escapeHtml } from './escape-html';
+
 export function generateReciboHTML(data: ReciboData): string {
+  const docNumber = escapeHtml(data.docNumber);
+  const paymentDate = escapeHtml(data.paymentDate);
+  const paymentDateExtended = escapeHtml(data.paymentDateExtended);
+  const amount = escapeHtml(data.amount);
+  const amountInWords = escapeHtml(data.amountInWords);
+  const clientName = escapeHtml(data.clientName);
+  const clientDoc = escapeHtml(data.clientDoc);
+  const serviceDescription = escapeHtml(data.serviceDescription);
+  const address = escapeHtml(data.address);
+  const city = escapeHtml(data.city);
+  const paymentMethod = escapeHtml(data.paymentMethod);
+  const issuedAtCity = escapeHtml(data.issuedAtCity);
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Recibo de Pagamento - ${data.docNumber}</title>
+  <title>Recibo de Pagamento - ${docNumber}</title>
   <style>
     @page { size: A4; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -204,8 +219,8 @@ export function generateReciboHTML(data: ReciboData): string {
     </div>
     <div class="header-tag">
       <div class="tag-title">DATA DO PAGAMENTO</div>
-      <div class="tag-date">${data.paymentDate}</div>
-      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nº ${data.docNumber}</div>
+      <div class="tag-date">${paymentDate}</div>
+      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nº ${docNumber}</div>
     </div>
   </div>
 
@@ -213,41 +228,41 @@ export function generateReciboHTML(data: ReciboData): string {
   <div class="doc-subtitle">Comprovação de recebimento e quitação do valor descrito</div>
 
   <div class="amount-card">
-    <div class="amount-value">R$ ${data.amount}</div>
-    <div class="amount-words">(${data.amountInWords})</div>
+    <div class="amount-value">R$ ${amount}</div>
+    <div class="amount-words">(${amountInWords})</div>
   </div>
 
   <div class="declaration-box">
-    Declaramos, para os devidos fins, que recebemos de <strong>${data.clientName}</strong>, inscrito(a) no CPF/CNPJ nº <strong>${data.clientDoc}</strong>, a quantia de <strong>R$ ${data.amount} (${data.amountInWords})</strong>, paga por meio de <strong>${data.paymentMethod}</strong> em <strong>${data.paymentDateExtended}</strong>, referente ao serviço de <strong>${data.serviceDescription}</strong>, realizado no endereço <strong>${data.address}</strong>.<br><br>
+    Declaramos, para os devidos fins, que recebemos de <strong>${clientName}</strong>, inscrito(a) no CPF/CNPJ nº <strong>${clientDoc}</strong>, a quantia de <strong>R$ ${amount} (${amountInWords})</strong>, paga por meio de <strong>${paymentMethod}</strong> em <strong>${paymentDateExtended}</strong>, referente ao serviço de <strong>${serviceDescription}</strong>, realizado no endereço <strong>${address}</strong>.<br><br>
     Pelo recebimento acima, damos plena e irrevogável quitação exclusivamente quanto ao valor e ao serviço descritos neste recibo.
   </div>
 
   <div class="info-grid">
     <div class="info-card">
       <div class="info-label">PAGADOR</div>
-      <div class="info-val">${data.clientName}</div>
+      <div class="info-val">${clientName}</div>
     </div>
     <div class="info-card">
       <div class="info-label">CNPJ/CPF DO PAGADOR</div>
-      <div class="info-val">${data.clientDoc}</div>
+      <div class="info-val">${clientDoc}</div>
     </div>
     <div class="info-card full-card">
       <div class="info-label">SERVIÇO QUITADO</div>
-      <div class="info-val">${data.serviceDescription}</div>
+      <div class="info-val">${serviceDescription}</div>
     </div>
     <div class="info-card">
       <div class="info-label">FORMA DE PAGAMENTO</div>
-      <div class="info-val">${data.paymentMethod}</div>
+      <div class="info-val">${paymentMethod}</div>
     </div>
     <div class="info-card">
       <div class="info-label">DATA E LOCAL</div>
-      <div class="info-val">${data.paymentDate} - ${data.city}/RJ</div>
+      <div class="info-val">${paymentDate} - ${city}/RJ</div>
     </div>
   </div>
 
   <div class="signature-section">
     <div>
-      <div style="font-size: 11px; color: #475569;">${data.issuedAtCity}, ${data.paymentDateExtended}</div>
+      <div style="font-size: 11px; color: #475569;">${issuedAtCity}, ${paymentDateExtended}</div>
     </div>
     <div class="sig-block">
       <div class="sig-line"></div>
@@ -266,14 +281,27 @@ export function generateReciboHTML(data: ReciboData): string {
 }
 
 export function generateOrdemServicoHTML(data: OrdemServicoData): string {
+  const docNumber = escapeHtml(data.docNumber);
+  const executionDate = escapeHtml(data.executionDate);
+  const clientName = escapeHtml(data.clientName);
+  const clientDoc = escapeHtml(data.clientDoc);
+  const clientAddress = escapeHtml(data.clientAddress);
+  const serviceDescription = escapeHtml(data.serviceDescription);
+  const totalAmount = escapeHtml(data.totalAmount);
+  const paymentMethod = escapeHtml(data.paymentMethod);
+  const technicalNotes = escapeHtml(data.technicalNotes || 'Serviço executado com sucesso e inspecionado junto ao cliente.');
+  const technicianName = escapeHtml(data.technicianName || 'LEONARDO SANTOS');
+  const warrantyDays = escapeHtml(data.warrantyDays);
+  const warrantyTerms = data.warrantyTerms ? escapeHtml(data.warrantyTerms) : '';
+
   const itemsHTML = data.items
     .map(
       (item) => `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.description}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">R$ ${item.unitPrice}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 700;">R$ ${item.subtotal}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${escapeHtml(item.description)}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${escapeHtml(item.quantity)}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">R$ ${escapeHtml(item.unitPrice)}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 700;">R$ ${escapeHtml(item.subtotal)}</td>
     </tr>
   `
     )
@@ -283,7 +311,7 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Ordem de Serviço / Laudo Técnico - ${data.docNumber}</title>
+  <title>Ordem de Serviço / Laudo Técnico - ${docNumber}</title>
   <style>
     @page { size: A4; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -464,8 +492,8 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
     </div>
     <div class="header-tag">
       <div class="tag-title">DATA DA EXECUÇÃO</div>
-      <div class="tag-date">${data.executionDate}</div>
-      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nº ${data.docNumber}</div>
+      <div class="tag-date">${executionDate}</div>
+      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nº ${docNumber}</div>
     </div>
   </div>
 
@@ -476,8 +504,8 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
 
   <div class="client-card">
     <div class="section-title">DADOS DO CLIENTE</div>
-    <div class="client-name">${data.clientName}</div>
-    <div class="client-meta">CNPJ/CPF: ${data.clientDoc} | ${data.clientAddress}</div>
+    <div class="client-name">${clientName}</div>
+    <div class="client-meta">CNPJ/CPF: ${clientDoc} | ${clientAddress}</div>
   </div>
 
   <div class="section-title">ITENS DO SERVIÇO</div>
@@ -496,33 +524,33 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
   </table>
 
   <div class="table-total">
-    <span style="font-size: 12px; font-weight: 600; color: #475569;">Forma de pagamento informada: ${data.paymentMethod}</span>
-    <span>TOTAL: R$ ${data.totalAmount}</span>
+    <span style="font-size: 12px; font-weight: 600; color: #475569;">Forma de pagamento informada: ${paymentMethod}</span>
+    <span>TOTAL: R$ ${totalAmount}</span>
   </div>
 
   <div class="tech-report-box">
     <div class="section-title">LAUDO TÉCNICO / CONSTATAÇÕES</div>
-    <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Serviço executado: ${data.serviceDescription}</div>
-    <div style="font-size: 12px; color: #334155; white-space: pre-wrap;">${data.technicalNotes || 'Serviço executado com sucesso e inspecionado junto ao cliente.'}</div>
+    <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Serviço executado: ${serviceDescription}</div>
+    <div style="font-size: 12px; color: #334155; white-space: pre-wrap;">${technicalNotes}</div>
   </div>
 
   <div class="compliance-box">
     <div class="section-title" style="color: #15803d;">CONFORMIDADE TÉCNICA E SEGURANÇA</div>
     <div class="compliance-item">✓ Empresa licenciada pelo INEA para transporte e descarte ecológico de resíduos.</div>
     <div class="compliance-item">✓ Equipe técnica certificada em NR-33 (Espaço Confinado) e NR-35 (Trabalho em Altura).</div>
-    <div class="compliance-item">✓ Garantia de ${data.warrantyDays} dias, válida desde que não seja constatado mau uso${data.warrantyTerms ? ` (${data.warrantyTerms})` : ''}.</div>
-    <div class="compliance-item">✓ Forma de pagamento: ${data.paymentMethod}.</div>
+    <div class="compliance-item">✓ Garantia de ${warrantyDays} dias, válida desde que não seja constatado mau uso${warrantyTerms ? ` (${warrantyTerms})` : ''}.</div>
+    <div class="compliance-item">✓ Forma de pagamento: ${paymentMethod}.</div>
   </div>
 
   <div class="signatures">
     <div class="sig-col">
       <div class="sig-line"></div>
-      <div class="sig-name">${data.technicianName || 'LEONARDO SANTOS'}</div>
+      <div class="sig-name">${technicianName}</div>
       <div class="sig-sub">Responsável Técnico (RR Desentupidora)</div>
     </div>
     <div class="sig-col">
       <div class="sig-line"></div>
-      <div class="sig-name">${data.clientName}</div>
+      <div class="sig-name">${clientName}</div>
       <div class="sig-sub">Ciência e aceite do serviço executado</div>
     </div>
   </div>

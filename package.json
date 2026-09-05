@@ -1,12 +1,16 @@
 {
   "name": "rrdesentupidora-site-hub",
-  "version": "0.10.00",
+  "version": "0.10.01",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed-rafael.ts",
+    "db:seed:rafael": "tsx scripts/seed-rafael.ts"
   },
   "dependencies": {
     "current": "^0.1.6",
@@ -29,6 +33,7 @@
     "drizzle-kit": "^0.31.10",
     "postcss": "8.4.49",
     "tailwindcss": "4.0.0",
+    "tsx": "^4.23.13",
     "typescript": "5.7.2"
   }
 }

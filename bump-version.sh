@@ -70,9 +70,9 @@ const fs = require('fs')
 const [label, version, today, file] = process.argv.slice(2)
 let source = fs.readFileSync(file, 'utf8')
 source = source
-  .replace(/export const VERSION = '[^']*'/, `export const VERSION = '${label}'`)
-  .replace(/export const APP_VERSION = '[^']*'/, `export const APP_VERSION = '${version}'`)
-  .replace(/export const APP_VERSION_DATE = '[^']*'/, `export const APP_VERSION_DATE = '${today}'`)
+  .replace(/export const VERSION\s+= '[^']*'/, `export const VERSION          = '${label}'`)
+  .replace(/export const APP_VERSION\s+= '[^']*'/, `export const APP_VERSION      = '${version}'`)
+  .replace(/export const APP_VERSION_DATE\s+= '[^']*'/, `export const APP_VERSION_DATE = '${today}'`)
 fs.writeFileSync(file, source)
 NODE
 

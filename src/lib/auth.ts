@@ -52,14 +52,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     if (!token) return null;
 
     if (!db) {
-      // Fallback para sessão emergencial em ambiente sem DB conectado
-      return {
-        id: '00000000-0000-0000-0000-000000000001',
-        name: 'Rafael (RR)',
-        phone: '5521996699191',
-        email: 'contato@rrdesentupidora.com.br',
-        role: 'ADMIN',
-      };
+      // Sem banco conectado → não autenticado (fail-closed)
+      return null;
     }
 
     const now = new Date();
