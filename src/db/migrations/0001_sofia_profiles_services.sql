@@ -35,3 +35,6 @@ CREATE TABLE IF NOT EXISTS "service_catalog" (
 CREATE INDEX IF NOT EXISTS "service_catalog_status_idx" ON "service_catalog" USING btree ("status");
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "service_catalog_category_idx" ON "service_catalog" USING btree ("category");
+
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "service_catalog_name_unique_idx" ON "service_catalog" USING btree ("name");

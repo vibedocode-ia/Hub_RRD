@@ -1,4 +1,5 @@
 import { getDb, sofiaResponseProfiles, serviceCatalog } from '../src/db';
+import { eq } from 'drizzle-orm';
 import { DEFAULT_SOFIA_PROFILES, DEFAULT_SERVICE_CATALOG } from '../src/lib/rr-defaults';
 
 async function seed() {
@@ -7,7 +8,8 @@ async function seed() {
     await db.insert(sofiaResponseProfiles).values(profile).onConflictDoNothing();
   }
   for (const item of DEFAULT_SERVICE_CATALOG) {
-    await db.insert(serviceCatalog).values(item).onConflictDoNothing();
+    const existing = await db.select({ id: serviceCatalog.id }).from(serviceCatalog).where(eq(serviceCatalog.name, item.name)).limit(1);
+    if (existing.length === 0) await db.insert(serviceCatalog).values(item);
   }
   console.log('✅ Defaults operacionais da Sofia e serviços aplicados.');
 }

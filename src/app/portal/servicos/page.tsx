@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { asc } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { Plus, Wrench } from 'lucide-react';
 import { db, serviceCatalog } from '@/db';
 import { DEFAULT_SERVICE_CATALOG } from '@/lib/rr-defaults';
@@ -10,7 +10,10 @@ export const metadata = { title: 'Serviços · Hub RR' };
 
 async function loadServices(){
   if(!db) return [];
-  for (const item of DEFAULT_SERVICE_CATALOG) await db.insert(serviceCatalog).values(item).onConflictDoNothing();
+  for (const item of DEFAULT_SERVICE_CATALOG) {
+    const existing = await db.select({ id: serviceCatalog.id }).from(serviceCatalog).where(eq(serviceCatalog.name, item.name)).limit(1);
+    if (existing.length === 0) await db.insert(serviceCatalog).values(item);
+  }
   return db.select().from(serviceCatalog).orderBy(asc(serviceCatalog.displayOrder), asc(serviceCatalog.name));
 }
 
