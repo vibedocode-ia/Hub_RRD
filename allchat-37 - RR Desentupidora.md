@@ -109,4 +109,35 @@ Com base nas orientações comerciais do Hermes e do Vanderson, recuperamos e re
 ### Versão
 V0.04.00 · 2026-09-04
 
+---
+
+## Sessão 2026-09-04 — Lançamento da Fase 2: Hub RRD (V0.10.00)
+
+### Resumo
+- **Engenharia & Fundação do Hub RRD:**
+  - Lançamento do MVP Interno Operacional do Hub RRD (`V0.10.00`) para a operação de campo da RR Desentupidora.
+  - Conexão relacional **Drizzle ORM + PostgreSQL** com isolamento total de banco.
+  - Autenticação real server-side (`POST /api/auth/login`) com **scrypt nativo Node.js**, sessões persistentes no banco e cookies **`HttpOnly`**.
+  - Protection de todas as rotas `/portal/*` via **`middleware.ts`**.
+  - Script de seed seguro (`scripts/seed-rafael.ts`) para cadastro do operador master Rafael (`5521996699191`).
+- **Módulos do Portal Operacional (`/portal`):**
+  - `/portal/login`: Login server-side executivo com tratamento de erros.
+  - `/portal/dashboard`: Visão geral de métricas operacionais em tempo real.
+  - `/portal/crm` & `/portal/crm/novo`: Cadastro e busca de clientes (PF/PJ/Restaurantes/Condomínios) por telefone normalizado e bairro.
+  - `/portal/chamados` & `/portal/chamados/novo`: Abertura e acompanhamento de ordens de serviço (Normal / Urgente 24h).
+  - `/portal/documentos` & `/portal/documentos/preview/[id]`: Central de documentos oficiais com snapshot imutável em JSONB (`documentPayloadSnapshot`).
+  - `/portal/sofia-drafts`: Central de aprovação dos áudios/textos capturados pela assistente Sofia no WhatsApp, permitindo emissão de recibo/laudo em 1 clique pelo Rafael.
+  - `/portal/settings`: Gestão de equipes, veículos (Vácuo / VACOL) e equipamentos.
+- **Endpoint da Sofia (WhatsApp API):**
+  - `POST /api/sofia/dispatch` com validação Zod, secret Bearer server-side, `Idempotency-Key` e suporte a rascunhos incompletos (`PENDING_REVIEW`).
+- **Gerador de PDFs Canônicos:**
+  - Renderização fiel aos modelos oficiais de Recibo de Pagamento (CNPJ 53.102.506/0001-78, INEA, valor por extenso e garantia) e Ordem de Serviço / Laudo Técnico (NR-33/NR-35/INEA).
+- **Build & Versionamento:**
+  - `npm run build` compilado com 0 erros (20/20 páginas e rotas).
+  - Release `V0.10.00` enviada para o GitHub e deploy acionado no Coolify (`https://rrd.vibedocode.pro`).
+
+### Versão
+V0.10.00 · 2026-09-04
+
+
 

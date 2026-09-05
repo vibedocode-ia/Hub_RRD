@@ -1,8 +1,5 @@
-import PortalGate from './PortalGate';
-import { APP_NAME } from '@/lib/version';
-
-export const metadata = { title: `Acesso ao Hub · ${APP_NAME}` };
+import { redirect } from 'next/navigation';
 
 export default function PortalPage() {
-  return <PortalGate />;
+  redirect('/portal/dashboard');
 }
