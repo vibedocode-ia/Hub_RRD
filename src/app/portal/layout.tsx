@@ -13,6 +13,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 import LogoutButton from './components/LogoutButton';
+import MobileBottomNav from './components/MobileBottomNav';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,10 +99,11 @@ export default async function PortalLayout({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 pb-28 sm:p-6 sm:pb-6 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

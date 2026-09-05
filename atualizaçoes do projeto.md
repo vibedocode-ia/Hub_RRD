@@ -1,3 +1,6 @@
+### V0.10.07 (2026-09-05) - Menu mobile fixo inferior estilo aplicativo
+- **Release:** Site + Hub RRD.
+
 ### V0.10.06 (2026-09-05) - Corrige seed idempotente do catálogo de serviços
 - **Release:** Site + Hub RRD.
 
