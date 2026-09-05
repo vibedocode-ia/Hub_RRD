@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import DeleteResourceButton from '@/components/DeleteResourceButton';
 import { db, serviceRequests, clients, clientAddresses } from '@/db';
 import { eq, desc } from 'drizzle-orm';
 import { ClipboardList, PlusCircle, AlertTriangle, CheckCircle, Clock, FileText } from 'lucide-react';
@@ -119,6 +120,8 @@ export default async function ChamadosPage() {
                     <div className="text-sm font-black text-emerald-400">R$ {req.totalAmount || '0,00'}</div>
                     <div className="text-[10px] text-slate-500">{new Date(req.createdAt).toLocaleDateString('pt-BR')}</div>
                   </div>
+                  <Link href={`/portal/chamados/${req.id}/editar`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs transition">Editar</Link>
+                  <DeleteResourceButton endpoint={`/api/chamados/${req.id}`} redirectTo="/portal/chamados" confirmText="Excluir este chamado e documentos vinculados?" />
                   <Link
                     href={`/portal/sofia-drafts?id=${req.id}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition"

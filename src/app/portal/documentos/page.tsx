@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import DeleteResourceButton from '@/components/DeleteResourceButton';
 import { db, officialDocuments, clients, serviceRequests } from '@/db';
 import { eq, desc } from 'drizzle-orm';
 import { FileText, Printer, Download, Eye, CheckCircle2 } from 'lucide-react';
@@ -105,6 +106,7 @@ export default async function DocumentosPage() {
                       <CheckCircle2 className="w-3 h-3" /> Snapshot Congelado
                     </div>
                   </div>
+                  <DeleteResourceButton endpoint={`/api/documents/${doc.id}`} redirectTo="/portal/documentos" confirmText="Excluir este documento emitido? O chamado será preservado." />
                   <Link
                     href={`/portal/documentos/preview/${doc.id}`}
                     target="_blank"

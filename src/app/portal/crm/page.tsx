@@ -129,12 +129,15 @@ export default async function CRMPage() {
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <Link
-                        href={`/portal/crm/${client.id}`}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 px-3 py-1.5 rounded-lg transition inline-block"
-                      >
-                        Ficha Completa ➔
-                      </Link>
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/portal/crm/${client.id}/editar`} className="text-xs font-bold text-slate-300 hover:text-white bg-slate-800/70 border border-slate-700 px-3 py-1.5 rounded-lg transition inline-block">Editar</Link>
+                        <Link
+                          href={`/portal/crm/${client.id}`}
+                          className="text-xs font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 px-3 py-1.5 rounded-lg transition inline-block"
+                        >
+                          Ficha Completa ➔
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
