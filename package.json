@@ -1,6 +1,6 @@
 {
   "name": "rrdesentupidora-site-hub",
-  "version": "0.10.04",
+  "version": "0.10.05",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed-rafael.ts",
     "db:seed:rafael": "tsx scripts/seed-rafael.ts",
-    "db:seed:users": "tsx scripts/seed-users.ts"
+    "db:seed:users": "tsx scripts/seed-users.ts",
+    "db:seed:operational": "tsx scripts/seed-operational-defaults.ts"
   },
   "dependencies": {
     "current": "^0.1.6",

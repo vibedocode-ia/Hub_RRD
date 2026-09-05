@@ -8,6 +8,7 @@ import {
   FileText, 
   MessageSquareCode, 
   Settings, 
+  Wrench,
   LogOut, 
   ShieldCheck 
 } from 'lucide-react';
@@ -35,6 +36,7 @@ export default async function PortalLayout({
     { label: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
     { label: 'CRM de Clientes', href: '/portal/crm', icon: Users },
     { label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
+    { label: 'Serviços', href: '/portal/servicos', icon: Wrench },
     { label: 'Documentos', href: '/portal/documentos', icon: FileText },
     { label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode },
     { label: 'Configurações', href: '/portal/settings', icon: Settings },

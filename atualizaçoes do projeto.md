@@ -1,3 +1,6 @@
+### V0.10.05 (2026-09-05) - Perfis de atendimento Sofia e CRUD de serviços
+- **Release:** Site + Hub RRD.
+
 ### V0.10.04 (2026-09-05) - Adiciona CRUD operacional e Vanderson SUPER_ADMIN
 - **Release:** Site + Hub RRD.
 

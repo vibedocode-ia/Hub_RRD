@@ -79,6 +79,20 @@ export const SOFIA_EVENT_STATUS = {
   REJECTED: 'REJECTED',
 } as const;
 
+
+export const SOFIA_PROFILE_AUDIENCES = {
+  RAFAEL_ADMIN: 'RAFAEL_ADMIN',
+  PROFESSIONALS: 'PROFESSIONALS',
+  LEADS: 'LEADS',
+  CLIENTS: 'CLIENTS',
+} as const;
+export type SofiaProfileAudience = typeof SOFIA_PROFILE_AUDIENCES[keyof typeof SOFIA_PROFILE_AUDIENCES];
+
+export const SERVICE_CATALOG_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+} as const;
+
 // ==========================================
 // TABELAS DO BANCO DE DADOS
 // ==========================================
@@ -277,4 +291,44 @@ export const sofiaEvents = pgTable('sofia_events', {
 }, (table) => [
   index('sofia_events_idempotency_idx').on(table.idempotencyKey),
   index('sofia_events_status_idx').on(table.status),
+]);
+
+
+// 10. Perfis de atendimento da Sofia — prompts editáveis por público
+export const sofiaResponseProfiles = pgTable('sofia_response_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  audience: text('audience').notNull().unique(),
+  title: text('title').notNull(),
+  description: text('description').notNull().default(''),
+  initialLookupFields: text('initial_lookup_fields').notNull().default(''),
+  initialContext: text('initial_context').notNull().default(''),
+  responsePrompt: text('response_prompt').notNull().default(''),
+  allowedData: text('allowed_data').notNull().default(''),
+  blockedData: text('blocked_data').notNull().default(''),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('sofia_response_profiles_audience_idx').on(table.audience),
+]);
+
+// 11. Catálogo editável de serviços RR
+export const serviceCatalog = pgTable('service_catalog', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  category: text('category').notNull().default(SERVICE_TYPES.DESENTUPIMENTO),
+  description: text('description').notNull().default(''),
+  basePrice: numeric('base_price', { precision: 10, scale: 2 }).default('0.00'),
+  priceNotes: text('price_notes').notNull().default(''),
+  warrantyDays: integer('warranty_days').default(30).notNull(),
+  defaultDurationMinutes: integer('default_duration_minutes').default(90).notNull(),
+  requiresInspection: boolean('requires_inspection').default(false).notNull(),
+  isEmergencyEligible: boolean('is_emergency_eligible').default(true).notNull(),
+  status: text('status').notNull().default(SERVICE_CATALOG_STATUS.ACTIVE),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('service_catalog_status_idx').on(table.status),
+  index('service_catalog_category_idx').on(table.category),
 ]);
