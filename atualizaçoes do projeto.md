@@ -1,3 +1,6 @@
+### V0.10.02 (2026-09-05) - Adiciona alternância de visibilidade da senha no login
+- **Release:** Site + Hub RRD.
+
 ### V0.10.01 (2026-09-04) - Patch de segurança e integração Sofia Multi Cliente
 - **Release:** Site + Hub RRD.
 
