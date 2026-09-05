@@ -1,3 +1,6 @@
+### V0.10.03 (2026-09-05) - Corrige rota de ficha completa do CRM
+- **Release:** Site + Hub RRD.
+
 ### V0.10.02 (2026-09-05) - Adiciona alternância de visibilidade da senha no login
 - **Release:** Site + Hub RRD.
 

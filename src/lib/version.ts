@@ -1,6 +1,6 @@
 // RR Desentupidora — Site + Hub RRD · versionamento VibeDoCode (obrigatório)
-export const VERSION          = 'V0.10.02';
-export const APP_VERSION      = '0.10.02';
+export const VERSION          = 'V0.10.03';
+export const APP_VERSION      = '0.10.03';
 export const APP_VERSION_DATE = '2026-09-05';
 export const APP_NAME         = 'RR Desentupidora';
 export const APP_DESCRIPTION  =

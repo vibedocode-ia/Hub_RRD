@@ -1,6 +1,6 @@
 {
   "name": "rrdesentupidora-site-hub",
-  "version": "0.10.02",
+  "version": "0.10.03",
   "private": true,
   "scripts": {
     "dev": "next dev",
