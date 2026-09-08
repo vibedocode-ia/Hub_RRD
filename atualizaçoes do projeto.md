@@ -1,3 +1,6 @@
+### V0.10.08 (2026-09-08) - Templates canônicos fiéis de Recibo e Ordem de Serviço/Relatório Técnico
+- **Release:** Site + Hub RRD.
+
 ### V0.10.07 (2026-09-05) - Menu mobile fixo inferior estilo aplicativo
 - **Release:** Site + Hub RRD.
 

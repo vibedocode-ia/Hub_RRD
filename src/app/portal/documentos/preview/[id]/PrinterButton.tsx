@@ -4,6 +4,12 @@ import { Printer, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export function PrinterButton() {
+  const printDocument = () => {
+    const frame = document.getElementById('rrd-document-frame') as HTMLIFrameElement | null;
+    frame?.contentWindow?.focus();
+    frame?.contentWindow?.print();
+  };
+
   return (
     <div className="flex items-center gap-3">
       <Link
@@ -13,7 +19,7 @@ export function PrinterButton() {
         <ArrowLeft className="w-4 h-4" /> Voltar ao Hub
       </Link>
       <button
-        onClick={() => window.print()}
+        onClick={printDocument}
         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
       >
         <Printer className="w-4 h-4" /> Imprimir / Salvar PDF

@@ -138,6 +138,15 @@ V0.04.00 · 2026-09-04
 
 ### Versão
 V0.10.00 · 2026-09-04
+## 2026-09-08 — V0.10.08 · Modelos canônicos de documentos
 
-
+- `Recibo PDF Aberto RRD.pdf`, `Recibo RRD.pdf`, `Recibo_de_Pagamento_RRD.pdf` e `Ordem_de_Servico_Relatorio_Tecnico_RRD.pdf` analisados diretamente.
+- Link Canva `DAHUoMZCXVc` confirmado como fonte editável do conjunto de documentos.
+- Gerador genérico substituído pelos templates versionados `RR_RECIBO_V1` e `RR_OS_RELATORIO_V1`.
+- Identidade fixa preservada: A4, ondas, logo, marca d'água, cores, tabelas, quitação, conformidade, assinaturas, INEA, NR-33, NR-35 e rodapé.
+- Somente campos operacionais variáveis são sobrepostos; exemplos fictícios deixaram de ser usados como fallback.
+- Valor por extenso passou a ser calculado pelo Hub; CPF/CNPJ e endereço são obrigatórios antes da emissão.
+- Impressão corrigida para imprimir o documento dentro do iframe, sem a interface do Hub.
+- Provas finais salvas em `Docs/Docs Modelos/Validação Hub RRD/`.
+- TypeScript, build Next.js e inspeção visual das provas aprovados.
 

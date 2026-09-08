@@ -1,139 +1,130 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { db, serviceRequests, clients, clientAddresses, officialDocuments, DOC_STATUS, DOC_TYPES } from '../../../../db';
+import { db, serviceRequests, clients, clientAddresses, officialDocuments, DOC_STATUS } from '../../../../db';
 import { getSessionUser } from '../../../../lib/auth';
 import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
+import { moneyToWords } from '../../../../lib/documents/money-to-words';
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
     const body = await req.json();
     const { serviceRequestId, docType, amount, paymentMethod, warrantyDays, warrantyTerms, amountInWords, technicalNotes } = body;
-
-    if (!serviceRequestId || !docType) {
-      return NextResponse.json({ error: 'Informe o chamado e o tipo de documento.' }, { status: 400 });
+    if (!serviceRequestId || !['RECIBO_GARANTIA', 'LAUDO_TECNICO'].includes(docType)) {
+      return NextResponse.json({ error: 'Informe o chamado e um tipo de documento válido.' }, { status: 400 });
     }
+    if (!db) return NextResponse.json({ error: 'Banco de dados indisponível' }, { status: 500 });
 
-    if (!db) {
-      return NextResponse.json({ error: 'Banco de dados indisponível' }, { status: 500 });
-    }
-
-    // Busca chamado + cliente + endereço
-    const requests = await db
-      .select({
-        req: serviceRequests,
-        cli: clients,
-        addr: clientAddresses,
-      })
+    const records = await db
+      .select({ req: serviceRequests, cli: clients, addr: clientAddresses })
       .from(serviceRequests)
       .innerJoin(clients, eq(serviceRequests.clientId, clients.id))
       .leftJoin(clientAddresses, eq(serviceRequests.addressId, clientAddresses.id))
       .where(eq(serviceRequests.id, serviceRequestId))
       .limit(1);
+    if (!records.length) return NextResponse.json({ error: 'Chamado não encontrado.' }, { status: 404 });
 
-    if (requests.length === 0) {
-      return NextResponse.json({ error: 'Chamado não encontrado.' }, { status: 404 });
+    const { req: serviceRequest, cli, addr } = records[0];
+    const rawAmount = String(amount || serviceRequest.totalAmount || '').trim();
+    const numericAmount = Number(rawAmount.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json({ error: 'Informe um valor válido antes de emitir o documento.' }, { status: 400 });
+    }
+    if (!cli.document || !addr) {
+      return NextResponse.json({ error: 'Complete CPF/CNPJ e endereço do cliente antes da emissão.' }, { status: 400 });
     }
 
-    const { req: sReq, cli, addr } = requests[0];
+    const formattedAmount = numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const amountText = String(amountInWords || moneyToWords(numericAmount)).trim();
+    const fullAddress = [
+      `${addr.street}, ${addr.number}`,
+      addr.complement,
+      addr.floorOrUnit,
+      `${addr.neighborhood}, ${addr.city}/${addr.state || 'RJ'}`,
+      addr.zipCode ? `CEP ${addr.zipCode}` : null,
+    ].filter(Boolean).join(' - ');
 
-    const docNumber = docType === 'RECIBO_GARANTIA'
-      ? `REC-2026-${Math.floor(1000 + Math.random() * 9000)}`
-      : `OS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const formattedDate = now.toLocaleDateString('pt-BR');
+    const fullDateText = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    const docNumber = docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : `OS-${year}-${suffix}`;
+    const resolvedPayment = String(paymentMethod || serviceRequest.paymentMethod || '').trim();
+    if (!resolvedPayment) return NextResponse.json({ error: 'Informe a forma de pagamento.' }, { status: 400 });
 
-    const dateNow = new Date();
-    const formattedDate = dateNow.toLocaleDateString('pt-BR');
-    const fullDateText = dateNow.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-
-    let documentPayload: any;
-
-    if (docType === 'RECIBO_GARANTIA') {
-      documentPayload = {
-        type: 'RECIBO_GARANTIA',
-        data: {
-          docNumber,
-          paymentDate: formattedDate,
-          paymentDateExtended: fullDateText,
-          amount: amount || sReq.totalAmount || '300,00',
-          amountInWords: amountInWords || 'trezentos reais',
-          clientName: cli.name,
-          clientDoc: cli.document || 'Não informado',
-          serviceDescription: sReq.problemReported,
-          address: addr ? `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}/RJ` : 'Niterói/RJ',
-          city: addr?.city || 'Niterói',
-          paymentMethod: paymentMethod || sReq.paymentMethod || 'Pix',
-          issuedAtCity: 'Niterói/RJ',
-        },
-      };
-    } else {
-      documentPayload = {
-        type: docType,
-        data: {
-          docNumber,
-          executionDate: formattedDate,
-          clientName: cli.name,
-          clientDoc: cli.document || 'Não informado',
-          clientAddress: addr ? `${addr.street}, ${addr.number} ${addr.complement || ''} - ${addr.neighborhood}, ${addr.city}/RJ` : 'Niterói/RJ',
-          serviceType: sReq.serviceType,
-          serviceDescription: sReq.problemReported,
-          items: [
-            {
-              description: sReq.problemReported,
-              quantity: 1,
-              unitPrice: amount || sReq.totalAmount || '300,00',
-              subtotal: amount || sReq.totalAmount || '300,00',
-            },
-          ],
-          totalAmount: amount || sReq.totalAmount || '300,00',
-          paymentMethod: paymentMethod || sReq.paymentMethod || 'Pix',
-          technicalNotes: technicalNotes || 'Serviço executado e inspecionado junto ao cliente.',
-          technicianName: 'LEONARDO SANTOS',
-          warrantyDays: warrantyDays || sReq.warrantyDays || 30,
-          warrantyTerms: warrantyTerms || '',
-        },
-      };
-    }
+    const documentPayload = docType === 'RECIBO_GARANTIA'
+      ? {
+          type: 'RECIBO_GARANTIA' as const,
+          data: {
+            docNumber,
+            paymentDate: formattedDate,
+            paymentDateExtended: fullDateText,
+            amount: formattedAmount,
+            amountInWords: amountText,
+            clientName: cli.name,
+            clientDoc: cli.document,
+            serviceDescription: serviceRequest.problemReported,
+            address: fullAddress,
+            city: 'Niterói',
+            paymentMethod: resolvedPayment,
+            issuedAtCity: 'Niterói/RJ',
+          },
+        }
+      : {
+          type: 'LAUDO_TECNICO' as const,
+          data: {
+            docNumber,
+            executionDate: formattedDate,
+            clientName: cli.name,
+            clientDoc: cli.document,
+            clientAddress: fullAddress,
+            serviceType: serviceRequest.serviceType,
+            serviceDescription: serviceRequest.problemReported,
+            items: [{ description: serviceRequest.problemReported, quantity: 1, unitPrice: formattedAmount, subtotal: formattedAmount }],
+            totalAmount: formattedAmount,
+            paymentMethod: resolvedPayment,
+            technicalNotes: String(technicalNotes || serviceRequest.problemFound || '').trim(),
+            technicianName: 'LEONARDO SANTOS',
+            warrantyDays: Number(warrantyDays || serviceRequest.warrantyDays || 30),
+            warrantyTerms: String(warrantyTerms || '').trim(),
+          },
+        };
 
     const htmlSnapshot = renderDocumentHTML(documentPayload);
+    const [documentRecord] = await db.insert(officialDocuments).values({
+      docType,
+      docNumber,
+      serviceRequestId,
+      clientId: cli.id,
+      templateVersion: docType === 'RECIBO_GARANTIA' ? 'RR_RECIBO_V1' : 'RR_OS_RELATORIO_V1',
+      totalValue: numericAmount.toFixed(2),
+      amountInWords: amountText,
+      paymentMethod: resolvedPayment,
+      hasWarranty: true,
+      warrantyDays: Number(warrantyDays || serviceRequest.warrantyDays || 30),
+      warrantyTerms: warrantyTerms || null,
+      technicalNotes: technicalNotes || serviceRequest.problemFound || null,
+      documentPayloadSnapshot: documentPayload,
+      htmlSnapshot,
+      status: DOC_STATUS.EMITIDO,
+      issuedAt: now,
+      createdById: user.id,
+    }).returning();
 
-    const [docRecord] = await db
-      .insert(officialDocuments)
-      .values({
-        docType,
-        docNumber,
-        serviceRequestId,
-        clientId: cli.id,
-        templateVersion: 'V1.0',
-        totalValue: amount || sReq.totalAmount || '300.00',
-        amountInWords: amountInWords || null,
-        paymentMethod: paymentMethod || 'Pix',
-        hasWarranty: true,
-        warrantyDays: warrantyDays || 30,
-        warrantyTerms: warrantyTerms || null,
-        documentPayloadSnapshot: documentPayload, // SNAPSHOT IMUTÁVEL CONGELADO
-        htmlSnapshot,
-        status: DOC_STATUS.EMITIDO,
-        issuedAt: new Date(),
-        createdById: user.id,
-      })
-      .returning();
-
-    // Atualiza chamado para CONCLUIDO se for recibo
     if (docType === 'RECIBO_GARANTIA') {
       await db.update(serviceRequests).set({ status: 'CONCLUIDO' }).where(eq(serviceRequests.id, serviceRequestId));
     }
 
     return NextResponse.json({
       success: true,
-      documentId: docRecord.id,
-      docNumber: docRecord.docNumber,
-      previewUrl: `/portal/documentos/preview/${docRecord.id}`,
+      documentId: documentRecord.id,
+      docNumber: documentRecord.docNumber,
+      previewUrl: `/portal/documentos/preview/${documentRecord.id}`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao emitir documento:', error);
     return NextResponse.json({ error: 'Falha interna ao emitir documento.' }, { status: 500 });
   }

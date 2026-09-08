@@ -45,8 +45,9 @@ export default async function DocumentPreviewPage({
       {/* Embedded Document HTML */}
       <div className="w-full max-w-4xl bg-white text-slate-900 my-6 rounded-lg shadow-2xl overflow-hidden print:m-0 print:shadow-none print:w-full">
         <iframe
+          id="rrd-document-frame"
           srcDoc={htmlContent}
-          className="w-full min-h-[1120px] border-none"
+          className="w-full aspect-[210/297] min-h-[1120px] border-none bg-white"
           title={`Documento ${doc.docNumber}`}
         />
       </div>

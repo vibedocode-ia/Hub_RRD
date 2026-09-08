@@ -1,11 +1,13 @@
+import { escapeHtml } from './escape-html';
+
 export interface ReciboData {
   docNumber: string;
-  paymentDate: string; // Ex: '15/04/2026'
-  paymentDateExtended: string; // Ex: '15 de abril de 2026'
-  amount: string; // Ex: '300,00'
-  amountInWords: string; // Ex: 'trezentos reais'
+  paymentDate: string;
+  paymentDateExtended: string;
+  amount: string;
+  amountInWords: string;
   clientName: string;
-  clientDoc: string; // CPF ou CNPJ
+  clientDoc: string;
   serviceDescription: string;
   address: string;
   city: string;
@@ -35,10 +37,28 @@ export interface OrdemServicoData {
   warrantyTerms?: string;
 }
 
-import { escapeHtml } from './escape-html';
+const PAGE_CSS = `
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 210mm; min-height: 297mm; background: #fff; }
+  body { font-family: 'DejaVu Sans', Arial, sans-serif; color: #242b38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { position: relative; width: 595.5pt; height: 842.25pt; overflow: hidden; background-position: 0 0; background-repeat: no-repeat; background-size: 595.5pt 842.25pt; }
+  .field { position: absolute; z-index: 2; margin: 0; }
+  .white { background: #fff; }
+  .navy { background: #053b70; }
+  .muted { color: #616979; }
+  strong { font-family: 'DejaVu Sans', Arial, sans-serif; font-weight: 700; }
+  @media screen { body { margin: 0 auto; } .page { box-shadow: 0 0 18px rgba(15,23,42,.16); } }
+`;
+
+function docLabel(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 11) return 'CPF';
+  if (digits.length === 14) return 'CNPJ';
+  return 'CPF/CNPJ';
+}
 
 export function generateReciboHTML(data: ReciboData): string {
-  const docNumber = escapeHtml(data.docNumber);
   const paymentDate = escapeHtml(data.paymentDate);
   const paymentDateExtended = escapeHtml(data.paymentDateExtended);
   const amount = escapeHtml(data.amount);
@@ -50,238 +70,41 @@ export function generateReciboHTML(data: ReciboData): string {
   const city = escapeHtml(data.city);
   const paymentMethod = escapeHtml(data.paymentMethod);
   const issuedAtCity = escapeHtml(data.issuedAtCity);
+  const identityLabel = docLabel(data.clientDoc);
 
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Recibo de Pagamento - ${docNumber}</title>
-  <style>
-    @page { size: A4; margin: 0; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      color: #0f172a;
-      background: #ffffff;
-      padding: 40px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #0284c7;
-      padding-bottom: 16px;
-      margin-bottom: 24px;
-    }
-    .brand-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #0284c7;
-      letter-spacing: -0.5px;
-    }
-    .brand-sub {
-      font-size: 11px;
-      color: #475569;
-      margin-top: 4px;
-    }
-    .header-tag {
-      text-align: right;
-    }
-    .tag-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-    }
-    .tag-date {
-      font-size: 16px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-    .doc-title {
-      text-align: center;
-      font-size: 22px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-    .doc-subtitle {
-      text-align: center;
-      font-size: 12px;
-      color: #64748b;
-      margin-bottom: 24px;
-    }
-    .amount-card {
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .amount-value {
-      font-size: 32px;
-      font-weight: 900;
-      color: #0369a1;
-    }
-    .amount-words {
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
-      margin-top: 4px;
-    }
-    .declaration-box {
-      background: #f8fafc;
-      border-left: 4px solid #0284c7;
-      padding: 16px 20px;
-      margin-bottom: 24px;
-      border-radius: 0 8px 8px 0;
-      font-size: 13px;
-      color: #334155;
-      line-height: 1.6;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .info-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 12px 16px;
-    }
-    .info-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-      margin-bottom: 2px;
-    }
-    .info-val {
-      font-size: 13px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-    .full-card {
-      grid-column: span 2;
-    }
-    .signature-section {
-      margin-top: 40px;
-      padding-top: 24px;
-      border-top: 1px dashed #cbd5e1;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-    .sig-block {
-      text-align: center;
-      width: 260px;
-    }
-    .sig-line {
-      border-top: 1px solid #0f172a;
-      margin-bottom: 8px;
-    }
-    .sig-company {
-      font-size: 11px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-    .sig-role {
-      font-size: 10px;
-      color: #64748b;
-    }
-    .footer-note {
-      font-size: 10px;
-      color: #94a3b8;
-      margin-top: 40px;
-      text-align: center;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 12px;
-    }
-    @media print {
-      body { padding: 20px; }
-      .no-print { display: none; }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="brand-title">RR DESENTUPIDORA E DEDETIZADORA LTDA</div>
-      <div class="brand-sub">CNPJ: 53.102.506/0001-78 | Licença INEA: operacional ativa</div>
-      <div class="brand-sub">Rua Santos Moreira, 40, Casa 103 - Santa Rosa, Niterói/RJ</div>
-      <div class="brand-sub">(21) 99669-9191 | (21) 99442-3968 | atendimento@rrdesentupidora.com.br</div>
-    </div>
-    <div class="header-tag">
-      <div class="tag-title">DATA DO PAGAMENTO</div>
-      <div class="tag-date">${paymentDate}</div>
-      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nº ${docNumber}</div>
-    </div>
-  </div>
-
-  <div class="doc-title">RECIBO DE PAGAMENTO</div>
-  <div class="doc-subtitle">Comprovação de recebimento e quitação do valor descrito</div>
-
-  <div class="amount-card">
-    <div class="amount-value">R$ ${amount}</div>
-    <div class="amount-words">(${amountInWords})</div>
-  </div>
-
-  <div class="declaration-box">
-    Declaramos, para os devidos fins, que recebemos de <strong>${clientName}</strong>, inscrito(a) no CPF/CNPJ nº <strong>${clientDoc}</strong>, a quantia de <strong>R$ ${amount} (${amountInWords})</strong>, paga por meio de <strong>${paymentMethod}</strong> em <strong>${paymentDateExtended}</strong>, referente ao serviço de <strong>${serviceDescription}</strong>, realizado no endereço <strong>${address}</strong>.<br><br>
-    Pelo recebimento acima, damos plena e irrevogável quitação exclusivamente quanto ao valor e ao serviço descritos neste recibo.
-  </div>
-
-  <div class="info-grid">
-    <div class="info-card">
-      <div class="info-label">PAGADOR</div>
-      <div class="info-val">${clientName}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">CNPJ/CPF DO PAGADOR</div>
-      <div class="info-val">${clientDoc}</div>
-    </div>
-    <div class="info-card full-card">
-      <div class="info-label">SERVIÇO QUITADO</div>
-      <div class="info-val">${serviceDescription}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">FORMA DE PAGAMENTO</div>
-      <div class="info-val">${paymentMethod}</div>
-    </div>
-    <div class="info-card">
-      <div class="info-label">DATA E LOCAL</div>
-      <div class="info-val">${paymentDate} - ${city}/RJ</div>
-    </div>
-  </div>
-
-  <div class="signature-section">
-    <div>
-      <div style="font-size: 11px; color: #475569;">${issuedAtCity}, ${paymentDateExtended}</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-line"></div>
-      <div class="sig-company">RR DESENTUPIDORA E DEDETIZADORA LTDA</div>
-      <div class="sig-role">CNPJ: 53.102.506/0001-78</div>
-      <div class="sig-role">Assinatura do representante autorizado</div>
-    </div>
-  </div>
-
-  <div class="footer-note">
-    Este recibo comprova somente o pagamento do valor e do serviço identificados acima. Não substitui documento fiscal quando sua emissão for legalmente exigida.<br>
-    <strong>RR DESENTUPIDORA E DEDETIZADORA LTDA • CNPJ 53.102.506/0001-78</strong>
-  </div>
-</body>
-</html>`;
+  return `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recibo de Pagamento</title>
+<style>${PAGE_CSS}
+  .receipt { background-image: url('/documents/templates/rr-recibo-v1.png'); }
+  .r-header-company-fix { left: 145pt; top: 122pt; width: 255pt; height: 16pt; padding: 3pt 4pt; font-size: 7.8pt; line-height: 9pt; }
+  .r-date { left: 426pt; top: 53pt; width: 112pt; height: 19pt; color: #fff; font-size: 11pt; line-height: 19pt; font-weight: 700; text-align: center; }
+  .r-amount { left: 55pt; top: 211pt; width: 396pt; height: 50pt; color: #fff; padding: 3pt 9pt; }
+  .r-amount-main { font-size: 23pt; line-height: 27pt; font-weight: 700; }
+  .r-amount-words { font-size: 8.2pt; line-height: 12pt; }
+  .r-declaration { left: 44pt; top: 288pt; width: 510pt; min-height: 87pt; padding: 4pt; font-size: 10.2pt; line-height: 15.7pt; text-align: left; }
+  .r-table-value { left: 178pt; width: 373pt; height: 16pt; padding: 3.2pt 5pt 1pt; font-size: 8.4pt; line-height: 10pt; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .r-id-label { left: 48pt; top: 474pt; width: 130pt; height: 16pt; padding: 3.2pt 2pt; background: #eaf9fe; color: #111bd4; font-size: 7.2pt; line-height: 10pt; font-weight: 700; }
+  .r-v1 { top: 447pt; } .r-v2 { top: 474pt; } .r-v3 { top: 501pt; } .r-v4 { top: 528pt; } .r-v5 { top: 555pt; }
+  .r-note-fix { left: 49pt; top: 607pt; width: 410pt; height: 16pt; padding: 3pt; background: #fff8d8; font-size: 7pt; line-height: 9pt; }
+  .r-sign-date { left: 408pt; top: 637pt; width: 153pt; height: 19pt; padding: 4pt 2pt; font-size: 8pt; line-height: 10pt; font-weight: 700; text-align: center; }
+</style></head><body>
+<main class="page receipt" aria-label="Recibo de Pagamento da RR Desentupidora">
+  <div class="field white r-header-company-fix">CNPJ: 53.102.506/0001-78 &nbsp;|&nbsp; Licença INEA: operacional ativa</div>
+  <div class="field navy r-date">${paymentDate}</div>
+  <div class="field navy r-amount"><div class="r-amount-main">R$ ${amount}</div><div class="r-amount-words">(${amountInWords})</div></div>
+  <div class="field white r-declaration">Declaramos, para os devidos fins, que recebemos de <strong>${clientName}</strong>, inscrito(a) no ${identityLabel} nº <strong>${clientDoc}</strong>, a quantia de <strong>R$ ${amount} (${amountInWords})</strong>, paga por meio de <strong>${paymentMethod}</strong> em <strong>${paymentDateExtended}</strong>, referente ao serviço de <strong>${serviceDescription}</strong>, realizado e concluído no endereço <strong>${address}</strong>.</div>
+  <div class="field r-table-value r-v1">${clientName}</div>
+  <div class="field r-id-label">${identityLabel} DO PAGADOR</div>
+  <div class="field r-table-value r-v2">${clientDoc}</div>
+  <div class="field r-table-value r-v3">${serviceDescription}</div>
+  <div class="field r-table-value r-v4">${paymentMethod}</div>
+  <div class="field r-table-value r-v5">${paymentDate} - ${city}/RJ</div>
+  <div class="field r-note-fix">Este recibo comprova somente o pagamento do valor e do serviço identificados acima.</div>
+  <div class="field white r-sign-date">${issuedAtCity}, ${paymentDateExtended}</div>
+</main></body></html>`;
 }
 
 export function generateOrdemServicoHTML(data: OrdemServicoData): string {
-  const docNumber = escapeHtml(data.docNumber);
   const executionDate = escapeHtml(data.executionDate);
   const clientName = escapeHtml(data.clientName);
   const clientDoc = escapeHtml(data.clientDoc);
@@ -289,275 +112,41 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
   const serviceDescription = escapeHtml(data.serviceDescription);
   const totalAmount = escapeHtml(data.totalAmount);
   const paymentMethod = escapeHtml(data.paymentMethod);
-  const technicalNotes = escapeHtml(data.technicalNotes || 'Serviço executado com sucesso e inspecionado junto ao cliente.');
-  const technicianName = escapeHtml(data.technicianName || 'LEONARDO SANTOS');
+  const technicalNotes = escapeHtml(data.technicalNotes);
+  const technicianName = escapeHtml(data.technicianName);
   const warrantyDays = escapeHtml(data.warrantyDays);
-  const warrantyTerms = data.warrantyTerms ? escapeHtml(data.warrantyTerms) : '';
+  const warrantyTerms = data.warrantyTerms ? ` ${escapeHtml(data.warrantyTerms)}` : ' válida desde que não seja constatado mau uso.';
+  const identityLabel = docLabel(data.clientDoc);
+  const firstItem = data.items[0] || { description: data.serviceDescription, quantity: 1, unitPrice: data.totalAmount, subtotal: data.totalAmount };
 
-  const itemsHTML = data.items
-    .map(
-      (item) => `
-    <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${escapeHtml(item.description)}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${escapeHtml(item.quantity)}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">R$ ${escapeHtml(item.unitPrice)}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 700;">R$ ${escapeHtml(item.subtotal)}</td>
-    </tr>
-  `
-    )
-    .join('');
-
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Ordem de Serviço / Laudo Técnico - ${docNumber}</title>
-  <style>
-    @page { size: A4; margin: 0; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      color: #0f172a;
-      background: #ffffff;
-      padding: 40px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #0284c7;
-      padding-bottom: 16px;
-      margin-bottom: 24px;
-    }
-    .brand-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #0284c7;
-      letter-spacing: -0.5px;
-    }
-    .brand-sub {
-      font-size: 11px;
-      color: #475569;
-      margin-top: 4px;
-    }
-    .header-tag {
-      text-align: right;
-    }
-    .tag-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-    }
-    .tag-date {
-      font-size: 16px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-    .doc-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .doc-title {
-      font-size: 22px;
-      font-weight: 900;
-      color: #0f172a;
-    }
-    .doc-badge {
-      background: #e0f2fe;
-      color: #0369a1;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 12px;
-      text-transform: uppercase;
-    }
-    .client-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }
-    .section-title {
-      font-size: 11px;
-      font-weight: 800;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-    .client-name {
-      font-size: 15px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-    .client-meta {
-      font-size: 12px;
-      color: #475569;
-      margin-top: 4px;
-    }
-    table.items-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    table.items-table th {
-      background: #f1f5f9;
-      color: #475569;
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 10px;
-      text-align: left;
-      border-bottom: 2px solid #cbd5e1;
-    }
-    .table-total {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 16px;
-      font-size: 16px;
-      font-weight: 800;
-      padding: 12px 16px;
-      background: #f8fafc;
-      border-radius: 6px;
-      margin-bottom: 24px;
-    }
-    .tech-report-box {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }
-    .compliance-box {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 32px;
-    }
-    .compliance-item {
-      font-size: 12px;
-      color: #166534;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .signatures {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin-top: 40px;
-      padding-top: 20px;
-    }
-    .sig-col {
-      text-align: center;
-    }
-    .sig-line {
-      border-top: 1px solid #0f172a;
-      margin-bottom: 8px;
-    }
-    .sig-name {
-      font-size: 12px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-    .sig-sub {
-      font-size: 10px;
-      color: #64748b;
-    }
-    .footer-note {
-      font-size: 10px;
-      color: #94a3b8;
-      margin-top: 40px;
-      text-align: center;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 12px;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="brand-title">RR DESENTUPIDORA E DEDETIZADORA LTDA</div>
-      <div class="brand-sub">CNPJ: 53.102.506/0001-78 | Licença INEA: operacional ativa</div>
-      <div class="brand-sub">Rua Santos Moreira, 40, Casa 103 - Santa Rosa, Niterói/RJ</div>
-      <div class="brand-sub">(21) 99669-9191 | (21) 99442-3968 | atendimento@rrdesentupidora.com.br</div>
-    </div>
-    <div class="header-tag">
-      <div class="tag-title">DATA DA EXECUÇÃO</div>
-      <div class="tag-date">${executionDate}</div>
-      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nº ${docNumber}</div>
-    </div>
-  </div>
-
-  <div class="doc-title-row">
-    <div class="doc-title">ORDEM DE SERVIÇO / RELATÓRIO TÉCNICO</div>
-    <div class="doc-badge">Atendimento Concluído</div>
-  </div>
-
-  <div class="client-card">
-    <div class="section-title">DADOS DO CLIENTE</div>
-    <div class="client-name">${clientName}</div>
-    <div class="client-meta">CNPJ/CPF: ${clientDoc} | ${clientAddress}</div>
-  </div>
-
-  <div class="section-title">ITENS DO SERVIÇO</div>
-  <table class="items-table">
-    <thead>
-      <tr>
-        <th>Descrição do Serviço</th>
-        <th style="text-align: center;">Qtd</th>
-        <th style="text-align: right;">Unitário</th>
-        <th style="text-align: right;">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${itemsHTML}
-    </tbody>
-  </table>
-
-  <div class="table-total">
-    <span style="font-size: 12px; font-weight: 600; color: #475569;">Forma de pagamento informada: ${paymentMethod}</span>
-    <span>TOTAL: R$ ${totalAmount}</span>
-  </div>
-
-  <div class="tech-report-box">
-    <div class="section-title">LAUDO TÉCNICO / CONSTATAÇÕES</div>
-    <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Serviço executado: ${serviceDescription}</div>
-    <div style="font-size: 12px; color: #334155; white-space: pre-wrap;">${technicalNotes}</div>
-  </div>
-
-  <div class="compliance-box">
-    <div class="section-title" style="color: #15803d;">CONFORMIDADE TÉCNICA E SEGURANÇA</div>
-    <div class="compliance-item">✓ Empresa licenciada pelo INEA para transporte e descarte ecológico de resíduos.</div>
-    <div class="compliance-item">✓ Equipe técnica certificada em NR-33 (Espaço Confinado) e NR-35 (Trabalho em Altura).</div>
-    <div class="compliance-item">✓ Garantia de ${warrantyDays} dias, válida desde que não seja constatado mau uso${warrantyTerms ? ` (${warrantyTerms})` : ''}.</div>
-    <div class="compliance-item">✓ Forma de pagamento: ${paymentMethod}.</div>
-  </div>
-
-  <div class="signatures">
-    <div class="sig-col">
-      <div class="sig-line"></div>
-      <div class="sig-name">${technicianName}</div>
-      <div class="sig-sub">Responsável Técnico (RR Desentupidora)</div>
-    </div>
-    <div class="sig-col">
-      <div class="sig-line"></div>
-      <div class="sig-name">${clientName}</div>
-      <div class="sig-sub">Ciência e aceite do serviço executado</div>
-    </div>
-  </div>
-
-  <div class="footer-note">
-    <strong>RR DESENTUPIDORA E DEDETIZADORA LTDA • CNPJ 53.102.506/0001-78</strong>
-  </div>
-</body>
-</html>`;
+  return `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ordem de Serviço / Relatório Técnico</title>
+<style>${PAGE_CSS}
+  .service-order { background-image: url('/documents/templates/rr-os-relatorio-v1.png'); }
+  .o-date { left: 425pt; top: 53pt; width: 115pt; height: 20pt; color: #fff; font-size: 11pt; line-height: 20pt; font-weight: 700; text-align: center; }
+  .o-client { left: 40pt; top: 207pt; width: 520pt; height: 39pt; padding: 4pt 5pt; font-size: 7.7pt; line-height: 14pt; }
+  .o-client-name { color: #063b70; font-size: 8.4pt; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o-row { left: 36pt; top: 290pt; width: 524pt; height: 29pt; padding: 7pt 4pt; font-size: 8.1pt; line-height: 10pt; }
+  .o-row span { position: absolute; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .o-desc { left: 4pt; width: 290pt; } .o-qty { left: 304pt; width: 28pt; text-align: center; } .o-unit { left: 357pt; width: 68pt; text-align: right; } .o-subtotal { right: 4pt; width: 78pt; text-align: right; }
+  .o-total { left: 487pt; top: 326pt; width: 73pt; height: 24pt; padding: 5pt 3pt; font-size: 10pt; line-height: 12pt; font-weight: 700; color: #063b70; text-align: right; }
+  .o-payment-top { left: 420pt; top: 359pt; width: 143pt; height: 18pt; padding: 4pt 0; font-size: 7.2pt; line-height: 9pt; color: #616979; text-align: right; }
+  .o-report { left: 38pt; top: 407pt; width: 524pt; height: 60pt; padding: 5pt 4pt; font-size: 7.8pt; line-height: 13pt; }
+  .o-report strong { font-weight: 700; }
+  .o-compliance { left: 49pt; top: 508pt; width: 508pt; height: 61pt; padding: 4pt 0 4pt 8pt; font-size: 7.4pt; line-height: 13pt; }
+  .o-tech { left: 93pt; top: 696pt; width: 140pt; height: 27pt; padding: 4pt; font-size: 6.6pt; line-height: 8.3pt; text-align: center; }
+  .o-client-sign { left: 320pt; top: 696pt; width: 240pt; height: 27pt; padding: 4pt; font-size: 6.6pt; line-height: 8.3pt; text-align: center; }
+  .sig-name { display:block; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+</style></head><body>
+<main class="page service-order" aria-label="Ordem de Serviço e Relatório Técnico da RR Desentupidora">
+  <div class="field navy o-date">${executionDate}</div>
+  <div class="field white o-client"><div class="o-client-name">${clientName}</div><div>${identityLabel}: ${clientDoc} &nbsp;|&nbsp; ${clientAddress}</div></div>
+  <div class="field white o-row"><span class="o-desc">${escapeHtml(firstItem.description)}</span><span class="o-qty">${escapeHtml(firstItem.quantity)}</span><span class="o-unit">R$ ${escapeHtml(firstItem.unitPrice)}</span><span class="o-subtotal">R$ ${escapeHtml(firstItem.subtotal)}</span></div>
+  <div class="field white o-total">R$ ${totalAmount}</div>
+  <div class="field white o-payment-top">Forma de pagamento informada: ${paymentMethod}</div>
+  <div class="field white o-report"><div><strong>Serviço executado:</strong> ${serviceDescription}.</div><div><strong>Observações técnicas do atendimento:</strong> ${technicalNotes}</div></div>
+  <div class="field white o-compliance"><div>Empresa licenciada pelo INEA para transporte e descarte de resíduos.</div><div>Equipe técnica certificada em NR-33 (Espaço Confinado) e NR-35 (Trabalho em Altura).</div><div>Garantia de ${warrantyDays} dias,${warrantyTerms}</div><div>Forma de pagamento: ${paymentMethod}.</div></div>
+  <div class="field white o-tech"><span class="sig-name">${technicianName}</span><span>Responsável Técnico</span></div>
+  <div class="field white o-client-sign"><span class="sig-name">${clientName}</span><span>Ciência e aceite do serviço</span></div>
+</main></body></html>`;
 }
