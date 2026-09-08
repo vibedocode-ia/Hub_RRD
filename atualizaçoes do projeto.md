@@ -1,3 +1,6 @@
+### V0.10.09 (2026-09-08) - Sofia aceita Admin/Super Admin do Hub RRD
+- **Release:** Site + Hub RRD.
+
 ### V0.10.08 (2026-09-08) - Templates canônicos fiéis de Recibo e Ordem de Serviço/Relatório Técnico
 - **Release:** Site + Hub RRD.
 

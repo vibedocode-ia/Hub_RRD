@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
-import { eq } from 'drizzle-orm';
-import { db, sofiaEvents, clients, clientAddresses, serviceRequests, REQUEST_STATUS, CLIENT_SOURCES, LEAD_STATUS } from '../../../../db';
+import { and, eq, inArray } from 'drizzle-orm';
+import { db, sofiaEvents, clients, clientAddresses, serviceRequests, users, REQUEST_STATUS, CLIENT_SOURCES, LEAD_STATUS, USER_ROLES } from '../../../../db';
 import { SofiaDispatchSchema } from '../../../../lib/validation/sofia';
 import { VERSION } from '../../../../lib/version';
 
 const RAFAEL_PHONE = '5521996699191';
+const SOFIA_ALLOWED_DISPATCH_ROLES = [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN] as const;
 
 function normalizePhone(raw: string): string {
   return raw.replace(/\D/g, '');
@@ -100,11 +101,19 @@ export async function POST(req: NextRequest) {
 
     const payload = validation.data;
 
-    // 5. Validação exata do senderPhone (Rafael autorizado)
+    // 5. Validação do senderPhone: Rafael OU usuário Admin/Super Admin cadastrado no Hub RRD.
+    // A Central Sofia resolve a rota por telefone antes de chamar este Hub; aqui o Hub RRD
+    // ainda valida localmente se o emissor tem permissão administrativa para criar rascunhos.
     const normalizedSender = normalizePhone(payload.senderPhone);
-    if (normalizedSender !== RAFAEL_PHONE) {
+    const authorizedUsers = await db
+      .select({ id: users.id, role: users.role })
+      .from(users)
+      .where(and(eq(users.phone, normalizedSender), inArray(users.role, [...SOFIA_ALLOWED_DISPATCH_ROLES])))
+      .limit(1);
+
+    if (normalizedSender !== RAFAEL_PHONE && authorizedUsers.length === 0) {
       return NextResponse.json(
-        { error: 'Apenas comandos disparados pelo número autorizado do Rafael são aceitos.' },
+        { error: 'Apenas comandos disparados por Rafael ou por Admin/Super Admin cadastrado no Hub RRD são aceitos.' },
         { status: 403, headers: { 'X-Hub-Version': VERSION, 'X-Correlation-Id': correlationId } }
       );
     }
