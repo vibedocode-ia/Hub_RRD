@@ -1,3 +1,7 @@
+### V0.10.11 (2026-09-11) - Operações Sofia seguras para rascunhos RRD
+- **Sofia:** adiciona `POST /api/sofia/actions` com Bearer do Hub, contexto central fixado no servidor, contrato Zod estrito e idempotência.
+- **Operação:** permite listar catálogo/equipes e criar somente rascunho de orçamento/OS; não cria chamado definitivo, não emite documentos e não expõe autenticação do portal.
+
 ### V0.10.09 (2026-09-08) - Sofia aceita Admin/Super Admin do Hub RRD
 - **Release:** Site + Hub RRD.
 
