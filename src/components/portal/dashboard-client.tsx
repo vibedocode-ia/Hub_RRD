@@ -4,18 +4,35 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { Users, ClipboardList, MessageSquareCode, FileText, PlusCircle, ArrowRight, ShieldCheck, DollarSign, TrendingDown, AlertTriangle, Truck } from 'lucide-react';
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const EMPTY_METRICS = {
+  clientsCount: 0,
+  pendingRequestsCount: 0,
+  sofiaDraftsCount: 0,
+  faturamentoTotal: 0,
+  gastosTotais: 0,
+};
+
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Falha ao carregar os dados do dashboard.');
+  }
+
+  return payload;
+};
 
 export function DashboardClient() {
   const { data, error, isLoading } = useSWR('/api/dashboard/bi', fetcher, {
     refreshInterval: 10000 // atualiza a cada 10s
   });
 
-  if (error) return <div className="text-red-500">Falha ao carregar dashboard.</div>;
+  if (error) {
+    return <div className="text-red-400">Falha ao carregar dashboard. Tente atualizar a página.</div>;
+  }
   
-  const { metrics, alertasEstoque = [], equipesAtivas = [] } = data || {
-    metrics: { clientsCount: 0, pendingRequestsCount: 0, sofiaDraftsCount: 0, faturamentoTotal: 0, gastosTotais: 0 }
-  };
+  const { metrics = EMPTY_METRICS, alertasEstoque = [], equipesAtivas = [] } = data || {};
 
   return (
     <div className="space-y-8">
