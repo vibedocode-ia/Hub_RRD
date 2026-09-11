@@ -66,6 +66,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
           phone: users.phone,
           email: users.email,
           role: users.role,
+          isActive: users.isActive,
         },
       })
       .from(sessions)
@@ -73,11 +74,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       .where(and(eq(sessions.id, token), gte(sessions.expiresAt, now)))
       .limit(1);
 
-    if (activeSessions.length === 0) {
+    if (activeSessions.length === 0 || !activeSessions[0].user.isActive) {
       return null;
     }
 
-    return activeSessions[0].user;
+    const { isActive: _isActive, ...sessionUser } = activeSessions[0].user;
+    return sessionUser;
   } catch (error) {
     console.error('Erro ao verificar sessão:', error);
     return null;

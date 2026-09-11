@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, users } from '../../../../db';
 import { verifyPassword } from '../../../../lib/auth-crypto';
 import { createSession } from '../../../../lib/auth';
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const foundUsers = await db
       .select()
       .from(users)
-      .where(eq(users.phone, searchPhone))
+      .where(and(eq(users.phone, searchPhone), eq(users.isActive, true)))
       .limit(1);
 
     if (foundUsers.length === 0) {
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         });
       }
       return NextResponse.json(
-        { error: 'Usuário não cadastrado ou senha incorreta.' },
+        { error: 'Credenciais inválidas.' },
         { status: 401 }
       );
     }
@@ -83,11 +83,12 @@ export async function POST(req: NextRequest) {
 
     if (!isValid) {
       return NextResponse.json(
-        { error: 'Senha incorreta. Tente novamente.' },
+        { error: 'Credenciais inválidas.' },
         { status: 401 }
       );
     }
 
+    await db.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
     await createSession(user.id);
 
     return NextResponse.json({

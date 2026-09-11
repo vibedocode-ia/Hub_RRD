@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, clients, clientAddresses } from '../../../db';
-import { getSessionUser } from '../../../lib/auth';
+import { requireLocalPermission } from '../../../lib/require-local-permission';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    const authorized = await requireLocalPermission('crm.write');
+    if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para editar CRM' }, { status: 403 });
+    const user = authorized.access;
 
     const body = await req.json();
     const { name, type, phone, document, email, contactPerson, notes, street, number, complement, neighborhood, city, state, referencePoint, serviceAccessNotes } = body;

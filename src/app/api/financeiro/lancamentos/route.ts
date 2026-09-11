@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db, financeiroLancamentos } from '@/db';
-import { getSessionUser } from '@/lib/auth';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 
 export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const authorized = await requireLocalPermission('financial.write');
+  if (!authorized) {
+    return NextResponse.json({ error: 'Permissão insuficiente para lançar no financeiro' }, { status: 403 });
   }
 
   if (!db) {

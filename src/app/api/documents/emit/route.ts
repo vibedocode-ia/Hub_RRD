@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, serviceRequests, clients, clientAddresses, officialDocuments, DOC_STATUS } from '../../../../db';
-import { getSessionUser } from '../../../../lib/auth';
+import { requireLocalPermission } from '../../../../lib/require-local-permission';
 import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
 import { moneyToWords } from '../../../../lib/documents/money-to-words';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authorized = await requireLocalPermission('documents.issue');
+    if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para emitir documentos.' }, { status: 403 });
+    const user = authorized.access;
 
     const body = await req.json();
     const { serviceRequestId, docType, amount, paymentMethod, warrantyDays, warrantyTerms, amountInWords, technicalNotes } = body;

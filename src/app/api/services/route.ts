@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { asc } from 'drizzle-orm';
 import { db, serviceCatalog } from '@/db';
-import { getSessionUser } from '@/lib/auth';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const authorized = await requireLocalPermission('settings.manage');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const rows = await db.select().from(serviceCatalog).orderBy(asc(serviceCatalog.displayOrder), asc(serviceCatalog.name));
   return NextResponse.json({ success: true, services: rows });
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+  const authorized = await requireLocalPermission('settings.manage');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const body = await req.json();
   if (!body.name) return NextResponse.json({ error: 'Nome do serviço é obrigatório.' }, { status: 400 });

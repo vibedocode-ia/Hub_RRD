@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, serviceRequests, clients, clientAddresses, REQUEST_STATUS, LEAD_STATUS } from '../../../db';
-import { getSessionUser } from '../../../lib/auth';
+import { requireLocalPermission } from '../../../lib/require-local-permission';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authorized = await requireLocalPermission('operations.write');
+    if (!authorized) {
+      return NextResponse.json({ error: 'Permissão insuficiente para criar chamado' }, { status: 403 });
     }
 
     const body = await req.json();

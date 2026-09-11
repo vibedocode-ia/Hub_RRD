@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, sofiaResponseProfiles } from '@/db';
-import { getSessionUser } from '@/lib/auth';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 import { DEFAULT_SOFIA_PROFILES } from '@/lib/rr-defaults';
 
 async function ensureDefaults() {
@@ -14,8 +14,8 @@ async function ensureDefaults() {
 }
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const authorized = await requireLocalPermission('settings.manage');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   await ensureDefaults();
   const rows = await db.select().from(sofiaResponseProfiles).orderBy(sofiaResponseProfiles.audience);
@@ -23,9 +23,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+  const authorized = await requireLocalPermission('settings.manage');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const body = await req.json();
   const { id, title, description, initialLookupFields, initialContext, responsePrompt, allowedData, blockedData, isActive } = body;

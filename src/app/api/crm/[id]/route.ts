@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, clients, clientAddresses, serviceRequests, officialDocuments, attachments, sofiaEvents } from '@/db';
-import { getSessionUser } from '@/lib/auth';
+import { requireLocalPermission } from '../../../../lib/require-local-permission';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const authorized = await requireLocalPermission('crm.write');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para editar CRM' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
 
   const { id } = await params;
@@ -51,8 +51,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const authorized = await requireLocalPermission('crm.write');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para editar CRM' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
 
   const { id } = await params;

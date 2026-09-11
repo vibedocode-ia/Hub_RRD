@@ -1,14 +1,17 @@
-import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // ==========================================
 // CONSTANTES E ENUMS DA OPERAÇÃO RR DESENTUPIDORA
 // ==========================================
 
 export const USER_ROLES = {
+  OWNER: 'OWNER',
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   OPERATOR: 'OPERATOR',
   TEAM: 'TEAM',
+  FINANCEIRO: 'FINANCEIRO',
+  LEITURA: 'LEITURA',
 } as const;
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
 
@@ -115,10 +118,38 @@ export const users = pgTable('users', {
   email: text('email'),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull().default(USER_ROLES.ADMIN),
+  isActive: boolean('is_active').notNull().default(true),
+  lastLoginAt: timestamp('last_login_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [
   index('users_phone_idx').on(table.phone),
+]);
+
+// 1b. Permissões locais do Hub RRD. Não criam nem alteram grants/números da Central Sofia.
+export const userPermissions = pgTable('user_permissions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  permissionKey: text('permission_key').notNull(),
+  grantedById: uuid('granted_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('user_permissions_user_permission_unique').on(table.userId, table.permissionKey),
+  index('user_permissions_user_idx').on(table.userId),
+]);
+
+// 1c. Auditoria local sanitizada para administração e emissão de documentos.
+export const auditEvents = pgTable('audit_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  actorUserId: uuid('actor_user_id').references(() => users.id),
+  action: text('action').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: uuid('target_id'),
+  metadata: jsonb('metadata').notNull().default({}),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('audit_events_actor_created_idx').on(table.actorUserId, table.createdAt),
+  index('audit_events_target_created_idx').on(table.targetType, table.targetId, table.createdAt),
 ]);
 
 // 2. Sessões Autenticadas (Cookies Server-Side HttpOnly)

@@ -1,4 +1,5 @@
-import { Settings, ShieldCheck, Truck, Wrench, Users, CheckCircle2, Bot } from 'lucide-react';
+import Link from 'next/link';
+import { Settings, ShieldCheck, Truck, Wrench, Users, CheckCircle2, Bot, UserRoundCog } from 'lucide-react';
 import { db, sofiaResponseProfiles } from '@/db';
 import { asc } from 'drizzle-orm';
 import { DEFAULT_SOFIA_PROFILES } from '@/lib/rr-defaults';
@@ -28,6 +29,11 @@ export default async function SettingsPage() {
       <p className="text-xs text-slate-300 leading-relaxed mb-5">Configure como a Sofia atende cada público: Rafael/admin, profissionais da RR, leads e clientes. Estes campos são a base para roteamento seguro, consulta de contexto e bloqueio de dados sensíveis.</p>
       <SofiaProfileEditor profiles={profiles as any} />
     </section>
+
+    <Link href="/portal/settings/pessoas" className="flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-900/60 p-5 transition hover:border-cyan-700 hover:bg-slate-800/70">
+      <span><span className="flex items-center gap-2 text-sm font-bold text-cyan-300"><UserRoundCog className="w-4 h-4" /> Pessoas e Acessos RRD</span><span className="mt-1 block text-xs text-slate-400">Crie pessoas locais e defina as áreas permitidas no Hub RRD.</span></span>
+      <span className="text-xs font-bold text-cyan-400">GERENCIAR →</span>
+    </Link>
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card icon={<Users className="w-4 h-4"/>} title="Equipes de Atendimento" lines={[['Equipe Alpha (Hidrojato)','Líder: Leonardo Santos'],['Equipe Bravo (Vácuo)','Líder: Rafael (Operador Master)']]}/>

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, serviceCatalog } from '@/db';
-import { getSessionUser } from '@/lib/auth';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+  const authorized = await requireLocalPermission('settings.manage');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const { id } = await params;
   const body = await req.json();
@@ -32,9 +31,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+  const authorized = await requireLocalPermission('settings.manage');
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const { id } = await params;
   const deleted = await db.delete(serviceCatalog).where(eq(serviceCatalog.id, id)).returning({ id: serviceCatalog.id });

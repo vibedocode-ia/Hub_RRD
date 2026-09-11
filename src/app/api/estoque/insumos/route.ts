@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db, insumos } from '@/db';
 import { eq, sql } from 'drizzle-orm';
-import { getSessionUser } from '@/lib/auth';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 
 export async function PATCH(request: Request) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const authorized = await requireLocalPermission('inventory.write');
+  if (!authorized) {
+    return NextResponse.json({ error: 'Permissão insuficiente para alterar estoque' }, { status: 403 });
   }
 
   if (!db) {

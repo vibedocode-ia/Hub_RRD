@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "financeiro_lancamentos" (
   "created_at" timestamp DEFAULT now() NOT NULL,
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS "insumos" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS "insumos" (
   "created_at" timestamp DEFAULT now() NOT NULL,
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS "sofia_drafts" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -47,8 +49,13 @@ CREATE TABLE IF NOT EXISTS "sofia_drafts" (
   "updated_at" timestamp DEFAULT now() NOT NULL,
   CONSTRAINT "sofia_drafts_correlation_id_unique" UNIQUE("correlation_id")
 );
+--> statement-breakpoint
 
 CREATE INDEX IF NOT EXISTS "sofia_drafts_correlation_idx" ON "sofia_drafts" USING btree ("correlation_id");
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "sofia_drafts_status_updated_idx" ON "sofia_drafts" USING btree ("status", "updated_at");
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "sofia_drafts_hub_status_idx" ON "sofia_drafts" USING btree ("central_hub_id", "status");
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "sofia_drafts_sender_created_idx" ON "sofia_drafts" USING btree ("sender_phone", "created_at");
+--> statement-breakpoint
