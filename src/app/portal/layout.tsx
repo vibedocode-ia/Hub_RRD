@@ -10,7 +10,10 @@ import {
   Settings, 
   Wrench,
   LogOut, 
-  ShieldCheck 
+  ShieldCheck,
+  Package,
+  CircleDollarSign,
+  Briefcase
 } from 'lucide-react';
 import LogoutButton from './components/LogoutButton';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -35,10 +38,11 @@ export default async function PortalLayout({
 
   const navItems = [
     { label: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
+    { label: 'Operacional', href: '/portal/operacional', icon: Briefcase },
     { label: 'CRM de Clientes', href: '/portal/crm', icon: Users },
     { label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
-    { label: 'Serviços', href: '/portal/servicos', icon: Wrench },
-    { label: 'Documentos', href: '/portal/documentos', icon: FileText },
+    { label: 'Estoque', href: '/portal/estoque', icon: Package },
+    { label: 'Financeiro', href: '/portal/financeiro', icon: CircleDollarSign },
     { label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode },
     { label: 'Configurações', href: '/portal/settings', icon: Settings },
   ];

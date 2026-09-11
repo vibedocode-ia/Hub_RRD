@@ -79,6 +79,16 @@ export const SOFIA_EVENT_STATUS = {
   REJECTED: 'REJECTED',
 } as const;
 
+export const SOFIA_DRAFT_STATUS = {
+  COLLECTING: 'COLLECTING',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  CONVERTED: 'CONVERTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type SofiaDraftStatus = typeof SOFIA_DRAFT_STATUS[keyof typeof SOFIA_DRAFT_STATUS];
+
 
 export const SOFIA_PROFILE_AUDIENCES = {
   RAFAEL_ADMIN: 'RAFAEL_ADMIN',
@@ -293,6 +303,34 @@ export const sofiaEvents = pgTable('sofia_events', {
   index('sofia_events_status_idx').on(table.status),
 ]);
 
+export const sofiaDrafts = pgTable('sofia_drafts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  correlationId: text('correlation_id').notNull().unique(),
+  centralContactId: uuid('central_contact_id').notNull(),
+  centralClientId: uuid('central_client_id').notNull(),
+  centralHubId: uuid('central_hub_id').notNull(),
+  centralRole: text('central_role').notNull(),
+  senderPhone: text('sender_phone').notNull(),
+  intent: text('intent').notNull(),
+  status: text('status').notNull().default(SOFIA_DRAFT_STATUS.COLLECTING),
+  draftPayload: jsonb('draft_payload').notNull().default({}),
+  pendingFields: jsonb('pending_fields').notNull().default([]),
+  conversationSummary: text('conversation_summary'),
+  sourceEventId: uuid('source_event_id').references(() => sofiaEvents.id),
+  serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id),
+  reviewedById: uuid('reviewed_by_id').references(() => users.id),
+  reviewedAt: timestamp('reviewed_at'),
+  convertedAt: timestamp('converted_at'),
+  rejectionReason: text('rejection_reason'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('sofia_drafts_correlation_idx').on(table.correlationId),
+  index('sofia_drafts_status_updated_idx').on(table.status, table.updatedAt),
+  index('sofia_drafts_hub_status_idx').on(table.centralHubId, table.status),
+  index('sofia_drafts_sender_created_idx').on(table.senderPhone, table.createdAt),
+]);
+
 
 // 10. Perfis de atendimento da Sofia — prompts editáveis por público
 export const sofiaResponseProfiles = pgTable('sofia_response_profiles', {
@@ -332,3 +370,28 @@ export const serviceCatalog = pgTable('service_catalog', {
   index('service_catalog_status_idx').on(table.status),
   index('service_catalog_category_idx').on(table.category),
 ]);
+
+// 12. Insumos (Estoque e Dedetização)
+export const insumos = pgTable('insumos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  nome: text('nome').notNull(),
+  categoria: text('categoria').notNull(),
+  quantidade: numeric('quantidade', { precision: 10, scale: 2 }).notNull().default('0.00'),
+  unidade: text('unidade').notNull(), // ex: 'Litros', 'Unidades', 'Kg'
+  nivelCritico: numeric('nivel_critico', { precision: 10, scale: 2 }).notNull().default('5.00'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 13. Lançamentos Financeiros (Fluxo de Caixa)
+export const financeiroLancamentos = pgTable('financeiro_lancamentos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tipo: text('tipo').notNull(), // 'RECEITA' ou 'DESPESA'
+  valor: numeric('valor', { precision: 10, scale: 2 }).notNull(),
+  descricao: text('descricao').notNull(),
+  data: timestamp('data').notNull(),
+  categoria: text('categoria'),
+  status: text('status').notNull().default('EFETIVADO'), // 'PENDENTE', 'EFETIVADO', 'CANCELADO'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

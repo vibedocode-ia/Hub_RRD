@@ -8,6 +8,20 @@
       "when": 1788576135245,
       "tag": "0000_elite_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789076207771,
+      "tag": "0001_volatile_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789082273898,
+      "tag": "0002_nosy_power_pack",
+      "breakpoints": true
     }
   ]
 }
