@@ -62,7 +62,7 @@ export function OperacionalClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Equipes */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+          <div id="equipes" className="scroll-mt-24 bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                 <Users className="w-5 h-5 text-cyan-400" /> Equipes
@@ -141,8 +141,7 @@ export function OperacionalClient({
             </div>
           </div>
 
-          {/* Equipamentos */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden mt-6">
+          <div id="equipamentos" className="scroll-mt-24 bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden mt-6">
             <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-cyan-400" /> Equipamentos

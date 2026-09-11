@@ -12,6 +12,9 @@ import {
   FileText,
   MessageSquareCode,
   Settings,
+  Package,
+  CircleDollarSign,
+  Briefcase,
   LogOut,
   X,
 } from 'lucide-react';
@@ -24,9 +27,12 @@ const mainItems = [
 ];
 
 const moreItems = [
-  { label: 'Documentos', href: '/portal/documentos', icon: FileText, description: 'Orçamentos, recibos e laudos' },
+  { label: 'Operação', href: '/portal/operacional', icon: Briefcase, description: 'Equipes, frotas e equipamentos' },
+  { label: 'Estoque', href: '/portal/estoque', icon: Package, description: 'Insumos e movimentações' },
+  { label: 'Financeiro', href: '/portal/financeiro', icon: CircleDollarSign, description: 'Lançamentos e documentos' },
+  { label: 'Documentos', href: '/portal/documentos', icon: FileText, description: 'Recibos, OS e laudos' },
   { label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode, description: 'Pedidos vindos do WhatsApp' },
-  { label: 'Configurações', href: '/portal/settings', icon: Settings, description: 'Prompts, serviços e operação' },
+  { label: 'Configurações', href: '/portal/settings', icon: Settings, description: 'Sofia, acessos e operação' },
 ];
 
 function isActive(pathname: string, href: string) {

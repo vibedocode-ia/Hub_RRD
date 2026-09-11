@@ -1,51 +1,28 @@
-import Link from 'next/link';
-import { Settings, ShieldCheck, Truck, Wrench, Users, CheckCircle2, Bot, UserRoundCog } from 'lucide-react';
-import { db, sofiaResponseProfiles } from '@/db';
-import { asc } from 'drizzle-orm';
-import { DEFAULT_SOFIA_PROFILES } from '@/lib/rr-defaults';
-import SofiaProfileEditor from './SofiaProfileEditor';
+import Link from 'next/link'
+import { Settings, Bot, UserRoundCog, Users, Truck, Wrench, ShieldCheck } from 'lucide-react'
+import SettingsNav from './SettingsNav'
 
-export const metadata = { title: 'Configurações Operacionais · Hub RR' };
-export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Configurações · Hub RR' }
+export const dynamic = 'force-dynamic'
 
-async function loadProfiles() {
-  if (!db) return [];
-  for (const profile of DEFAULT_SOFIA_PROFILES) {
-    await db.insert(sofiaResponseProfiles).values(profile).onConflictDoNothing();
-  }
-  return db.select().from(sofiaResponseProfiles).orderBy(asc(sofiaResponseProfiles.audience));
-}
+const cards = [
+  { href: '/portal/settings/sofia', title: 'Sofia', description: 'Perfis de atendimento, contexto, dados permitidos e respostas.', icon: Bot, tone: 'border-cyan-800/70 bg-cyan-950/20' },
+  { href: '/portal/settings/pessoas', title: 'Acessos', description: 'Pessoas locais, papéis, permissões e sessões do Hub RRD.', icon: UserRoundCog, tone: 'border-violet-800/70 bg-violet-950/20' },
+  { href: '/portal/operacional#equipes', title: 'Equipes', description: 'Equipes de campo, líderes, contatos e disponibilidade.', icon: Users, tone: 'border-emerald-800/70 bg-emerald-950/20' },
+  { href: '/portal/operacional#frotas', title: 'Frotas', description: 'Veículos, placas, checklists e disponibilidade operacional.', icon: Truck, tone: 'border-amber-800/70 bg-amber-950/20' },
+  { href: '/portal/operacional#equipamentos', title: 'Equipamentos', description: 'Recursos técnicos e status de uso na operação.', icon: Wrench, tone: 'border-blue-800/70 bg-blue-950/20' },
+]
 
-export default async function SettingsPage() {
-  const profiles = await loadProfiles();
-  return <div className="space-y-8 max-w-6xl">
-    <div>
-      <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">Configurações Operacionais da RR <Settings className="w-5 h-5 text-cyan-400" /></h1>
-      <p className="text-sm text-slate-400">Perfis da Sofia, equipes, frotas, equipamentos e termos operacionais.</p>
-    </div>
-
-    <section className="rounded-2xl border border-cyan-900/70 bg-cyan-950/20 p-5">
-      <div className="flex items-center gap-2 text-sm font-bold text-cyan-300 mb-2"><Bot className="w-4 h-4"/> Prompts e consultas iniciais da Sofia</div>
-      <p className="text-xs text-slate-300 leading-relaxed mb-5">Configure como a Sofia atende cada público: Rafael/admin, profissionais da RR, leads e clientes. Estes campos são a base para roteamento seguro, consulta de contexto e bloqueio de dados sensíveis.</p>
-      <SofiaProfileEditor profiles={profiles as any} />
+export default function SettingsPage() {
+  return <div className="mx-auto max-w-6xl space-y-6">
+    <header>
+      <div className="flex items-center gap-2"><h1 className="text-2xl font-black tracking-tight text-slate-100">Configurações</h1><Settings className="h-5 w-5 text-cyan-400" /></div>
+      <p className="mt-1 text-sm text-slate-400">Organize as regras do sistema e os recursos da operação RR por área.</p>
+    </header>
+    <SettingsNav />
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {cards.map(({ href, title, description, icon: Icon, tone }) => <Link key={title} href={href} className={`group rounded-2xl border p-5 transition hover:-translate-y-0.5 hover:border-cyan-500/70 hover:bg-slate-800/70 ${tone}`}><div className="flex items-start justify-between"><span className="rounded-xl bg-slate-950/60 p-2.5 text-cyan-300"><Icon className="h-5 w-5" /></span><span className="text-xs font-bold text-slate-500 transition group-hover:text-cyan-300">ABRIR →</span></div><h2 className="mt-5 text-base font-black text-slate-100">{title}</h2><p className="mt-1 text-xs leading-relaxed text-slate-400">{description}</p></Link>)}
     </section>
-
-    <Link href="/portal/settings/pessoas" className="flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-900/60 p-5 transition hover:border-cyan-700 hover:bg-slate-800/70">
-      <span><span className="flex items-center gap-2 text-sm font-bold text-cyan-300"><UserRoundCog className="w-4 h-4" /> Pessoas e Acessos RRD</span><span className="mt-1 block text-xs text-slate-400">Crie pessoas locais e defina as áreas permitidas no Hub RRD.</span></span>
-      <span className="text-xs font-bold text-cyan-400">GERENCIAR →</span>
-    </Link>
-
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card icon={<Users className="w-4 h-4"/>} title="Equipes de Atendimento" lines={[['Equipe Alpha (Hidrojato)','Líder: Leonardo Santos'],['Equipe Bravo (Vácuo)','Líder: Rafael (Operador Master)']]}/>
-      <Card icon={<Truck className="w-4 h-4"/>} title="Frota Própria RR" lines={[['Caminhão Vácuo Heavy','Capacidade: 10m³ • Esgotamento'],['VACOL Compacto 4x4','Subsolos até 2.1m • Garagens Niterói']]}/>
-      <Card icon={<Wrench className="w-4 h-4"/>} title="Equipamentos" lines={[['Hidrojato 1.500 BAR','Alta Pressão Ecológica'],['Máquina K-50 / K-500','Desentupimento Rotativo']]}/>
-    </div>
-
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-3">
-      <div className="flex items-center gap-2 text-sm font-bold text-cyan-400"><ShieldCheck className="w-4 h-4" /> Política de Garantia Padrão</div>
-      <p className="text-xs text-slate-300 leading-relaxed">A garantia padrão dos serviços de desentupimento e manutenção executados pela RR Desentupidora é de <strong>30 dias</strong>, válida desde que não seja constatado mau uso das instalações hidráulicas. Para contratos corporativos e condomínios, o período de garantia e termos específicos podem ser editados diretamente ao emitir cada recibo/laudo.</p>
-    </div>
-  </div>;
+    <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><div className="flex items-center gap-2 text-sm font-bold text-cyan-300"><ShieldCheck className="h-4 w-4" /> Princípios de configuração</div><div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-3"><p>Identidade e acessos locais ficam no Hub RRD.</p><p>A Central Sofia continua autoridade de números e grants.</p><p>Alterações sensíveis exigem permissão server-side.</p></div></section>
+  </div>
 }
-
-function Card({icon,title,lines}:{icon:React.ReactNode; title:string; lines:[string,string][]}){return <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3"><div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">{icon} {title}</div><div className="text-xs text-slate-300 space-y-2">{lines.map(([a,b])=><div key={a} className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-800"><div className="font-bold text-slate-200">{a}</div><div className="text-[10px] text-slate-500">{b}</div></div>)}</div></div>}

@@ -37,14 +37,15 @@ export default async function PortalLayout({
   }
 
   const navItems = [
-    { label: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
-    { label: 'Operacional', href: '/portal/operacional', icon: Briefcase },
-    { label: 'CRM de Clientes', href: '/portal/crm', icon: Users },
-    { label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
-    { label: 'Estoque', href: '/portal/estoque', icon: Package },
-    { label: 'Financeiro', href: '/portal/financeiro', icon: CircleDollarSign },
-    { label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode },
-    { label: 'Configurações', href: '/portal/settings', icon: Settings },
+    { section: 'Visão geral', label: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
+    { section: 'Operação', label: 'Clientes / CRM', href: '/portal/crm', icon: Users },
+    { section: 'Operação', label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
+    { section: 'Operação', label: 'Equipes e Frotas', href: '/portal/operacional', icon: Briefcase },
+    { section: 'Operação', label: 'Estoque', href: '/portal/estoque', icon: Package },
+    { section: 'Gestão', label: 'Financeiro', href: '/portal/financeiro', icon: CircleDollarSign },
+    { section: 'Gestão', label: 'Documentos', href: '/portal/documentos', icon: FileText },
+    { section: 'Sofia', label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode },
+    { section: 'Sistema', label: 'Configurações', href: '/portal/settings', icon: Settings },
   ];
 
   return (
@@ -78,20 +79,19 @@ export default async function PortalLayout({
         {/* Sidebar */}
         <aside className="w-64 bg-slate-900/50 border-r border-slate-800/80 p-4 hidden md:flex flex-col justify-between shrink-0">
           <nav className="space-y-1">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 mb-2">
-              Navegação Operacional
-            </div>
-            {navItems.map((item) => {
+            {navItems.map((item, index) => {
               const Icon = item.icon;
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-cyan-400 hover:bg-slate-800/60 transition group"
-                >
-                  <Icon className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition" />
-                  {item.label}
-                </Link>
+                <div key={item.href}>
+                  {(index === 0 || navItems[index - 1].section !== item.section) && <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">{item.section}</div>}
+                  <Link
+                    href={item.href}
+                    className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800/60 hover:text-cyan-400"
+                  >
+                    <Icon className="h-4 w-4 text-slate-400 transition group-hover:text-cyan-400" />
+                    {item.label}
+                  </Link>
+                </div>
               );
             })}
           </nav>

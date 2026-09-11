@@ -1,5 +1,19 @@
 # Changelog
 
+## V0.10.14 — 2026-09-11
+
+### Changed
+- Reorganiza configurações em hub com menu superior para Sofia, Acessos, Equipes, Frotas e Equipamentos.
+- Separa a configuração da Sofia em página própria, sem misturar seus controles com usuários locais.
+- Agrupa o menu principal em Visão geral, Operação, Gestão, Sofia e Sistema.
+- Expõe Clientes/CRM, Chamados, Equipes/Frotas, Estoque, Financeiro, Documentos e Configurações na navegação.
+- Amplia o menu mobile com os módulos operacionais no submenu Mais.
+
+### Verification
+- Typecheck aprovado.
+- 13 testes automatizados aprovados.
+- Build de produção aprovado com as rotas `/portal/settings/sofia` e `/portal/settings/pessoas`.
+
 ## V0.10.13 — 2026-09-11
 
 ### Fixed
