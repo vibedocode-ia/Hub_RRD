@@ -1,5 +1,15 @@
 # Changelog
 
+## V0.10.13 — 2026-09-11
+
+### Fixed
+- Reconcilia histórico legado do Drizzle quando migrations antigas já foram aplicadas manualmente no banco RRD sem registro no journal.
+- Evita loop de reinício do container na inicialização de produção.
+
+### Verification
+- Fluxo completo testado em cópia do banco produtivo dentro da rede Coolify: reconciliação + `drizzle-kit migrate` concluídos.
+- Typecheck, 13 testes e build de produção aprovados.
+
 ## V0.10.12 — 2026-09-11
 
 ### Added
