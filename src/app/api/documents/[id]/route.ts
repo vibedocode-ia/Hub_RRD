@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { db, officialDocuments, attachments } from '@/db';
+import { db, officialDocuments } from '@/db';
 import { requireLocalPermission } from '@/lib/require-local-permission';
 
 type Params = { params: Promise<{ id: string }> };
@@ -25,11 +25,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const authorized = await requireLocalPermission('documents.issue');
-  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para alterar documentos' }, { status: 403 });
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para arquivar documentos' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const { id } = await params;
-  await db.delete(attachments).where(eq(attachments.documentId, id));
-  const deleted = await db.delete(officialDocuments).where(eq(officialDocuments.id, id)).returning({ id: officialDocuments.id });
-  if (deleted.length === 0) return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 });
-  return NextResponse.json({ success: true });
+  const [archived] = await db.update(officialDocuments).set({ status: 'ARQUIVADO', updatedAt: new Date() }).where(eq(officialDocuments.id, id)).returning({ id: officialDocuments.id });
+  if (!archived) return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 });
+  return NextResponse.json({ success: true, archived: true, documentId: id });
 }

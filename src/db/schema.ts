@@ -74,6 +74,7 @@ export const DOC_STATUS = {
   APROVADO: 'APROVADO',
   EMITIDO: 'EMITIDO',
   ENVIADO: 'ENVIADO',
+  ARQUIVADO: 'ARQUIVADO',
 } as const;
 
 export const SOFIA_EVENT_STATUS = {

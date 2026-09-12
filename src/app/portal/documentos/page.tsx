@@ -114,7 +114,7 @@ export default async function DocumentosPage() {
                       <CheckCircle2 className="w-3 h-3" /> Snapshot Congelado
                     </div>
                   </div>
-                  <DeleteResourceButton endpoint={`/api/documents/${doc.id}`} redirectTo="/portal/documentos" confirmText="Excluir este documento emitido? O chamado será preservado." />
+                  <DeleteResourceButton endpoint={`/api/documents/${doc.id}`} redirectTo="/portal/documentos" confirmText="Arquivar este documento emitido? O snapshot, anexos e chamado serão preservados." />
                   <Link
                     href={`/portal/documentos/preview/${doc.id}`}
                     target="_blank"

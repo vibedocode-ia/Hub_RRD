@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, serviceRequests, clients, clientAddresses, officialDocuments, documentTemplates, DOC_STATUS } from '../../../../db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
 import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     }
     if (!db) return NextResponse.json({ error: 'Banco de dados indisponível' }, { status: 500 });
 
-    const [template] = await db.select().from(documentTemplates).where(eq(documentTemplates.docType, docType)).limit(1);
-    if (!template || !template.isActive) return NextResponse.json({ error: 'Não há modelo ativo para este tipo de documento.' }, { status: 422 });
+    const [template] = await db.select().from(documentTemplates).where(and(eq(documentTemplates.docType, docType), eq(documentTemplates.isActive, true))).limit(1);
+    if (!template) return NextResponse.json({ error: 'Não há modelo ativo para este tipo de documento.' }, { status: 422 });
 
     const records = await db
       .select({ req: serviceRequests, cli: clients, addr: clientAddresses })
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       warrantyDays: Number(warrantyDays || serviceRequest.warrantyDays || 30),
       warrantyTerms: warrantyTerms || null,
       technicalNotes: technicalNotes || serviceRequest.problemFound || null,
-      documentPayloadSnapshot: documentPayload,
+      documentPayloadSnapshot: { ...documentPayload, templateId: template.id, templateVersion: template.version, templateSourceSha256: template.sourceSha256 },
       htmlSnapshot,
       status: DOC_STATUS.EMITIDO,
       issuedAt: now,

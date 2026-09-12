@@ -1,3 +1,6 @@
+### V0.12.08 (2026-09-12) - Retenção auditável de documentos e proveniência canônica de modelos
+- **Release:** Site + Hub RRD.
+
 ### V0.12.07 (2026-09-12) - CRM operacional e ficha Sofia completa autorizada
 - **Release:** Site + Hub RRD.
 
