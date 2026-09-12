@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { db, serviceRequests, clients, clientAddresses, officialDocuments, DOC_STATUS } from '../../../../db';
+import { db, serviceRequests, clients, clientAddresses, officialDocuments, documentTemplates, DOC_STATUS } from '../../../../db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
 import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
 import { moneyToWords } from '../../../../lib/documents/money-to-words';
@@ -13,10 +13,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { serviceRequestId, docType, amount, paymentMethod, warrantyDays, warrantyTerms, amountInWords, technicalNotes } = body;
-    if (!serviceRequestId || !['RECIBO_GARANTIA', 'LAUDO_TECNICO'].includes(docType)) {
+    if (!serviceRequestId || !['RECIBO_GARANTIA', 'LAUDO_TECNICO', 'ORCAMENTO'].includes(docType)) {
       return NextResponse.json({ error: 'Informe o chamado e um tipo de documento válido.' }, { status: 400 });
     }
     if (!db) return NextResponse.json({ error: 'Banco de dados indisponível' }, { status: 500 });
+
+    const [template] = await db.select().from(documentTemplates).where(eq(documentTemplates.docType, docType)).limit(1);
+    if (!template || !template.isActive) return NextResponse.json({ error: 'Não há modelo ativo para este tipo de documento.' }, { status: 422 });
 
     const records = await db
       .select({ req: serviceRequests, cli: clients, addr: clientAddresses })
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
     const formattedDate = now.toLocaleDateString('pt-BR');
     const fullDateText = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     const suffix = Math.floor(1000 + Math.random() * 9000);
-    const docNumber = docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : `OS-${year}-${suffix}`;
+    const docNumber = docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : docType === 'LAUDO_TECNICO' ? `OS-${year}-${suffix}` : `ORC-${year}-${suffix}`;
     const resolvedPayment = String(paymentMethod || serviceRequest.paymentMethod || '').trim();
     if (!resolvedPayment) return NextResponse.json({ error: 'Informe a forma de pagamento.' }, { status: 400 });
 
@@ -74,7 +77,7 @@ export async function POST(req: NextRequest) {
             issuedAtCity: 'Niterói/RJ',
           },
         }
-      : {
+      : docType === 'LAUDO_TECNICO' ? {
           type: 'LAUDO_TECNICO' as const,
           data: {
             docNumber,
@@ -92,6 +95,15 @@ export async function POST(req: NextRequest) {
             warrantyDays: Number(warrantyDays || serviceRequest.warrantyDays || 30),
             warrantyTerms: String(warrantyTerms || '').trim(),
           },
+        } : {
+          type: 'ORCAMENTO' as const,
+          data: {
+            docNumber, issueDate: formattedDate, contractor: cli.name,
+            object: serviceRequest.serviceType, serviceScope: serviceRequest.problemReported,
+            totalAmount: formattedAmount, paymentMethod: resolvedPayment,
+            validityDays: '15 dias', executionDeadline: 'A combinar',
+            guarantees: String(warrantyTerms || (serviceRequest.warrantyDays ? `Garantia de ${serviceRequest.warrantyDays} dias.` : '')).trim(),
+          },
         };
 
     const htmlSnapshot = renderDocumentHTML(documentPayload);
@@ -100,7 +112,7 @@ export async function POST(req: NextRequest) {
       docNumber,
       serviceRequestId,
       clientId: cli.id,
-      templateVersion: docType === 'RECIBO_GARANTIA' ? 'RR_RECIBO_V1' : 'RR_OS_RELATORIO_V1',
+      templateVersion: template.version,
       totalValue: numericAmount.toFixed(2),
       amountInWords: amountText,
       paymentMethod: resolvedPayment,

@@ -1,15 +1,14 @@
 import { generateReciboHTML, generateOrdemServicoHTML, ReciboData, OrdemServicoData } from './pdf-templates';
+import { generateOrcamentoHTML, OrcamentoData } from './orcamento-template';
 
 export type DocumentPayload =
   | { type: 'RECIBO_GARANTIA'; data: ReciboData }
-  | { type: 'ORCAMENTO' | 'LAUDO_TECNICO'; data: OrdemServicoData };
+  | { type: 'LAUDO_TECNICO'; data: OrdemServicoData }
+  | { type: 'ORCAMENTO'; data: OrcamentoData };
 
-/**
- * Converte o payload imutável congelado em HTML pronto para visualização e impressão PDF.
- */
+/** Converte o snapshot imutável no HTML próprio do modelo canônico. */
 export function renderDocumentHTML(payload: DocumentPayload): string {
-  if (payload.type === 'RECIBO_GARANTIA') {
-    return generateReciboHTML(payload.data);
-  }
-  return generateOrdemServicoHTML(payload.data);
+  if (payload.type === 'RECIBO_GARANTIA') return generateReciboHTML(payload.data);
+  if (payload.type === 'LAUDO_TECNICO') return generateOrdemServicoHTML(payload.data);
+  return generateOrcamentoHTML(payload.data);
 }

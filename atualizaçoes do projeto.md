@@ -1,3 +1,6 @@
+### V0.12.06 (2026-09-12) - Emissão de orçamento com modelo canônico de duas páginas e ação na fila Sofia.
+- **Release:** Site + Hub RRD.
+
 ### V0.12.05 (2026-09-12) - CRUD de clientes com arquivamento seguro e preservação de histórico.
 - **Release:** Site + Hub RRD.
 

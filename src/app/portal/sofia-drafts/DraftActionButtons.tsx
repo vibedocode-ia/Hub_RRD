@@ -10,7 +10,7 @@ export default function DraftActionButtons({ draftId, defaultAmount }: { draftId
   const [amount, setAmount] = useState(defaultAmount);
   const [paymentMethod, setPaymentMethod] = useState('Pix');
 
-  const handleEmit = async (docType: 'RECIBO_GARANTIA' | 'LAUDO_TECNICO') => {
+  const handleEmit = async (docType: 'RECIBO_GARANTIA' | 'LAUDO_TECNICO' | 'ORCAMENTO') => {
     setLoading(true);
     try {
       const res = await fetch('/api/documents/emit', {
@@ -66,6 +66,15 @@ export default function DraftActionButtons({ draftId, defaultAmount }: { draftId
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleEmit('ORCAMENTO')}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/20 transition disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+          Emitir Orçamento
+        </button>
+
         <button
           onClick={() => handleEmit('RECIBO_GARANTIA')}
           disabled={loading}
