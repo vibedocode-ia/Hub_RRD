@@ -1,3 +1,6 @@
+### V0.12.05 (2026-09-12) - CRUD de clientes com arquivamento seguro e preservação de histórico.
+- **Release:** Site + Hub RRD.
+
 ### V0.12.04 (2026-09-12) - Biblioteca de modelos PDF para recibo, laudo e orçamento no Hub RRD.
 - **Release:** Site + Hub RRD.
 

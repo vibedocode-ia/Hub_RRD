@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { db, clients, clientAddresses, serviceRequests, officialDocuments, attachments, sofiaEvents } from '@/db';
+import { db, clients, clientAddresses } from '@/db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
 
 type Params = { params: Promise<{ id: string }> };
@@ -52,21 +52,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const authorized = await requireLocalPermission('crm.write');
-  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para editar CRM' }, { status: 403 });
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para arquivar cliente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
-
   const { id } = await params;
-  const relatedRequests = await db.select({ id: serviceRequests.id }).from(serviceRequests).where(eq(serviceRequests.clientId, id));
-  for (const req of relatedRequests) {
-    await db.delete(sofiaEvents).where(eq(sofiaEvents.createdRequestId, req.id));
-    await db.delete(attachments).where(eq(attachments.serviceRequestId, req.id));
-  }
-  await db.delete(officialDocuments).where(eq(officialDocuments.clientId, id));
-  await db.delete(attachments).where(eq(attachments.clientId, id));
-  await db.delete(serviceRequests).where(eq(serviceRequests.clientId, id));
-  await db.delete(clientAddresses).where(eq(clientAddresses.clientId, id));
-  const deleted = await db.delete(clients).where(eq(clients.id, id)).returning({ id: clients.id });
-  if (deleted.length === 0) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
-
-  return NextResponse.json({ success: true });
+  const [archived] = await db.update(clients).set({ isActive: false, updatedAt: new Date() }).where(eq(clients.id, id)).returning({ id: clients.id });
+  if (!archived) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
+  return NextResponse.json({ success: true, archived: true, clientId: id });
 }

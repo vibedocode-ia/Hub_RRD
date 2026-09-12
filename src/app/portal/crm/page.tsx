@@ -35,6 +35,7 @@ export default async function CRMPage() {
           neighborhood: clientAddresses.neighborhood,
         })
         .from(clients)
+        .where(eq(clients.isActive, true))
         .leftJoin(clientAddresses, eq(clients.id, clientAddresses.clientId))
         .orderBy(desc(clients.createdAt));
 
