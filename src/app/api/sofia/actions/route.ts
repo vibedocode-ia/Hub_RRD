@@ -74,10 +74,15 @@ export async function POST(req: NextRequest) {
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, entryId: entry.id, type: entry.tipo, amount: entry.valor }, intentDetected: 'financial_create_entry', status: 'PROCESSED' })
         return reply({ success: true, action, entry: { id: entry.id, type: entry.tipo, amount: entry.valor, description: entry.descricao, status: entry.status } }, 201, correlationId)
       }
-      const vehicleId = String(data.vehicleId); const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vehicleId)).limit(1)
-      if (!vehicle) return reply({ success: false, error: 'Veículo não encontrado.' }, 404, correlationId)
-      const [archived] = await db.update(vehicles).set({ isActive: false, updatedAt: new Date() }).where(and(eq(vehicles.id, vehicleId), eq(vehicles.isActive, true))).returning()
-      await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, vehicleId }, intentDetected: 'fleet_archive_vehicle', status: 'PROCESSED' })
+      const vehicleName = clean(data.vehicleName, 160)
+      const matches = data.vehicleId
+        ? await db.select().from(vehicles).where(eq(vehicles.id, String(data.vehicleId))).limit(1)
+        : await db.select().from(vehicles).where(and(eq(vehicles.isActive, true), ilike(vehicles.name, vehicleName))).limit(2)
+      if (!matches.length) return reply({ success: false, error: 'Veículo não encontrado.' }, 404, correlationId)
+      if (matches.length > 1) return reply({ success: false, error: 'Mais de um veículo encontrado; especifique o nome completo.' }, 409, correlationId)
+      const vehicle = matches[0]
+      const [archived] = await db.update(vehicles).set({ isActive: false, updatedAt: new Date() }).where(and(eq(vehicles.id, vehicle.id), eq(vehicles.isActive, true))).returning()
+      await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, vehicleId: vehicle.id }, intentDetected: 'fleet_archive_vehicle', status: 'PROCESSED' })
       return reply({ success: true, action, vehicle: safeVehicleSummary(archived || vehicle) }, 200, correlationId)
     }
 

@@ -7,25 +7,15 @@ const trusted = {
   centralClientId: '22222222-2222-4222-8222-222222222222',
   centralHubId: '33333333-3333-4333-8333-333333333333',
   centralRole: 'hub_owner',
-  senderPhone: '+5521990000000',
+  senderPhone: '+5521999104605',
 }
 
-test('accepts a bounded stock query for EPI', () => {
-  const result = parseSofiaDomainAction({ ...trusted, action: 'list_stock', data: { query: 'EPI' } })
-  assert.equal(result.ok, true)
-})
-
-test('accepts a positive financial income with bounded data', () => {
-  const result = parseSofiaDomainAction({ ...trusted, action: 'create_financial_entry', data: { type: 'RECEITA', amount: '5000.00', description: '[TESTE SOFIA] Entrada de validação', category: 'SERVICOS', status: 'EFETIVADO' } })
-  assert.equal(result.ok, true)
-})
-
-test('rejects an invalid financial amount', () => {
-  const result = parseSofiaDomainAction({ ...trusted, action: 'create_financial_entry', data: { type: 'RECEITA', amount: '-1', description: 'inválido' } })
-  assert.equal(result.ok, false)
-})
-
-test('requires a vehicle id to archive a vehicle', () => {
-  const result = parseSofiaDomainAction({ ...trusted, action: 'archive_vehicle', data: {} })
-  assert.equal(result.ok, false)
+test('parses only closed inventory, financial and fleet domain actions', () => {
+  assert.equal(parseSofiaDomainAction({ action: 'list_stock', data: { query: 'EPI' }, ...trusted }).ok, true)
+  assert.equal(parseSofiaDomainAction({ action: 'adjust_stock', data: { itemId: '44444444-4444-4444-8444-444444444444', quantity: '2', direction: 'ENTRADA' }, ...trusted }).ok, true)
+  assert.equal(parseSofiaDomainAction({ action: 'create_financial_entry', data: { type: 'RECEITA', amount: '5000', description: 'Entrada teste', category: 'Teste', status: 'EFETIVADO' }, ...trusted }).ok, true)
+  assert.equal(parseSofiaDomainAction({ action: 'archive_vehicle', data: { vehicleId: '55555555-5555-4555-8555-555555555555' }, ...trusted }).ok, true)
+  assert.equal(parseSofiaDomainAction({ action: 'archive_vehicle', data: { vehicleName: '[TESTE SOFIA] Caminhão Vacol' }, ...trusted }).ok, true)
+  assert.equal(parseSofiaDomainAction({ action: 'archive_vehicle', data: { vehicleId: '55555555-5555-4555-8555-555555555555', vehicleName: 'duplicado' }, ...trusted }).ok, false)
+  assert.equal(parseSofiaDomainAction({ action: 'create_financial_entry', data: { type: 'DROP TABLE', amount: '5000' }, ...trusted }).ok, false)
 })

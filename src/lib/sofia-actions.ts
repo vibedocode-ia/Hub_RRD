@@ -110,7 +110,11 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
     if (!['RECEITA', 'DESPESA'].includes(clean(data.type, 16)) || !decimal(data.amount) || !clean(data.description, 300)) return { ok: false, error: 'Lançamento financeiro inválido.' }
     if (data.status && !['PENDENTE', 'EFETIVADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
   }
-  if (action === 'archive_vehicle' && !isUuid(data.vehicleId)) return { ok: false, error: 'Veículo inválido.' }
+  if (action === 'archive_vehicle') {
+    const hasId = isUuid(data.vehicleId)
+    const vehicleName = clean(data.vehicleName, 160)
+    if (hasId === Boolean(vehicleName)) return { ok: false, error: 'Veículo inválido.' }
+  }
   return { ok: true, action, data }
 }
 
