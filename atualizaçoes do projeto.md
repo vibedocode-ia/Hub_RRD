@@ -1,3 +1,6 @@
+### V0.12.04 (2026-09-12) - Biblioteca de modelos PDF para recibo, laudo e orçamento no Hub RRD.
+- **Release:** Site + Hub RRD.
+
 ### V0.12.03 (2026-09-12) - Resolução server-side de veículo por nome para arquivamento Sofia.
 - **Release:** Site + Hub RRD.
 

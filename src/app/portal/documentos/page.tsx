@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import DeleteResourceButton from '@/components/DeleteResourceButton';
-import { db, officialDocuments, clients, serviceRequests } from '@/db';
+import { db, officialDocuments, clients, documentTemplates } from '@/db';
+import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
 import { eq, desc } from 'drizzle-orm';
 import { FileText, Printer, Download, Eye, CheckCircle2 } from 'lucide-react';
 
@@ -23,8 +24,10 @@ export default async function DocumentosPage() {
     clientPhone: string;
   }> = [];
 
+  let templateList: Array<{ id: string; name: string; docType: string; version: string; description: string | null; fields: any; sourceFilename: string; sourceSha256: string; isActive: boolean; archivedAt: Date | null; createdAt: Date }> = [];
   if (db) {
     try {
+      templateList = await db.select({ id: documentTemplates.id, name: documentTemplates.name, docType: documentTemplates.docType, version: documentTemplates.version, description: documentTemplates.description, fields: documentTemplates.fieldSchema, sourceFilename: documentTemplates.sourceFilename, sourceSha256: documentTemplates.sourceSha256, isActive: documentTemplates.isActive, archivedAt: documentTemplates.archivedAt, createdAt: documentTemplates.createdAt }).from(documentTemplates).orderBy(desc(documentTemplates.createdAt));
       const records = await db
         .select({
           id: officialDocuments.id,
@@ -59,6 +62,11 @@ export default async function DocumentosPage() {
         </p>
       </div>
 
+      <DocumentTemplateLibrary initialTemplates={templateList.map(item => ({ ...item, archivedAt: item.archivedAt?.toISOString() ?? null, createdAt: item.createdAt.toISOString() }))} />
+
+      <div className="border-t border-slate-800 pt-6">
+        <h2 className="text-lg font-black text-slate-100">Documentos Emitidos</h2>
+        <p className="mb-4 text-xs text-slate-400">Histórico oficial com snapshot imutável.</p>
       {docsList.length === 0 ? (
         <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-12 text-center">
           <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
@@ -120,6 +128,7 @@ export default async function DocumentosPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

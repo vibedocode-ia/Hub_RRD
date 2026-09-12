@@ -303,6 +303,29 @@ export const officialDocuments = pgTable('official_documents', {
   index('official_docs_service_request_idx').on(table.serviceRequestId),
 ]);
 
+// 7b. Modelos canônicos de documentos. O PDF original é preservado no banco para sobreviver ao deploy.
+export const documentTemplates = pgTable('document_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull(),
+  name: text('name').notNull(),
+  docType: text('doc_type').notNull(),
+  version: text('version').notNull(),
+  description: text('description'),
+  fieldSchema: jsonb('field_schema').notNull().default([]),
+  sourcePdfBase64: text('source_pdf_base64').notNull(),
+  sourceFilename: text('source_filename').notNull(),
+  sourceMime: text('source_mime').notNull().default('application/pdf'),
+  sourceSha256: text('source_sha256').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdById: uuid('created_by_id').references(() => users.id),
+  archivedAt: timestamp('archived_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('document_templates_slug_version_unique').on(table.slug, table.version),
+  index('document_templates_doc_type_active_idx').on(table.docType, table.isActive),
+]);
+
 // 8. Anexos e Fotos de Campo (Evidências Antes/Depois)
 export const attachments = pgTable('attachments', {
   id: uuid('id').primaryKey().defaultRandom(),
