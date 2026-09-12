@@ -1,3 +1,6 @@
+### V0.12.01 (2026-09-12) - Ativação do deploy automático GitHub para validação operacional Sofia
+- **Release:** Site + Hub RRD.
+
 ### V0.12.00 (2026-09-12) - Operações Sofia para estoque, financeiro e frota com contratos auditados e confirmação segura
 - **Release:** Site + Hub RRD.
 
