@@ -81,3 +81,44 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
 export function safeClientSummary(client: { id: string; name: string; phone: string; isActive: boolean }) {
   return { id: client.id, name: client.name, phone: `***${digits(client.phone).slice(-4)}`, active: client.isActive }
 }
+export type SofiaDomainAction = 'list_stock' | 'adjust_stock' | 'create_financial_entry' | 'list_vehicles' | 'archive_vehicle'
+
+const DOMAIN_ACTIONS = new Set<SofiaDomainAction>(['list_stock', 'adjust_stock', 'create_financial_entry', 'list_vehicles', 'archive_vehicle'])
+const isUuid = (value: unknown) => /^[0-9a-f-]{36}$/i.test(clean(value, 40))
+const decimal = (value: unknown) => {
+  const normalized = clean(value, 32).replace(',', '.')
+  const number = Number(normalized)
+  return Number.isFinite(number) && number > 0 && number <= 10000000 ? normalized : null
+}
+const trustedDomainEnvelope = (body: Record<string, unknown>) =>
+  (clean(body.centralRole, 32) === 'hub_owner' || clean(body.centralRole, 32) === 'hub_admin') &&
+  /^\+?[1-9]\d{7,14}$/.test(clean(body.senderPhone, 20)) &&
+  isUuid(body.centralContactId) && isUuid(body.centralClientId) && isUuid(body.centralHubId)
+
+export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaDomainAction; data: Record<string, unknown> } | { ok: false; error: string } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ok: false, error: 'Payload inválido.' }
+  const body = raw as Record<string, unknown>
+  if (!DOMAIN_ACTIONS.has(body.action as SofiaDomainAction)) return { ok: false, error: 'Operação Sofia não suportada.' }
+  if (!trustedDomainEnvelope(body)) return { ok: false, error: 'Contexto central não autorizado.' }
+  const action = body.action as SofiaDomainAction
+  const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data as Record<string, unknown> : {}
+  if (action === 'list_stock' && clean(data.query, 160).length > 160) return { ok: false, error: 'Consulta de estoque inválida.' }
+  if (action === 'adjust_stock') {
+    if (!isUuid(data.itemId) || !decimal(data.quantity) || !['ENTRADA', 'SAIDA'].includes(clean(data.direction, 16))) return { ok: false, error: 'Ajuste de estoque inválido.' }
+  }
+  if (action === 'create_financial_entry') {
+    if (!['RECEITA', 'DESPESA'].includes(clean(data.type, 16)) || !decimal(data.amount) || !clean(data.description, 300)) return { ok: false, error: 'Lançamento financeiro inválido.' }
+    if (data.status && !['PENDENTE', 'EFETIVADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
+  }
+  if (action === 'archive_vehicle' && !isUuid(data.vehicleId)) return { ok: false, error: 'Veículo inválido.' }
+  return { ok: true, action, data }
+}
+
+export function safeStockSummary(item: { id: string; nome: string; categoria: string; quantidade: string; unidade: string; nivelCritico: string }) {
+  const quantity = Number(item.quantidade)
+  return { id: item.id, name: item.nome, category: item.categoria, quantity: item.quantidade, unit: item.unidade, lowStock: Number.isFinite(quantity) && quantity <= Number(item.nivelCritico) }
+}
+
+export function safeVehicleSummary(vehicle: { id: string; name: string; plate: string | null; type: string; isActive: boolean }) {
+  return { id: vehicle.id, name: vehicle.name, plate: vehicle.plate ? `***${vehicle.plate.slice(-3)}` : null, type: vehicle.type, active: vehicle.isActive }
+}

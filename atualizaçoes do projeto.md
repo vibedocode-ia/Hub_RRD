@@ -1,3 +1,6 @@
+### V0.12.00 (2026-09-12) - Operações Sofia para estoque, financeiro e frota com contratos auditados e confirmação segura
+- **Release:** Site + Hub RRD.
+
 ### V0.11.00 (2026-09-11) - Unifica operações Sofia RRD: CRM seguro de clientes e catálogo operacional autenticado
 - **Release:** Site + Hub RRD.
 
