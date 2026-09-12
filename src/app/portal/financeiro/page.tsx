@@ -1,4 +1,4 @@
-import { db, financeiroLancamentos, officialDocuments } from '@/db';
+import { db, clients, financeiroLancamentos, officialDocuments } from '@/db';
 import { desc } from 'drizzle-orm';
 import { FinanceiroClient } from '@/components/portal/financeiro-client';
 
@@ -11,11 +11,13 @@ export const metadata = {
 export default async function FinanceiroPage() {
   let lancamentos: any[] = [];
   let documentos: any[] = [];
+  let clientOptions: Array<{ id: string; name: string }> = [];
 
   if (db) {
     try {
       lancamentos = await db.select().from(financeiroLancamentos).orderBy(desc(financeiroLancamentos.createdAt)).limit(15);
       documentos = await db.select().from(officialDocuments).orderBy(desc(officialDocuments.createdAt)).limit(10);
+      clientOptions = await db.select({ id: clients.id, name: clients.name }).from(clients).orderBy(desc(clients.updatedAt)).limit(200);
     } catch (e) {
       console.error('Erro ao consultar dados financeiros:', e);
     }
@@ -24,7 +26,8 @@ export default async function FinanceiroPage() {
   return (
     <FinanceiroClient 
       initialLancamentos={lancamentos} 
-      initialDocumentos={documentos} 
+      initialDocumentos={documentos}
+      clientOptions={clientOptions}
     />
   );
 }

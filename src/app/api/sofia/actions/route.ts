@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
 import { and, asc, desc, eq, gte, ilike, or, sql } from 'drizzle-orm'
-import { db, clientAddresses, clients, financeiroLancamentos, insumos, serviceCatalog, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, vehicles } from '@/db'
+import { db, clientAddresses, clients, financeiroLancamentos, insumos, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, vehicles } from '@/db'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
+import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
 
 const header = (correlationId?: string) => ({ 'X-Hub-Version': VERSION, ...(correlationId ? { 'X-Correlation-Id': correlationId } : {}) })
@@ -91,6 +92,29 @@ export async function POST(req: NextRequest) {
     const { action, data } = parsed
     if (action !== 'list_clients') { const replay = await db.select().from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1); if (replay.length) return reply({ success: true, alreadyProcessed: true, action }, 200, correlationId) }
     if (action === 'list_clients') { const rows = await db.select().from(clients).where(eq(clients.isActive, true)).orderBy(desc(clients.updatedAt)).limit(50); return reply({ success: true, action, clients: rows.map(safeClientSummary) }, 200, correlationId) }
+    if (action === 'get_client_profile') {
+      const clientId = typeof data.clientId === 'string' ? data.clientId : null
+      const name = typeof data.name === 'string' ? clean(data.name, 160) : ''
+      const matches = clientId
+        ? await db.select().from(clients).where(and(eq(clients.id, clientId), eq(clients.isActive, true))).limit(2)
+        : await db.select().from(clients).where(and(eq(clients.isActive, true), ilike(clients.name, name))).limit(2)
+      if (!matches.length) return reply({ success: false, error: 'Cliente não encontrado.' }, 404, correlationId)
+      if (matches.length > 1) return reply({ success: false, error: 'Mais de um cliente encontrado; informe o nome completo.' }, 409, correlationId)
+      const client = matches[0]
+      const [address, serviceRows, financialRows] = await Promise.all([
+        db.select().from(clientAddresses).where(and(eq(clientAddresses.clientId, client.id), eq(clientAddresses.isMain, true))).limit(1),
+        db.select().from(serviceRequests).where(eq(serviceRequests.clientId, client.id)).orderBy(desc(serviceRequests.completedAt), desc(serviceRequests.createdAt)).limit(100),
+        db.select().from(financeiroLancamentos).where(eq(financeiroLancamentos.clientId, client.id)).orderBy(desc(financeiroLancamentos.data)).limit(200),
+      ])
+      const profile = buildCrmProfile({ client, services: serviceRows, financial: financialRows })
+      return reply({ success: true, action, client: {
+        id: client.id, name: client.name, type: client.type, document: client.document, phone: client.phone, email: client.email,
+        contactPerson: client.contactPerson, source: client.source, recurrence: client.recurrence, customerSince: client.customerSince,
+        lastContactAt: client.lastContactAt, nextVisitAt: client.nextVisitAt, notes: client.notes, active: client.isActive,
+        address: address[0] ? { street: address[0].street, number: address[0].number, complement: address[0].complement, neighborhood: address[0].neighborhood, city: address[0].city, state: address[0].state, zipCode: address[0].zipCode, referencePoint: address[0].referencePoint, serviceAccessNotes: address[0].serviceAccessNotes } : null,
+        profile,
+      } }, 200, correlationId)
+    }
     if (action === 'create_client') {
       const phone = String(data.phone).trim(); const name = String(data.name).trim()
       const [client] = await db.insert(clients).values({ type: typeof data.type === 'string' ? data.type.slice(0, 32) : 'PF', name, phone, normalizedPhone: digits(phone), document: data.document ? digits(data.document) : null, email: typeof data.email === 'string' ? data.email.slice(0, 160) : null, contactPerson: typeof data.contactPerson === 'string' ? data.contactPerson.slice(0, 160) : null, notes: typeof data.notes === 'string' ? data.notes.slice(0, 2000) : null }).returning()
@@ -105,8 +129,21 @@ export async function POST(req: NextRequest) {
       await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id }, intentDetected: 'crm_archive_client', status: 'PROCESSED' })
       return reply({ success: true, action, client: safeClientSummary(archived || client) }, 200, correlationId)
     }
-    const [updated] = await db.update(clients).set({ name: String(data.name).trim(), phone: String(data.phone).trim(), normalizedPhone: digits(data.phone), document: data.document ? digits(data.document) : null, updatedAt: new Date() }).where(eq(clients.id, id)).returning()
-    await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id }, intentDetected: 'crm_update_client', status: 'PROCESSED' })
+    const updates: Record<string, unknown> = { updatedAt: new Date() }
+    if (data.name !== undefined) updates.name = clean(data.name, 160)
+    if (data.phone !== undefined) { updates.phone = clean(data.phone, 32); updates.normalizedPhone = digits(data.phone) }
+    if (data.document !== undefined) updates.document = data.document ? digits(data.document) : null
+    if (data.email !== undefined) updates.email = clean(data.email, 160) || null
+    if (data.contactPerson !== undefined) updates.contactPerson = clean(data.contactPerson, 160) || null
+    if (data.notes !== undefined) updates.notes = clean(data.notes, 4000) || null
+    if (data.type !== undefined) updates.type = clean(data.type, 32)
+    if (data.source !== undefined) updates.source = clean(data.source, 32) || null
+    if (data.recurrence !== undefined) updates.recurrence = clean(data.recurrence, 32)
+    for (const [source, target] of [['customerSince', 'customerSince'], ['lastContactAt', 'lastContactAt'], ['nextVisitAt', 'nextVisitAt']] as const) {
+      if (data[source] !== undefined) { const parsed = data[source] ? new Date(String(data[source])) : null; if (parsed && Number.isNaN(parsed.getTime())) return reply({ success: false, error: 'Data CRM inválida.' }, 422, correlationId); updates[target] = parsed }
+    }
+    const [updated] = await db.update(clients).set(updates as any).where(eq(clients.id, id)).returning()
+    await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id, fields: Object.keys(updates).filter(key => key !== 'updatedAt') }, intentDetected: 'crm_update_client', status: 'PROCESSED' })
     return reply({ success: true, action, client: safeClientSummary(updated) }, 200, correlationId)
   } catch { return reply({ success: false, error: 'Falha ao executar operação Sofia.' }, 500, correlationId) }
 }

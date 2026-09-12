@@ -44,9 +44,9 @@ export function pendingDraftFields(input: z.infer<typeof SofiaCreateDraftRequest
 
 
 // CRM Sofia: contrato fechado para clientes, separado das ações operacionais.
-export type SofiaClientAction = 'list_clients' | 'create_client' | 'update_client' | 'archive_client'
+export type SofiaClientAction = 'list_clients' | 'get_client_profile' | 'create_client' | 'update_client' | 'archive_client'
 
-const ACTIONS = new Set<SofiaClientAction>(['list_clients', 'create_client', 'update_client', 'archive_client'])
+const ACTIONS = new Set<SofiaClientAction>(['list_clients', 'get_client_profile', 'create_client', 'update_client', 'archive_client'])
 const clean = (value: unknown, limit: number) => typeof value === 'string' ? value.trim().slice(0, limit) : ''
 
 export function digits(value: unknown) { return clean(value, 32).replace(/\D/g, '') }
@@ -70,11 +70,23 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
   if (!/^\+?[1-9]\d{7,14}$/.test(clean(body.senderPhone, 20))) return { ok: false, error: 'Identidade de origem inválida.' }
   const action = body.action as SofiaClientAction
   const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data as Record<string, unknown> : {}
-  if (action === 'create_client' || action === 'update_client') {
+  if (action === 'get_client_profile') {
+    const hasId = /^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))
+    const name = clean(data.name, 160)
+    if (hasId === Boolean(name)) return { ok: false, error: 'Informe exatamente nome ou ID do cliente.' }
+  }
+  if (action === 'create_client') {
     if (!clean(data.name, 160) || !digits(data.phone)) return { ok: false, error: 'Nome e telefone são obrigatórios.' }
     if (data.document && !validCpf(data.document)) return { ok: false, error: 'CPF inválido. Corrija o documento antes de cadastrar.' }
   }
-  if ((action === 'update_client' || action === 'archive_client') && !/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
+  if (action === 'update_client') {
+    if (!/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
+    const editable = ['name', 'phone', 'document', 'email', 'contactPerson', 'notes', 'type', 'source', 'recurrence', 'customerSince', 'lastContactAt', 'nextVisitAt']
+    if (!editable.some(key => data[key] !== undefined)) return { ok: false, error: 'Nenhum campo CRM informado para atualização.' }
+    if (data.phone !== undefined && !digits(data.phone)) return { ok: false, error: 'Telefone inválido.' }
+    if (data.document && !validCpf(data.document)) return { ok: false, error: 'CPF inválido. Corrija o documento antes de atualizar.' }
+  }
+  if (action === 'archive_client' && !/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
   return { ok: true, action, data }
 }
 

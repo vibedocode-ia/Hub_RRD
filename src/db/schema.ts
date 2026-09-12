@@ -173,6 +173,10 @@ export const clients = pgTable('clients', {
   email: text('email'),
   contactPerson: text('contact_person'),
   source: text('source').default(CLIENT_SOURCES.WHATSAPP_SOFIA),
+  recurrence: text('recurrence').notNull().default('SERVICO_AVULSO'),
+  customerSince: timestamp('customer_since'),
+  lastContactAt: timestamp('last_contact_at'),
+  nextVisitAt: timestamp('next_visit_at'),
   notes: text('notes'),
   isActive: boolean('is_active').default(true).notNull(),
   createdById: uuid('created_by_id').references(() => users.id),
@@ -445,7 +449,10 @@ export const financeiroLancamentos = pgTable('financeiro_lancamentos', {
   descricao: text('descricao').notNull(),
   data: timestamp('data').notNull(),
   categoria: text('categoria'),
+  clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }),
   status: text('status').notNull().default('EFETIVADO'), // 'PENDENTE', 'EFETIVADO', 'CANCELADO'
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('financeiro_lancamentos_client_id_idx').on(table.clientId),
+]);

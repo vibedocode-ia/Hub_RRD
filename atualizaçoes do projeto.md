@@ -1,3 +1,6 @@
+### V0.12.07 (2026-09-12) - CRM operacional e ficha Sofia completa autorizada
+- **Release:** Site + Hub RRD.
+
 ### V0.12.06 (2026-09-12) - Emissão de orçamento com modelo canônico de duas páginas e ação na fila Sofia.
 - **Release:** Site + Hub RRD.
 

@@ -17,6 +17,11 @@ export default function NovoClientePage() {
     document: '',
     email: '',
     contactPerson: '',
+    source: 'WHATSAPP',
+    recurrence: 'SERVICO_AVULSO',
+    customerSince: new Date().toISOString().slice(0, 10),
+    lastContactAt: '',
+    nextVisitAt: '',
     notes: '',
     street: '',
     number: '',
@@ -143,6 +148,14 @@ export default function NovoClientePage() {
                 className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">E-mail</label>
+              <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="contato@empresa.com" className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Pessoa de contato</label>
+              <input type="text" name="contactPerson" value={form.contactPerson} onChange={handleChange} placeholder="Nome do responsável" className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" />
+            </div>
           </div>
         </div>
 
@@ -228,6 +241,21 @@ export default function NovoClientePage() {
           </div>
         </div>
 
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-bold text-cyan-400 border-b border-slate-800 pb-3">
+            <Users className="w-4 h-4" /> Relacionamento CRM
+          </div>
+          <p className="text-xs text-slate-400">Estes campos são a base da carteira comercial. Datas históricas podem e devem ser corrigidas para clientes antigos.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SelectField name="recurrence" label="Recorrência" value={form.recurrence} onChange={handleChange} options={[['SERVICO_AVULSO', 'Serviço avulso'], ['CLIENTE_MENSAL', 'Cliente mensal'], ['CONTRATO_FIXO', 'Contrato fixo'], ['OUTRO', 'Outro']]} />
+            <SelectField name="source" label="De onde veio" value={form.source} onChange={handleChange} options={[['INDICACAO', 'Indicação'], ['GOOGLE_ADS', 'Google Ads'], ['META_ADS', 'Meta Ads'], ['ORGANICO', 'Orgânico'], ['WHATSAPP', 'WhatsApp'], ['PARCERIA', 'Parceria'], ['OUTRO', 'Outro']]} />
+            <DateField name="customerSince" label="Cliente desde" value={form.customerSince} onChange={handleChange} />
+            <DateField name="lastContactAt" label="Último contato" value={form.lastContactAt} onChange={handleChange} />
+            <DateField name="nextVisitAt" label="Próxima visita" value={form.nextVisitAt} onChange={handleChange} />
+          </div>
+          <label className="block"><span className="block text-xs font-bold text-slate-300 uppercase mb-1">Observações</span><textarea name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder="Acordos comerciais, particularidades do cliente e contexto de atendimento." className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" /></label>
+        </div>
+
         <button
           type="submit"
           disabled={loading}
@@ -239,4 +267,11 @@ export default function NovoClientePage() {
       </form>
     </div>
   );
+}
+
+function SelectField({ name, label, value, onChange, options }: { name: string; label: string; value: string; onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly (readonly [string, string])[] }) {
+  return <label className="block"><span className="block text-xs font-bold text-slate-300 uppercase mb-1">{label}</span><select name={name} value={value} onChange={onChange} className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none">{options.map(([key, title]) => <option key={key} value={key}>{title}</option>)}</select></label>;
+}
+function DateField({ name, label, value, onChange }: { name: string; label: string; value: string; onChange: (event: React.ChangeEvent<HTMLInputElement>) => void }) {
+  return <label className="block"><span className="block text-xs font-bold text-slate-300 uppercase mb-1">{label}</span><input type="date" name={name} value={value} onChange={onChange} className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none" /></label>;
 }

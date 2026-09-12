@@ -32,6 +32,11 @@ export default function EditClientForm({ initial }: { initial: any }) {
       <Field name="city" label="Cidade" value={form.city || ''} onChange={handleChange} />
       <Field name="state" label="UF" value={form.state || 'RJ'} onChange={handleChange} />
       <Field name="referencePoint" label="Referência" value={form.referencePoint || ''} onChange={handleChange} />
+      <Select name="recurrence" label="Recorrência" value={form.recurrence || 'SERVICO_AVULSO'} onChange={handleChange} options={['SERVICO_AVULSO','CLIENTE_MENSAL','CONTRATO_FIXO','OUTRO']} />
+      <Select name="source" label="De onde veio" value={form.source || 'WHATSAPP'} onChange={handleChange} options={['INDICACAO','GOOGLE_ADS','META_ADS','ORGANICO','WHATSAPP','PARCERIA','OUTRO']} />
+      <Field name="customerSince" label="Cliente desde" type="date" value={dateValue(form.customerSince)} onChange={handleChange} />
+      <Field name="lastContactAt" label="Último contato" type="date" value={dateValue(form.lastContactAt)} onChange={handleChange} />
+      <Field name="nextVisitAt" label="Próxima visita" type="date" value={dateValue(form.nextVisitAt)} onChange={handleChange} />
     </div>
     <label className="block"><span className="text-xs font-bold uppercase text-slate-300">Notas internas</span><textarea name="notes" value={form.notes || ''} onChange={handleChange} rows={3} className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100" /></label>
     <label className="block"><span className="text-xs font-bold uppercase text-slate-300">Notas de acesso</span><textarea name="serviceAccessNotes" value={form.serviceAccessNotes || ''} onChange={handleChange} rows={2} className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100" /></label>
@@ -39,4 +44,5 @@ export default function EditClientForm({ initial }: { initial: any }) {
   </form>;
 }
 function Field(props: any) { return <label className="block"><span className="text-xs font-bold uppercase text-slate-300">{props.label}</span><input {...props} label={undefined} className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100" /></label>; }
-function Select({ name, label, value, onChange, options }: any) { return <label className="block"><span className="text-xs font-bold uppercase text-slate-300">{label}</span><select name={name} value={value} onChange={onChange} className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100">{options.map((o: string) => <option key={o} value={o}>{o}</option>)}</select></label>; }
+function Select({ name, label, value, onChange, options }: any) { return <label className="block"><span className="text-xs font-bold uppercase text-slate-300">{label}</span><select name={name} value={value} onChange={onChange} className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100">{options.map((o: string) => <option key={o} value={o}>{o.replaceAll('_', ' ')}</option>)}</select></label>; }
+function dateValue(value: unknown) { return value ? new Date(String(value)).toISOString().slice(0, 10) : ''; }

@@ -1,5 +1,22 @@
 # Changelog
 
+## V0.12.07 — 2026-09-12
+
+### Added
+- Evolui Clientes para CRM operacional: carteira filtrável, cards acionáveis, período, busca e métricas derivadas de serviços e financeiro vinculados.
+- Adiciona campos editáveis de relacionamento: recorrência, origem, cliente desde, último contato, próxima visita e observações.
+- Vincula lançamentos financeiros opcionalmente ao cliente para calcular total pago, pendências, último pagamento e LTV sem dados duplicados.
+- Registra a operação semântica `get_client_profile` para ficha CRM completa autorizada via Sofia, com busca por nome ou ID, e atualização fechada dos campos CRM.
+
+### Security
+- Consulta completa CRM permanece restrita à identidade autorizada, Hub RRD e campos contratados; logs de evento persistem apenas ação e nomes de campos, sem PII.
+- Contexto Sofia por chat direto expira em 24 horas e armazena somente coordenadas de autorização.
+
+### Verification
+- Migration Drizzle `0008_uneven_rachel_grey` aplicada em produção e schema verificado.
+- Typecheck, testes CRM/Sofia e build de produção aprovados.
+
+
 ## V0.10.14 — 2026-09-11
 
 ### Changed

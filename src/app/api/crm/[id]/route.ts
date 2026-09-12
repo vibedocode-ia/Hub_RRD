@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, clients, clientAddresses } from '@/db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
+import { normalizeCrmInput } from '../../../../lib/crm-profile';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,7 +13,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
-  const { name, type, phone, document, email, contactPerson, notes, street, number, complement, neighborhood, city, state, referencePoint, serviceAccessNotes } = body;
+  const { name, type, phone, document, email, contactPerson, notes, source, recurrence, customerSince, lastContactAt, nextVisitAt, street, number, complement, neighborhood, city, state, referencePoint, serviceAccessNotes } = body;
+  let crm;
+  try { crm = normalizeCrmInput({ type, source, recurrence, customerSince, lastContactAt, nextVisitAt, notes }); }
+  catch { return NextResponse.json({ error: 'Dados de relacionamento CRM inválidos.' }, { status: 400 }); }
   if (!name || !phone) return NextResponse.json({ error: 'Nome e telefone são obrigatórios' }, { status: 400 });
 
   const [updated] = await db.update(clients).set({
@@ -23,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     document: document || null,
     email: email || null,
     contactPerson: contactPerson || null,
-    notes: notes || null,
+    ...crm,
     updatedAt: new Date(),
   }).where(eq(clients.id, id)).returning();
 

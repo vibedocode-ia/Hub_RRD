@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { useTransition, useState } from 'react';
 import { createTransaction } from '@/lib/actions/financeiro';
 
-export function ModalNovoLancamento({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function ModalNovoLancamento({ isOpen, onClose, clientOptions }: { isOpen: boolean; onClose: () => void; clientOptions: Array<{ id: string; name: string }> }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [tipo, setTipo] = useState('DESPESA');
@@ -88,6 +88,15 @@ export function ModalNovoLancamento({ isOpen, onClose }: { isOpen: boolean; onCl
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition"
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-300 uppercase">Cliente vinculado</label>
+            <select name="clientId" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition">
+              <option value="">Lançamento geral / sem cliente</option>
+              {clientOptions.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+            </select>
+            <p className="text-[11px] text-slate-500">Vincule receitas ou pendências ao cliente para atualizar LTV e CRM.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import DeleteResourceButton from '@/components/DeleteResourceButton';
 import { notFound } from 'next/navigation';
-import { db, clients, clientAddresses, serviceRequests, officialDocuments } from '@/db';
+import { db, clients, clientAddresses, serviceRequests, officialDocuments, financeiroLancamentos } from '@/db';
+import { buildCrmProfile } from '@/lib/crm-profile';
 import { eq, desc } from 'drizzle-orm';
 import {
   ArrowLeft,
@@ -80,6 +81,13 @@ export default async function ClientDetailPage({ params }: PageProps) {
     .where(eq(officialDocuments.clientId, id))
     .orderBy(desc(officialDocuments.createdAt));
 
+  const financial = await db
+    .select()
+    .from(financeiroLancamentos)
+    .where(eq(financeiroLancamentos.clientId, id))
+    .orderBy(desc(financeiroLancamentos.data));
+  const crmProfile = buildCrmProfile({ client, services: requests, financial });
+
   const mainAddress = addresses[0];
 
   return (
@@ -124,7 +132,11 @@ export default async function ClientDetailPage({ params }: PageProps) {
             <Info label="E-mail" value={client.email || '—'} icon={<Mail className="w-4 h-4" />} />
             <Info label="Contato" value={client.contactPerson || '—'} icon={<User className="w-4 h-4" />} />
             <Info label="Origem" value={client.source || 'Manual/CRM'} icon={<ClipboardList className="w-4 h-4" />} />
-            <Info label="Cadastro" value={formatDate(client.createdAt)} icon={<CalendarClock className="w-4 h-4" />} />
+            <Info label="Recorrência" value={client.recurrence.replaceAll('_', ' ')} icon={<CalendarClock className="w-4 h-4" />} />
+            <Info label="Cliente desde" value={formatDate(client.customerSince || client.createdAt)} icon={<CalendarClock className="w-4 h-4" />} />
+            <Info label="Último contato" value={formatDate(client.lastContactAt)} icon={<CalendarClock className="w-4 h-4" />} />
+            <Info label="Próxima visita" value={formatDate(client.nextVisitAt)} icon={<CalendarClock className="w-4 h-4" />} />
+            <Info label="Cadastro no sistema" value={formatDate(client.createdAt)} icon={<CalendarClock className="w-4 h-4" />} />
           </div>
           {client.notes && (
             <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
@@ -151,6 +163,13 @@ export default async function ClientDetailPage({ params }: PageProps) {
           )}
         </section>
       </div>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Metric label="Quanto já pagou à RR" value={formatCurrency(crmProfile.totalPaid)} detail="Receitas efetivadas vinculadas" />
+        <Metric label="Pendências" value={formatCurrency(crmProfile.pendingAmount)} detail={crmProfile.financialStatus.replaceAll('_', ' ')} tone={crmProfile.pendingAmount ? 'amber' : 'emerald'} />
+        <Metric label="Último serviço" value={crmProfile.lastService ? `${crmProfile.lastService.code} · ${crmProfile.lastService.serviceType}` : 'Não registrado'} detail={crmProfile.lastService ? formatDate(crmProfile.lastService.completedAt) : 'Nenhum chamado concluído'} />
+        <Metric label="Último pagamento" value={crmProfile.lastPayment ? formatCurrency(crmProfile.lastPayment.amount) : 'Não registrado'} detail={crmProfile.lastPayment ? formatDate(crmProfile.lastPayment.date) : 'Nenhuma receita vinculada'} />
+      </section>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl">
         <h2 className="text-sm font-black uppercase tracking-wider text-slate-300 mb-5 flex items-center gap-2">
@@ -212,6 +231,11 @@ function Info({ label, value, icon }: { label: string; value: string; icon: Reac
       <div className="text-slate-200 font-semibold break-words">{value}</div>
     </div>
   );
+}
+
+function Metric({ label, value, detail, tone = 'cyan' }: { label: string; value: string; detail: string; tone?: 'cyan' | 'amber' | 'emerald' }) {
+  const styles = tone === 'amber' ? 'border-amber-500/30 text-amber-300' : tone === 'emerald' ? 'border-emerald-500/30 text-emerald-300' : 'border-cyan-500/30 text-cyan-300';
+  return <div className={`rounded-2xl border bg-slate-900/60 p-5 shadow-xl ${styles}`}><div className="text-[10px] uppercase tracking-wider font-bold text-slate-500">{label}</div><div className="mt-2 text-lg font-black break-words">{value}</div><div className="mt-1 text-xs text-slate-400">{detail}</div></div>;
 }
 
 function Empty({ text }: { text: string }) {

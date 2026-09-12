@@ -6,10 +6,12 @@ import { ModalNovoLancamento } from './ModalNovoLancamento';
 
 export function FinanceiroClient({ 
   initialLancamentos, 
-  initialDocumentos 
+  initialDocumentos,
+  clientOptions,
 }: { 
   initialLancamentos: any[]; 
-  initialDocumentos: any[]; 
+  initialDocumentos: any[];
+  clientOptions: Array<{ id: string; name: string }>;
 }) {
   const [lancamentos, setLancamentos] = useState(initialLancamentos);
   const [isNovoLancamentoOpen, setIsNovoLancamentoOpen] = useState(false);
@@ -178,7 +180,7 @@ export function FinanceiroClient({
         </div>
       </div>
 
-      <ModalNovoLancamento isOpen={isNovoLancamentoOpen} onClose={() => setIsNovoLancamentoOpen(false)} />
+      <ModalNovoLancamento isOpen={isNovoLancamentoOpen} onClose={() => setIsNovoLancamentoOpen(false)} clientOptions={clientOptions} />
     </div>
   );
 }
