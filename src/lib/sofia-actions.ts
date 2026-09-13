@@ -81,9 +81,13 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
   }
   if (action === 'update_client') {
     if (!/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
-    const editable = ['name', 'phone', 'document', 'email', 'contactPerson', 'notes', 'type', 'source', 'recurrence', 'customerSince', 'lastContactAt', 'nextVisitAt', 'street', 'number']
+    const editable = ['name', 'phone', 'document', 'email', 'contactPerson', 'notes', 'type', 'source', 'recurrence', 'customerSince', 'lastContactAt', 'nextVisitAt', 'street', 'number', 'complement', 'floorOrUnit', 'neighborhood', 'city', 'state', 'zipCode', 'referencePoint', 'serviceAccessNotes', 'propertyType', 'needsCondominiumAuthorization']
+    const unknown = Object.keys(data).filter(key => key !== 'clientId' && !editable.includes(key))
+    if (unknown.length) return { ok: false, error: 'Campo CRM não permitido.' }
     if (!editable.some(key => data[key] !== undefined)) return { ok: false, error: 'Nenhum campo CRM informado para atualização.' }
-    if (data.street !== undefined && !clean(data.street, 160)) return { ok: false, error: 'Logradouro inválido.' }
+    for (const field of ['street', 'number', 'neighborhood', 'city', 'state'] as const) if (data[field] !== undefined && !clean(data[field], field === 'state' ? 2 : 160)) return { ok: false, error: 'Campo de endereço inválido.' }
+    for (const field of ['complement', 'floorOrUnit', 'zipCode', 'referencePoint', 'serviceAccessNotes', 'propertyType'] as const) if (data[field] !== undefined && typeof data[field] !== 'string') return { ok: false, error: 'Campo de endereço inválido.' }
+    if (data.needsCondominiumAuthorization !== undefined && typeof data.needsCondominiumAuthorization !== 'boolean') return { ok: false, error: 'Autorização de condomínio inválida.' }
     if (data.phone !== undefined && !digits(data.phone)) return { ok: false, error: 'Telefone inválido.' }
     if (data.document && !validCpf(data.document)) return { ok: false, error: 'CPF inválido. Corrija o documento antes de atualizar.' }
   }

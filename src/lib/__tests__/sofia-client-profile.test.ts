@@ -17,8 +17,11 @@ test('authorized CRM profile lookup accepts exactly one client identity', () => 
   assert.equal(byId.ok, true)
 })
 
-test('authorized CRM update accepts a validated street with a client UUID', () => {
-  const updated = parseSofiaClientAction({ ...envelope, action: 'update_client', data: { clientId: '44444444-4444-4444-8444-444444444444', street: 'Rua das Flores' } })
+test('authorized CRM update accepts every mutable client and primary-address field', () => {
+  const updated = parseSofiaClientAction({ ...envelope, action: 'update_client', data: {
+    clientId: '44444444-4444-4444-8444-444444444444', name:'Cliente teste', phone:'+5521999999999', document:'52998224725', email:'teste@example.com', contactPerson:'Responsável', notes:'Observação operacional', type:'PJ', source:'INDICACAO', recurrence:'MENSAL', customerSince:'2026-01-01', lastContactAt:'2026-02-01', nextVisitAt:'2026-03-01',
+    street:'Rua das Flores', number:'915', complement:'Sala 2', floorOrUnit:'2º andar', neighborhood:'Centro', city:'Niterói', state:'RJ', zipCode:'24000000', referencePoint:'Próximo à praça', serviceAccessNotes:'Portaria', propertyType:'COMERCIAL', needsCondominiumAuthorization:true,
+  } })
   assert.equal(updated.ok, true)
   assert.equal(parseSofiaClientAction({ ...envelope, action: 'update_client', data: { clientId: '44444444-4444-4444-8444-444444444444', street: '' } }).ok, false)
 })
