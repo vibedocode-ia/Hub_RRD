@@ -116,9 +116,12 @@ export async function POST(req: NextRequest) {
     if (action === 'get_client_profile') {
       const clientId = typeof data.clientId === 'string' ? data.clientId : null
       const name = typeof data.name === 'string' ? clean(data.name, 160) : ''
+      const nameTerms = name.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(term => term.length >= 2).slice(0, 8)
       const matches = clientId
         ? await db.select().from(clients).where(and(eq(clients.id, clientId), eq(clients.isActive, true))).limit(2)
-        : await db.select().from(clients).where(and(eq(clients.isActive, true), ilike(clients.name, name))).limit(2)
+        : nameTerms.length && !/[%_]/.test(name)
+          ? await db.select().from(clients).where(and(eq(clients.isActive, true), ...nameTerms.map(term => ilike(clients.name, `%${term}%`)))).limit(2)
+          : []
       if (!matches.length) return reply({ success: false, error: 'Cliente não encontrado.' }, 404, correlationId)
       if (matches.length > 1) return reply({ success: false, error: 'Mais de um cliente encontrado; informe o nome completo.' }, 409, correlationId)
       const client = matches[0]
@@ -147,8 +150,9 @@ export async function POST(req: NextRequest) {
     if (!client) return reply({ success: false, error: 'Cliente não encontrado.' }, 404, correlationId)
     if (action === 'archive_client') {
       const [archived] = await db.update(clients).set({ isActive: false, updatedAt: new Date() }).where(and(eq(clients.id, id), eq(clients.isActive, true))).returning()
+      if (!archived) return reply({ success: false, error: 'Cliente ativo não encontrado.' }, 404, correlationId)
       await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id }, intentDetected: 'crm_archive_client', status: 'PROCESSED' })
-      return reply({ success: true, action, client: safeClientSummary(archived || client) }, 200, correlationId)
+      return reply({ success: true, action, client: safeClientSummary(archived) }, 200, correlationId)
     }
     const updates: Record<string, unknown> = { updatedAt: new Date() }
     if (data.name !== undefined) updates.name = clean(data.name, 160)
