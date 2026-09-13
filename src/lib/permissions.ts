@@ -14,6 +14,7 @@ export const RRD_PERMISSIONS = [
   'documents.issue',
   'documents.send',
   'sofia.drafts.review',
+  'sofia.use',
   'settings.manage',
 ] as const
 
@@ -43,6 +44,7 @@ export const DEFAULT_PERMISSIONS_BY_ROLE: Record<LocalUserRole, readonly RrdPerm
     'documents.read',
     'documents.prepare',
     'sofia.drafts.review',
+    'sofia.use',
   ],
   TEAM: ['operations.read', 'operations.write', 'inventory.read'],
   FINANCEIRO: ['financial.read', 'financial.write', 'documents.read', 'documents.prepare'],

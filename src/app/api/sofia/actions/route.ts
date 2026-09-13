@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
 import { and, asc, desc, eq, gte, ilike, or, sql } from 'drizzle-orm'
-import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, vehicles } from '@/db'
+import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, userPermissions, users, vehicles } from '@/db'
+import { canUseRrdSofia, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '@/lib/sofia-local-access'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
@@ -18,6 +19,14 @@ function authorized(req: NextRequest) {
   return { ok: true as const }
 }
 function centralHubMatches(raw: unknown) { return Boolean(raw && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>).centralHubId === process.env.RRD_HUB_ID) }
+async function locallyAuthorizedForSofia(senderPhone: unknown) {
+  const phone = normalizeRrdPhone(senderPhone)
+  if (!phone || !db) return false
+  const [person] = await db.select({ phone: users.phone, isActive: users.isActive }).from(users)
+    .innerJoin(userPermissions, and(eq(userPermissions.userId, users.id), eq(userPermissions.permissionKey, SOFIA_LOCAL_PERMISSION)))
+    .where(and(eq(users.phone, phone), eq(users.isActive, true))).limit(1)
+  return canUseRrdSofia(person ? { ...person, permissions: [SOFIA_LOCAL_PERMISSION] } : null, phone)
+}
 
 export async function POST(req: NextRequest) {
   const auth = authorized(req); if (!auth.ok) return reply({ success: false, error: auth.error }, auth.status)
@@ -26,6 +35,8 @@ export async function POST(req: NextRequest) {
   if (!/^[A-Za-z0-9:_-]{8,160}$/.test(correlationId)) return reply({ success: false, error: 'Chave de idempotência obrigatória.' }, 400)
   const rawBody = await req.json().catch(() => null)
   if (!centralHubMatches(rawBody)) return reply({ success: false, error: 'Hub central não autorizado.' }, 403, correlationId)
+  const senderPhone = rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody) ? (rawBody as Record<string, unknown>).senderPhone : null
+  if (!await locallyAuthorizedForSofia(senderPhone)) return reply({ success: false, error: 'Acesso local à Sofia não liberado para esta pessoa no Hub RRD.' }, 403, correlationId)
   try {
     const operational = SofiaActionRequest.safeParse(rawBody)
     if (operational.success) {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
-import { eq } from 'drizzle-orm';
-import { db, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS } from '../../../../db';
+import { and, eq } from 'drizzle-orm';
+import { db, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, userPermissions, users } from '../../../../db';
+import { canUseRrdSofia, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '../../../../lib/sofia-local-access';
 import { SofiaDispatchSchema } from '../../../../lib/validation/sofia';
 import { VERSION } from '../../../../lib/version';
 
@@ -29,6 +30,17 @@ function validateBearer(req: NextRequest): { valid: boolean; status: number; err
   }
 
   return { valid: true, status: 200 };
+}
+
+async function locallyAuthorizedForSofia(senderPhone: unknown): Promise<boolean> {
+  const phone = normalizeRrdPhone(senderPhone);
+  if (!phone || !db) return false;
+  const [person] = await db.select({ phone: users.phone, isActive: users.isActive })
+    .from(users)
+    .innerJoin(userPermissions, and(eq(userPermissions.userId, users.id), eq(userPermissions.permissionKey, SOFIA_LOCAL_PERMISSION)))
+    .where(and(eq(users.phone, phone), eq(users.isActive, true)))
+    .limit(1);
+  return canUseRrdSofia(person ? { ...person, permissions: [SOFIA_LOCAL_PERMISSION] } : null, phone);
 }
 
 export async function POST(req: NextRequest) {
@@ -97,7 +109,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Verificar Idempotência em sofiaDrafts
+    // 5. The Hub RRD independently confirms that this number is an active
+    // local person explicitly allowed to use Sofia before any business write.
+    if (!await locallyAuthorizedForSofia(payload.senderPhone)) {
+      return NextResponse.json(
+        { error: 'Acesso local à Sofia não liberado para esta pessoa no Hub RRD.' },
+        { status: 403, headers: { 'X-Hub-Version': VERSION, 'X-Correlation-Id': correlationId } }
+      );
+    }
+
+    // 6. Verificar Idempotência em sofiaDrafts
     const existingDraft = await db
       .select()
       .from(sofiaDrafts)

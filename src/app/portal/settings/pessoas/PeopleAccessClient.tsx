@@ -32,7 +32,7 @@ const labels: Record<RrdPermission, string> = {
   'financial.read': 'Ver financeiro', 'financial.write': 'Editar financeiro',
   'documents.read': 'Ver documentos', 'documents.prepare': 'Preparar documentos',
   'documents.approve': 'Aprovar documentos', 'documents.issue': 'Emitir documentos',
-  'documents.send': 'Enviar documentos', 'sofia.drafts.review': 'Revisar rascunhos Sofia',
+  'documents.send': 'Enviar documentos', 'sofia.drafts.review': 'Revisar rascunhos Sofia', 'sofia.use': 'Usar Sofia no Hub RRD',
   'settings.manage': 'Configurações operacionais',
 }
 
@@ -85,7 +85,7 @@ export default function PeopleAccessClient({ currentUserId }: { currentUserId: s
 
   return <section className="space-y-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div><h2 className="flex items-center gap-2 text-lg font-black text-slate-100"><UserRoundCog className="h-5 w-5 text-cyan-400" /> Pessoas e Acessos RRD</h2><p className="mt-1 text-xs text-slate-400">Controle somente o portal e as operações da RR. Números e grants WhatsApp continuam na Central Sofia.</p></div>
+      <div><h2 className="flex items-center gap-2 text-lg font-black text-slate-100"><UserRoundCog className="h-5 w-5 text-cyan-400" /> Pessoas e Acessos RRD</h2><p className="mt-1 text-xs text-slate-400">Controle somente o portal e as operações da RR. “Usar Sofia no Hub RRD” exige pessoa local ativa e é revalidado pelo servidor antes de cada operação.</p></div>
       <button onClick={() => open()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-cyan-500"><Plus className="h-4 w-4" /> Nova pessoa</button>
     </div>
     {message && <p className="rounded-xl border border-emerald-800 bg-emerald-950/30 p-3 text-xs text-emerald-300">{message}</p>}
