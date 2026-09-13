@@ -17,6 +17,12 @@ test('authorized CRM profile lookup accepts exactly one client identity', () => 
   assert.equal(byId.ok, true)
 })
 
+test('authorized CRM update accepts a validated street with a client UUID', () => {
+  const updated = parseSofiaClientAction({ ...envelope, action: 'update_client', data: { clientId: '44444444-4444-4444-8444-444444444444', street: 'Rua das Flores' } })
+  assert.equal(updated.ok, true)
+  assert.equal(parseSofiaClientAction({ ...envelope, action: 'update_client', data: { clientId: '44444444-4444-4444-8444-444444444444', street: '' } }).ok, false)
+})
+
 test('authorized CRM profile lookup rejects no identity or conflicting identities', () => {
   assert.equal(parseSofiaClientAction({ ...envelope, action: 'get_client_profile', data: {} }).ok, false)
   assert.equal(parseSofiaClientAction({ ...envelope, action: 'get_client_profile', data: { name: 'Cliente', clientId: '44444444-4444-4444-8444-444444444444' } }).ok, false)

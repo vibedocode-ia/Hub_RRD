@@ -168,7 +168,13 @@ export async function POST(req: NextRequest) {
       if (data[source] !== undefined) { const parsed = data[source] ? new Date(String(data[source])) : null; if (parsed && Number.isNaN(parsed.getTime())) return reply({ success: false, error: 'Data CRM inválida.' }, 422, correlationId); updates[target] = parsed }
     }
     const [updated] = await db.update(clients).set(updates as any).where(eq(clients.id, id)).returning()
-    await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id, fields: Object.keys(updates).filter(key => key !== 'updatedAt') }, intentDetected: 'crm_update_client', status: 'PROCESSED' })
+    if (data.street !== undefined) {
+      const street = clean(data.street, 160)
+      const [existingAddress] = await db.select().from(clientAddresses).where(and(eq(clientAddresses.clientId, id), eq(clientAddresses.isMain, true))).limit(1)
+      if (existingAddress) await db.update(clientAddresses).set({ street, updatedAt: new Date() }).where(eq(clientAddresses.id, existingAddress.id))
+      else await db.insert(clientAddresses).values({ clientId: id, street, number: 'S/N', neighborhood: 'Bairro a confirmar', city: 'Niterói', state: 'RJ', isMain: true })
+    }
+    await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id, fields: Object.keys(updates).filter(key => key !== 'updatedAt').concat(data.street !== undefined ? ['street'] : []) }, intentDetected: 'crm_update_client', status: 'PROCESSED' })
     return reply({ success: true, action, client: safeClientSummary(updated) }, 200, correlationId)
   } catch { return reply({ success: false, error: 'Falha ao executar operação Sofia.' }, 500, correlationId) }
 }
