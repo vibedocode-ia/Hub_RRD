@@ -5,7 +5,7 @@ import { db, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS } from '../../../../db
 import { SofiaDispatchSchema } from '../../../../lib/validation/sofia';
 import { VERSION } from '../../../../lib/version';
 
-const SOFIA_ALLOWED_DISPATCH_ROLES = ['hub_owner', 'hub_admin'];
+const SOFIA_ALLOWED_DISPATCH_ROLES = ['hub_owner', 'hub_admin', 'hub_operator'];
 
 function isTimingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
