@@ -49,6 +49,27 @@ export async function POST(req: NextRequest) {
     const domain = parseSofiaDomainAction(rawBody)
     if (domain.ok) {
       const { action, data } = domain
+      if (action === 'create_catalog_service' || action === 'update_catalog_service' || action === 'archive_catalog_service') {
+        const replay = await db.select({ id: sofiaEvents.id }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
+        if (replay[0]) return reply({ success: true, alreadyProcessed: true, action }, 200, correlationId)
+        const serviceId = String(data.serviceId || '')
+        if (action === 'archive_catalog_service') {
+          const [service] = await db.update(serviceCatalog).set({ status: 'INACTIVE', updatedAt: new Date() }).where(and(eq(serviceCatalog.id, serviceId), eq(serviceCatalog.status, 'ACTIVE'))).returning()
+          if (!service) return reply({ success: false, error: 'Serviço ativo não encontrado.' }, 404, correlationId)
+          await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, serviceId }, intentDetected: 'service_catalog_archive', status: 'PROCESSED' })
+          return reply({ success: true, action, service: { id: service.id, name: service.name, status: service.status } }, 200, correlationId)
+        }
+        const values: Record<string, unknown> = { updatedAt: new Date() }
+        for (const key of ['name', 'category', 'description', 'basePrice', 'priceNotes', 'status'] as const) if (data[key] !== undefined) values[key] = clean(data[key], key === 'description' ? 2000 : 300)
+        for (const key of ['warrantyDays', 'defaultDurationMinutes', 'displayOrder'] as const) if (data[key] !== undefined) values[key] = Number(data[key])
+        for (const key of ['requiresInspection', 'isEmergencyEligible'] as const) if (data[key] !== undefined) values[key] = Boolean(data[key])
+        let service: any
+        if (action === 'create_catalog_service') [service] = await db.insert(serviceCatalog).values({ ...values, name: clean(data.name, 160), description: clean(data.description, 2000), basePrice: clean(data.basePrice, 32), category: clean(data.category, 80) || 'DESENTUPIMENTO', status: 'ACTIVE' } as any).returning()
+        else [service] = await db.update(serviceCatalog).set(values as any).where(eq(serviceCatalog.id, serviceId)).returning()
+        if (!service) return reply({ success: false, error: 'Serviço não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, serviceId: service.id }, intentDetected: action === 'create_catalog_service' ? 'service_catalog_create' : 'service_catalog_update', status: 'PROCESSED' })
+        return reply({ success: true, action, service: { id: service.id, name: service.name, status: service.status } }, action === 'create_catalog_service' ? 201 : 200, correlationId)
+      }
       if (action === 'list_stock') {
         const query = clean(data.query, 160)
         const rows = await db.select().from(insumos).where(query ? or(ilike(insumos.nome, `%${query}%`), ilike(insumos.categoria, `%${query}%`)) : undefined).orderBy(asc(insumos.nome)).limit(50)

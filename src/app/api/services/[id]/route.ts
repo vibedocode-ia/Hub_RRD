@@ -35,7 +35,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const { id } = await params;
-  const deleted = await db.delete(serviceCatalog).where(eq(serviceCatalog.id, id)).returning({ id: serviceCatalog.id });
-  if (deleted.length === 0) return NextResponse.json({ error: 'Serviço não encontrado.' }, { status: 404 });
-  return NextResponse.json({ success: true });
+  const [archived] = await db.update(serviceCatalog).set({ status: 'INACTIVE', updatedAt: new Date() }).where(eq(serviceCatalog.id, id)).returning({ id: serviceCatalog.id });
+  if (!archived) return NextResponse.json({ error: 'Serviço não encontrado.' }, { status: 404 });
+  return NextResponse.json({ success: true, archived: true });
 }

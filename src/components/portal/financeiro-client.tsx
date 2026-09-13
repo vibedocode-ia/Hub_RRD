@@ -8,13 +8,16 @@ export function FinanceiroClient({
   initialLancamentos, 
   initialDocumentos,
   clientOptions,
+  initialType,
 }: { 
   initialLancamentos: any[]; 
   initialDocumentos: any[];
   clientOptions: Array<{ id: string; name: string }>;
+  initialType?: 'RECEITA' | 'DESPESA';
 }) {
   const [lancamentos, setLancamentos] = useState(initialLancamentos);
   const [isNovoLancamentoOpen, setIsNovoLancamentoOpen] = useState(false);
+  const visibleLancamentos = initialType ? lancamentos.filter(l => l.tipo === initialType) : lancamentos;
 
   // Totais reativos
   const entradas = lancamentos.filter(l => l.tipo === 'RECEITA').reduce((acc, l) => acc + Number(l.valor), 0);
@@ -96,14 +99,14 @@ export function FinanceiroClient({
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {lancamentos.length === 0 ? (
+                {visibleLancamentos.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 px-6 text-center text-slate-400">
                       Nenhuma movimentação registrada.
                     </td>
                   </tr>
                 ) : (
-                  lancamentos.map((l) => (
+                  visibleLancamentos.map((l) => (
                     <tr key={l.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
                       <td className="py-3 px-6 text-slate-200">
                         <div className="font-medium">{l.descricao}</div>

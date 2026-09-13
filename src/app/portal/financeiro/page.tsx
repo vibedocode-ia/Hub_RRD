@@ -8,7 +8,9 @@ export const metadata = {
   title: 'Financeiro · Hub RR',
 };
 
-export default async function FinanceiroPage() {
+export default async function FinanceiroPage({ searchParams }: { searchParams: Promise<{ tipo?: string }> }) {
+  const params = await searchParams;
+  const initialType = params.tipo === 'RECEITA' || params.tipo === 'DESPESA' ? params.tipo : undefined;
   let lancamentos: any[] = [];
   let documentos: any[] = [];
   let clientOptions: Array<{ id: string; name: string }> = [];
@@ -28,6 +30,7 @@ export default async function FinanceiroPage() {
       initialLancamentos={lancamentos} 
       initialDocumentos={documentos}
       clientOptions={clientOptions}
+      initialType={initialType}
     />
   );
 }

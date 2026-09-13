@@ -93,9 +93,9 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
 export function safeClientSummary(client: { id: string; name: string; phone: string; isActive: boolean }) {
   return { id: client.id, name: client.name, phone: `***${digits(client.phone).slice(-4)}`, active: client.isActive }
 }
-export type SofiaDomainAction = 'list_stock' | 'adjust_stock' | 'create_financial_entry' | 'list_vehicles' | 'archive_vehicle'
+export type SofiaDomainAction = 'list_stock' | 'adjust_stock' | 'create_financial_entry' | 'list_vehicles' | 'archive_vehicle' | 'create_catalog_service' | 'update_catalog_service' | 'archive_catalog_service'
 
-const DOMAIN_ACTIONS = new Set<SofiaDomainAction>(['list_stock', 'adjust_stock', 'create_financial_entry', 'list_vehicles', 'archive_vehicle'])
+const DOMAIN_ACTIONS = new Set<SofiaDomainAction>(['list_stock', 'adjust_stock', 'create_financial_entry', 'list_vehicles', 'archive_vehicle', 'create_catalog_service', 'update_catalog_service', 'archive_catalog_service'])
 const isUuid = (value: unknown) => /^[0-9a-f-]{36}$/i.test(clean(value, 40))
 const decimal = (value: unknown) => {
   const normalized = clean(value, 32).replace(',', '.')
@@ -127,6 +127,14 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
     const vehicleName = clean(data.vehicleName, 160)
     if (hasId === Boolean(vehicleName)) return { ok: false, error: 'Veículo inválido.' }
   }
+  if (action === 'create_catalog_service') {
+    if (!clean(data.name, 160) || !clean(data.description, 2000) || !decimal(data.basePrice)) return { ok: false, error: 'Serviço inválido: nome, descrição e valor base são obrigatórios.' }
+  }
+  if (action === 'update_catalog_service') {
+    if (!isUuid(data.serviceId)) return { ok: false, error: 'Serviço inválido.' }
+    if (!['name', 'category', 'description', 'basePrice', 'priceNotes', 'warrantyDays', 'defaultDurationMinutes', 'requiresInspection', 'isEmergencyEligible', 'displayOrder', 'status'].some(key => data[key] !== undefined)) return { ok: false, error: 'Nenhum campo de serviço informado.' }
+  }
+  if (action === 'archive_catalog_service' && !isUuid(data.serviceId)) return { ok: false, error: 'Serviço inválido.' }
   return { ok: true, action, data }
 }
 
