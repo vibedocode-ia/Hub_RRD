@@ -98,9 +98,22 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
 export function safeClientSummary(client: { id: string; name: string; phone: string; isActive: boolean }) {
   return { id: client.id, name: client.name, phone: `***${digits(client.phone).slice(-4)}`, active: client.isActive }
 }
-export type SofiaDomainAction = 'list_stock' | 'adjust_stock' | 'create_financial_entry' | 'list_vehicles' | 'archive_vehicle' | 'create_catalog_service' | 'update_catalog_service' | 'archive_catalog_service'
+export type SofiaDomainAction =
+  | 'list_stock' | 'adjust_stock' | 'create_financial_entry' | 'list_financial_entries' | 'get_financial_summary' | 'update_financial_entry'
+  | 'list_vehicles' | 'create_vehicle' | 'update_vehicle' | 'archive_vehicle'
+  | 'list_teams' | 'create_team' | 'update_team'
+  | 'list_equipment' | 'create_equipment' | 'update_equipment'
+  | 'list_service_requests' | 'update_service_request'
+  | 'list_documents' | 'update_document' | 'archive_document'
+  | 'create_catalog_service' | 'update_catalog_service' | 'archive_catalog_service'
 
-const DOMAIN_ACTIONS = new Set<SofiaDomainAction>(['list_stock', 'adjust_stock', 'create_financial_entry', 'list_vehicles', 'archive_vehicle', 'create_catalog_service', 'update_catalog_service', 'archive_catalog_service'])
+const DOMAIN_ACTIONS = new Set<SofiaDomainAction>([
+  'list_stock', 'adjust_stock', 'create_financial_entry', 'list_financial_entries', 'get_financial_summary', 'update_financial_entry',
+  'list_vehicles', 'create_vehicle', 'update_vehicle', 'archive_vehicle',
+  'list_teams', 'create_team', 'update_team', 'list_equipment', 'create_equipment', 'update_equipment',
+  'list_service_requests', 'update_service_request', 'list_documents', 'update_document', 'archive_document',
+  'create_catalog_service', 'update_catalog_service', 'archive_catalog_service',
+])
 const isUuid = (value: unknown) => /^[0-9a-f-]{36}$/i.test(clean(value, 40))
 const decimal = (value: unknown) => {
   const normalized = clean(value, 32).replace(',', '.')
@@ -108,7 +121,7 @@ const decimal = (value: unknown) => {
   return Number.isFinite(number) && number > 0 && number <= 10000000 ? normalized : null
 }
 const trustedDomainEnvelope = (body: Record<string, unknown>) =>
-  (clean(body.centralRole, 32) === 'hub_owner' || clean(body.centralRole, 32) === 'hub_admin') &&
+  ['hub_owner', 'hub_admin', 'hub_operator'].includes(clean(body.centralRole, 32)) &&
   /^\+?[1-9]\d{7,14}$/.test(clean(body.senderPhone, 20)) &&
   isUuid(body.centralContactId) && isUuid(body.centralClientId) && isUuid(body.centralHubId)
 
@@ -140,6 +153,23 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
     if (!['name', 'category', 'description', 'basePrice', 'priceNotes', 'warrantyDays', 'defaultDurationMinutes', 'requiresInspection', 'isEmergencyEligible', 'displayOrder', 'status'].some(key => data[key] !== undefined)) return { ok: false, error: 'Nenhum campo de serviço informado.' }
   }
   if (action === 'archive_catalog_service' && !isUuid(data.serviceId)) return { ok: false, error: 'Serviço inválido.' }
+  if (['list_financial_entries', 'get_financial_summary'].includes(action) && data.period !== undefined && !['HOJE', 'SEMANA_ATUAL', 'MES_ATUAL', 'TODOS'].includes(clean(data.period, 16))) return { ok: false, error: 'Período financeiro inválido.' }
+  if (action === 'update_financial_entry') {
+    if (!isUuid(data.entryId) || !['type', 'amount', 'description', 'category', 'status', 'date'].some(key => data[key] !== undefined)) return { ok: false, error: 'Lançamento financeiro inválido.' }
+    if (data.type !== undefined && !['RECEITA', 'DESPESA'].includes(clean(data.type, 16))) return { ok: false, error: 'Tipo financeiro inválido.' }
+    if (data.status !== undefined && !['PENDENTE', 'EFETIVADO', 'CANCELADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
+    if (data.amount !== undefined && !decimal(data.amount)) return { ok: false, error: 'Valor financeiro inválido.' }
+  }
+  if (action === 'create_team' && (!clean(data.name, 160) || !clean(data.leaderName, 160))) return { ok: false, error: 'Equipe inválida.' }
+  if (action === 'update_team' && (!isUuid(data.teamId) || !['name', 'leaderName', 'phone', 'isActive'].some(key => data[key] !== undefined))) return { ok: false, error: 'Equipe inválida.' }
+  if (action === 'create_vehicle' && (!clean(data.name, 160) || !clean(data.type, 64))) return { ok: false, error: 'Veículo inválido.' }
+  if (action === 'update_vehicle' && (!isUuid(data.vehicleId) || !['name', 'plate', 'type', 'isActive'].some(key => data[key] !== undefined))) return { ok: false, error: 'Veículo inválido.' }
+  if (action === 'create_equipment' && !clean(data.name, 160)) return { ok: false, error: 'Equipamento inválido.' }
+  if (action === 'update_equipment' && (!isUuid(data.equipmentId) || !['name', 'code', 'isActive'].some(key => data[key] !== undefined))) return { ok: false, error: 'Equipamento inválido.' }
+  if (action === 'update_service_request' && (!isUuid(data.requestId) || !['leadStatus', 'priority', 'serviceType', 'problemReported', 'problemFound', 'status', 'scheduledAt', 'assignedTeamId', 'vehicleId', 'equipmentId', 'totalAmount', 'paymentMethod', 'internalNotes', 'customerNotes', 'warrantyDays', 'cancelReason'].some(key => data[key] !== undefined))) return { ok: false, error: 'Chamado inválido.' }
+  if (action === 'list_documents' && data.docType !== undefined && !['ORCAMENTO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO'].includes(clean(data.docType, 32))) return { ok: false, error: 'Tipo de documento inválido.' }
+  if (action === 'update_document' && (!isUuid(data.documentId) || !['status', 'paymentMethod', 'warrantyTerms', 'technicalNotes'].some(key => data[key] !== undefined))) return { ok: false, error: 'Documento inválido.' }
+  if (action === 'archive_document' && !isUuid(data.documentId)) return { ok: false, error: 'Documento inválido.' }
   return { ok: true, action, data }
 }
 

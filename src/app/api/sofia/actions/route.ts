@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
 import { and, asc, desc, eq, gte, ilike, or, sql } from 'drizzle-orm'
-import { db, clientAddresses, clients, financeiroLancamentos, insumos, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, vehicles } from '@/db'
+import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, vehicles } from '@/db'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
@@ -79,6 +79,32 @@ export async function POST(req: NextRequest) {
         const rows = await db.select().from(vehicles).where(eq(vehicles.isActive, true)).orderBy(asc(vehicles.name)).limit(50)
         return reply({ success: true, action, vehicles: rows.map(safeVehicleSummary) }, 200, correlationId)
       }
+      if (action === 'list_financial_entries') {
+        const rows = await db.select().from(financeiroLancamentos).orderBy(desc(financeiroLancamentos.data)).limit(100)
+        return reply({ success: true, action, entries: rows.map(row => ({ id: row.id, type: row.tipo, amount: row.valor, description: row.descricao, category: row.categoria, date: row.data, status: row.status, clientId: row.clientId })) }, 200, correlationId)
+      }
+      if (action === 'get_financial_summary') {
+        const rows = await db.select().from(financeiroLancamentos).limit(500)
+        const summary = rows.reduce((acc, row) => { const value = Number(row.valor) || 0; if (row.status === 'EFETIVADO' && row.tipo === 'RECEITA') acc.revenue += value; if (row.status === 'EFETIVADO' && row.tipo === 'DESPESA') acc.expenses += value; if (row.status === 'PENDENTE' && row.tipo === 'RECEITA') acc.receivable += value; if (row.status === 'PENDENTE' && row.tipo === 'DESPESA') acc.payable += value; return acc }, { revenue: 0, expenses: 0, receivable: 0, payable: 0 })
+        return reply({ success: true, action, summary: { ...summary, cash: summary.revenue - summary.expenses } }, 200, correlationId)
+      }
+      if (action === 'list_teams') {
+        const rows = await db.select().from(teams).orderBy(asc(teams.name)).limit(50)
+        return reply({ success: true, action, teams: rows.map(row => ({ id: row.id, name: row.name, leaderName: row.leaderName, active: row.isActive })) }, 200, correlationId)
+      }
+      if (action === 'list_equipment') {
+        const rows = await db.select().from(equipment).where(eq(equipment.isActive, true)).orderBy(asc(equipment.name)).limit(50)
+        return reply({ success: true, action, equipment: rows.map(row => ({ id: row.id, name: row.name, code: row.code, active: row.isActive })) }, 200, correlationId)
+      }
+      if (action === 'list_service_requests') {
+        const rows = await db.select({ id: serviceRequests.id, code: serviceRequests.code, clientId: serviceRequests.clientId, status: serviceRequests.status, priority: serviceRequests.priority, serviceType: serviceRequests.serviceType, scheduledAt: serviceRequests.scheduledAt, totalAmount: serviceRequests.totalAmount }).from(serviceRequests).orderBy(desc(serviceRequests.updatedAt)).limit(100)
+        return reply({ success: true, action, requests: rows }, 200, correlationId)
+      }
+      if (action === 'list_documents') {
+        const docType = clean(data.docType, 32)
+        const rows = await db.select({ id: officialDocuments.id, docType: officialDocuments.docType, docNumber: officialDocuments.docNumber, clientId: officialDocuments.clientId, serviceRequestId: officialDocuments.serviceRequestId, totalValue: officialDocuments.totalValue, status: officialDocuments.status, issuedAt: officialDocuments.issuedAt }).from(officialDocuments).where(docType ? eq(officialDocuments.docType, docType) : undefined).orderBy(desc(officialDocuments.updatedAt)).limit(100)
+        return reply({ success: true, action, documents: rows }, 200, correlationId)
+      }
       const replay = await db.select({ id: sofiaEvents.id }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
       if (replay[0]) return reply({ success: true, alreadyProcessed: true, action }, 200, correlationId)
       if (action === 'adjust_stock') {
@@ -95,6 +121,76 @@ export async function POST(req: NextRequest) {
         const [entry] = await db.insert(financeiroLancamentos).values({ tipo: String(data.type), valor: String(data.amount).replace(',', '.'), descricao: clean(data.description, 300), categoria: clean(data.category, 100) || 'GERAL', status: clean(data.status, 16) || 'EFETIVADO', data: data.date ? new Date(String(data.date)) : new Date() }).returning()
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, entryId: entry.id, type: entry.tipo, amount: entry.valor }, intentDetected: 'financial_create_entry', status: 'PROCESSED' })
         return reply({ success: true, action, entry: { id: entry.id, type: entry.tipo, amount: entry.valor, description: entry.descricao, status: entry.status } }, 201, correlationId)
+      }
+      if (action === 'update_financial_entry') {
+        const values: Record<string, unknown> = { updatedAt: new Date() }
+        if (data.type !== undefined) values.tipo = clean(data.type, 16)
+        if (data.amount !== undefined) values.valor = String(data.amount).replace(',', '.')
+        if (data.description !== undefined) values.descricao = clean(data.description, 300)
+        if (data.category !== undefined) values.categoria = clean(data.category, 100) || null
+        if (data.status !== undefined) values.status = clean(data.status, 16)
+        if (data.date !== undefined) values.data = new Date(String(data.date))
+        const [entry] = await db.update(financeiroLancamentos).set(values as any).where(eq(financeiroLancamentos.id, String(data.entryId))).returning()
+        if (!entry) return reply({ success: false, error: 'Lançamento financeiro não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, entryId: entry.id, fields: Object.keys(data).filter(key => key !== 'entryId') }, intentDetected: 'financial_update_entry', status: 'PROCESSED' })
+        return reply({ success: true, action, entry: { id: entry.id, type: entry.tipo, amount: entry.valor, description: entry.descricao, status: entry.status } }, 200, correlationId)
+      }
+      if (action === 'create_team') {
+        const [team] = await db.insert(teams).values({ name: clean(data.name, 160), leaderName: clean(data.leaderName, 160), phone: clean(data.phone, 32) || null, isActive: data.isActive !== false }).returning()
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, teamId: team.id }, intentDetected: 'team_create', status: 'PROCESSED' })
+        return reply({ success: true, action, team: { id: team.id, name: team.name, leaderName: team.leaderName, active: team.isActive } }, 201, correlationId)
+      }
+      if (action === 'update_team') {
+        const values: Record<string, unknown> = { updatedAt: new Date() }; if (data.name !== undefined) values.name = clean(data.name, 160); if (data.leaderName !== undefined) values.leaderName = clean(data.leaderName, 160); if (data.phone !== undefined) values.phone = clean(data.phone, 32) || null; if (data.isActive !== undefined) values.isActive = data.isActive
+        const [team] = await db.update(teams).set(values as any).where(eq(teams.id, String(data.teamId))).returning()
+        if (!team) return reply({ success: false, error: 'Equipe não encontrada.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, teamId: team.id, fields: Object.keys(data).filter(key => key !== 'teamId') }, intentDetected: 'team_update', status: 'PROCESSED' })
+        return reply({ success: true, action, team: { id: team.id, name: team.name, leaderName: team.leaderName, active: team.isActive } }, 200, correlationId)
+      }
+      if (action === 'create_vehicle') {
+        const [vehicle] = await db.insert(vehicles).values({ name: clean(data.name, 160), type: clean(data.type, 64), plate: clean(data.plate, 32) || null, isActive: data.isActive !== false }).returning()
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, vehicleId: vehicle.id }, intentDetected: 'vehicle_create', status: 'PROCESSED' })
+        return reply({ success: true, action, vehicle: safeVehicleSummary(vehicle) }, 201, correlationId)
+      }
+      if (action === 'update_vehicle') {
+        const values: Record<string, unknown> = { updatedAt: new Date() }; if (data.name !== undefined) values.name = clean(data.name, 160); if (data.type !== undefined) values.type = clean(data.type, 64); if (data.plate !== undefined) values.plate = clean(data.plate, 32) || null; if (data.isActive !== undefined) values.isActive = data.isActive
+        const [vehicle] = await db.update(vehicles).set(values as any).where(eq(vehicles.id, String(data.vehicleId))).returning()
+        if (!vehicle) return reply({ success: false, error: 'Veículo não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, vehicleId: vehicle.id, fields: Object.keys(data).filter(key => key !== 'vehicleId') }, intentDetected: 'vehicle_update', status: 'PROCESSED' })
+        return reply({ success: true, action, vehicle: safeVehicleSummary(vehicle) }, 200, correlationId)
+      }
+      if (action === 'create_equipment') {
+        const [item] = await db.insert(equipment).values({ name: clean(data.name, 160), code: clean(data.code, 64) || null, isActive: data.isActive !== false }).returning()
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, equipmentId: item.id }, intentDetected: 'equipment_create', status: 'PROCESSED' })
+        return reply({ success: true, action, equipment: { id: item.id, name: item.name, code: item.code, active: item.isActive } }, 201, correlationId)
+      }
+      if (action === 'update_equipment') {
+        const values: Record<string, unknown> = { updatedAt: new Date() }; if (data.name !== undefined) values.name = clean(data.name, 160); if (data.code !== undefined) values.code = clean(data.code, 64) || null; if (data.isActive !== undefined) values.isActive = data.isActive
+        const [item] = await db.update(equipment).set(values as any).where(eq(equipment.id, String(data.equipmentId))).returning()
+        if (!item) return reply({ success: false, error: 'Equipamento não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, equipmentId: item.id, fields: Object.keys(data).filter(key => key !== 'equipmentId') }, intentDetected: 'equipment_update', status: 'PROCESSED' })
+        return reply({ success: true, action, equipment: { id: item.id, name: item.name, code: item.code, active: item.isActive } }, 200, correlationId)
+      }
+      if (action === 'update_service_request') {
+        const values: Record<string, unknown> = { updatedAt: new Date() }
+        const textFields: Array<[string, string, number]> = [['leadStatus','leadStatus',32],['priority','priority',32],['serviceType','serviceType',64],['problemReported','problemReported',2000],['problemFound','problemFound',2000],['status','status',32],['paymentMethod','paymentMethod',64],['internalNotes','internalNotes',4000],['customerNotes','customerNotes',4000],['cancelReason','cancelReason',2000]]
+        for (const [source, target, limit] of textFields) if (data[source] !== undefined) values[target] = clean(data[source], limit) || null
+        for (const [source, target] of [['assignedTeamId','assignedTeamId'],['vehicleId','vehicleId'],['equipmentId','equipmentId']] as const) if (data[source] !== undefined) values[target] = data[source]
+        if (data.totalAmount !== undefined) values.totalAmount = String(data.totalAmount).replace(',', '.')
+        if (data.warrantyDays !== undefined) values.warrantyDays = Number(data.warrantyDays)
+        if (data.scheduledAt !== undefined) values.scheduledAt = data.scheduledAt ? new Date(String(data.scheduledAt)) : null
+        const [request] = await db.update(serviceRequests).set(values as any).where(eq(serviceRequests.id, String(data.requestId))).returning()
+        if (!request) return reply({ success: false, error: 'Chamado não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, requestId: request.id, fields: Object.keys(data).filter(key => key !== 'requestId') }, intentDetected: 'service_request_update', status: 'PROCESSED' })
+        return reply({ success: true, action, request: { id: request.id, code: request.code, status: request.status } }, 200, correlationId)
+      }
+      if (action === 'update_document' || action === 'archive_document') {
+        const documentId = String(data.documentId); const values: Record<string, unknown> = { updatedAt: new Date() }
+        if (action === 'archive_document') values.status = 'ARQUIVADO'; else { if (data.status !== undefined) values.status = clean(data.status, 32); if (data.paymentMethod !== undefined) values.paymentMethod = clean(data.paymentMethod, 64); if (data.warrantyTerms !== undefined) values.warrantyTerms = clean(data.warrantyTerms, 4000); if (data.technicalNotes !== undefined) values.technicalNotes = clean(data.technicalNotes, 4000) }
+        const [document] = await db.update(officialDocuments).set(values as any).where(eq(officialDocuments.id, documentId)).returning()
+        if (!document) return reply({ success: false, error: 'Documento não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, documentId, fields: Object.keys(data).filter(key => key !== 'documentId') }, intentDetected: action === 'archive_document' ? 'document_archive' : 'document_update', status: 'PROCESSED' })
+        return reply({ success: true, action, document: { id: document.id, docNumber: document.docNumber, status: document.status } }, 200, correlationId)
       }
       const vehicleName = clean(data.vehicleName, 160)
       const matches = data.vehicleId
