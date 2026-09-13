@@ -81,7 +81,7 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
   }
   if (action === 'update_client') {
     if (!/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
-    const editable = ['name', 'phone', 'document', 'email', 'contactPerson', 'notes', 'type', 'source', 'recurrence', 'customerSince', 'lastContactAt', 'nextVisitAt', 'street']
+    const editable = ['name', 'phone', 'document', 'email', 'contactPerson', 'notes', 'type', 'source', 'recurrence', 'customerSince', 'lastContactAt', 'nextVisitAt', 'street', 'number']
     if (!editable.some(key => data[key] !== undefined)) return { ok: false, error: 'Nenhum campo CRM informado para atualização.' }
     if (data.street !== undefined && !clean(data.street, 160)) return { ok: false, error: 'Logradouro inválido.' }
     if (data.phone !== undefined && !digits(data.phone)) return { ok: false, error: 'Telefone inválido.' }
