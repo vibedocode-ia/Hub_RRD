@@ -42,6 +42,7 @@ function googlePayload(event: AgendaEvent) {
 /** Best-effort sync: local scheduling stays successful even when Google is offline. */
 export async function syncAgendaEventToGoogle(event: AgendaEvent) {
   if (!db) return { synced: false, reason: 'DATABASE_UNAVAILABLE' as const }
+  try {
   const token = await accessToken()
   if (!token) {
     await db.update(agendaEvents).set({ googleSyncStatus: 'NOT_CONNECTED', updatedAt: new Date() }).where(eq(agendaEvents.id, event.id))
@@ -62,4 +63,8 @@ export async function syncAgendaEventToGoogle(event: AgendaEvent) {
   const remote = await result.json() as { id?: string }
   await db.update(agendaEvents).set({ googleEventId: remote.id ?? event.googleEventId ?? null, googleSyncStatus: 'SYNCED', googleSyncedAt: new Date(), updatedAt: new Date() }).where(eq(agendaEvents.id, event.id))
   return { synced: true as const }
+  } catch {
+    try { await db.update(agendaEvents).set({ googleSyncStatus: 'FAILED' }).where(eq(agendaEvents.id,event.id)) } catch { /* Local write already committed; never turn it into an API error. */ }
+    return { synced:false, reason:'GOOGLE_SYNC_FAILED' as const }
+  }
 }

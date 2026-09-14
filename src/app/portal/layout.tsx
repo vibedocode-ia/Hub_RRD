@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import { getSessionUser } from '@/lib/auth';
 import { 
@@ -31,10 +32,8 @@ export default async function PortalLayout({
 }) {
   const user = await getSessionUser();
 
-  // Se não houver sessão ativa (ex: no login), renderiza apenas os filhos
-  if (!user) {
-    return <>{children}</>;
-  }
+  // Login lives in the public route group; never render private children without a session.
+  if (!user) redirect('/portal/login');
 
   const navItems = [
     { section: 'Visão geral', label: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
