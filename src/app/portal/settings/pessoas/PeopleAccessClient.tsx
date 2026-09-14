@@ -42,6 +42,15 @@ function formFor(person?: Person): FormState {
   }
 }
 
+type ValidationDetails = { fieldErrors?: Record<string, string[]>, formErrors?: string[] }
+const fieldLabels: Record<string, string> = { name: 'Nome', phone: 'Telefone', email: 'E-mail', password: 'Senha temporária', role: 'Papel local', permissions: 'Permissões' }
+function formatPeopleValidationError(error: unknown, details: unknown): string {
+  const parsed = details && typeof details === 'object' ? details as ValidationDetails : null
+  const fieldErrors = Object.entries(parsed?.fieldErrors ?? {}).flatMap(([field, messages]) => messages.map((message) => `${fieldLabels[field] ?? field}: ${message}`))
+  const formErrors = parsed?.formErrors ?? []
+  return fieldErrors.length || formErrors.length ? [...fieldErrors, ...formErrors].join(' ') : typeof error === 'string' && error ? error : 'Não foi possível salvar a pessoa.'
+}
+
 export default function PeopleAccessClient({ currentUserId }: { currentUserId: string }) {
   const [people, setPeople] = useState<Person[]>([])
   const [error, setError] = useState('')
@@ -78,14 +87,14 @@ export default function PeopleAccessClient({ currentUserId }: { currentUserId: s
     const response = await fetch(isNew ? '/api/settings/people' : `/api/settings/people/${editing?.id}`, { method: isNew ? 'POST' : 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
     const result = await response.json().catch(() => ({}))
     setSaving(false)
-    if (!response.ok) { setError(result.error || 'Não foi possível salvar a pessoa.'); return }
+    if (!response.ok) { setError(formatPeopleValidationError(result.error, result.details)); return }
     setMessage(isNew ? 'Pessoa criada com acesso local ao Hub RRD.' : 'Acessos atualizados e sessões revogadas quando aplicável.')
     setEditing(undefined); await load()
   }
 
   return <section className="space-y-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div><h2 className="flex items-center gap-2 text-lg font-black text-slate-100"><UserRoundCog className="h-5 w-5 text-cyan-400" /> Pessoas e Acessos RRD</h2><p className="mt-1 text-xs text-slate-400">Controle somente o portal e as operações da RR. “Usar Sofia no Hub RRD” exige pessoa local ativa e é revalidado pelo servidor antes de cada operação.</p></div>
+      <div><h2 className="flex items-center gap-2 text-lg font-black text-slate-100"><UserRoundCog className="h-5 w-5 text-cyan-400" /> Pessoas e Acessos RRD</h2><p className="mt-1 text-xs text-slate-400">Controle somente o portal e as operações locais da RR. Este cadastro é opcional para a Sofia: os acessos por WhatsApp são concedidos e revogados pela Central Sofia.</p></div>
       <button onClick={() => open()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-cyan-500"><Plus className="h-4 w-4" /> Nova pessoa</button>
     </div>
     {message && <p className="rounded-xl border border-emerald-800 bg-emerald-950/30 p-3 text-xs text-emerald-300">{message}</p>}

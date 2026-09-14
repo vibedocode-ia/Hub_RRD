@@ -1,5 +1,16 @@
 # Changelog
 
+## V0.12.23 — 2026-09-14
+
+### Fixed
+- Remove a exigência de cadastro/permissão local duplicada para ações Sofia autenticadas pela Central no Hub RRD. O contrato Central → RRD continua fail-closed: Bearer server-to-server, Hub central fixo, chave de idempotência, payload tipado e papel autorizado continuam obrigatórios.
+- Mantém o cadastro local opcional e restrito ao login e às operações do portal RRD; ele não cria, amplia nem revoga grants da Central Sofia.
+- Exibe no formulário de pessoas o campo e a causa da validação rejeitada pela API, em vez da mensagem genérica `Dados de pessoa inválidos.`.
+
+### Verification
+- 37/37 testes de segurança e regressão aprovados.
+- Typecheck e build de produção aprovados.
+
 ## V0.12.22 — 2026-09-14
 
 ### Fixed
