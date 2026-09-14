@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { CreateAgendaEventSchema, CreateContactSchema, normalizeGoogleSettings } from '../validation/contacts-agenda'
 
 test('contato representa pessoa sem empresa e rejeita campos desconhecidos', () => {
-  assert.equal(CreateContactSchema.safeParse({ name: 'João da Silva', phone: '(21) 99999-0000' }).success, true)
+  assert.equal(CreateContactSchema.safeParse({ name: 'João da Silva', phone: '(21) 99999-0000', instagramUrl: 'https://instagram.com/joao' }).success, true)
   assert.equal(CreateContactSchema.safeParse({ name: 'João', arbitrary: 'x' }).success, false)
 })
 

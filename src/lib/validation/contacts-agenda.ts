@@ -11,6 +11,9 @@ export const CreateContactSchema = z.object({
   email: z.string().trim().email().max(254).optional().nullable(),
   title: z.string().trim().max(120).optional().nullable(),
   photoUrl: optionalUrl,
+  linkedinUrl: optionalUrl,
+  instagramUrl: optionalUrl,
+  websiteUrl: optionalUrl,
   clientId: optionalUuid,
   notes: optionalText,
 }).strict()

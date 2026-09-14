@@ -192,7 +192,7 @@ export const clients = pgTable('clients', {
 
 // 3b. Contatos são pessoas independentes, opcionalmente vinculadas a um cliente/empresa.
 export const contacts = pgTable('contacts', {
-  id: uuid('id').primaryKey().defaultRandom(), name: text('name').notNull(), phone: text('phone'), email: text('email'), title: text('title'), photoUrl: text('photo_url'), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), notes: text('notes'), isActive: boolean('is_active').notNull().default(true), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  id: uuid('id').primaryKey().defaultRandom(), name: text('name').notNull(), phone: text('phone'), email: text('email'), title: text('title'), photoUrl: text('photo_url'), linkedinUrl: text('linkedin_url'), instagramUrl: text('instagram_url'), websiteUrl: text('website_url'), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), notes: text('notes'), isActive: boolean('is_active').notNull().default(true), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [index('contacts_client_idx').on(table.clientId), index('contacts_name_idx').on(table.name)])
 
 // 4. Endereços dos Clientes
