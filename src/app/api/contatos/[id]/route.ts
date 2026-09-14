@@ -1,0 +1,8 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { eq } from 'drizzle-orm'
+import { contacts, db } from '@/db'
+import { requireLocalPermission } from '@/lib/require-local-permission'
+import { UpdateContactSchema } from '@/lib/validation/contacts-agenda'
+type Params={params:Promise<{id:string}>}
+export async function PATCH(req:NextRequest,{params}:Params){const auth=await requireLocalPermission('crm.write');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});if(!db)return NextResponse.json({error:'Banco indisponível'},{status:503});const parsed=UpdateContactSchema.safeParse(await req.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:'Dados inválidos.'},{status:422});const{id}=await params;const [contact]=await db.update(contacts).set({...parsed.data,updatedAt:new Date()}).where(eq(contacts.id,id)).returning();return contact?NextResponse.json({success:true,contact}):NextResponse.json({error:'Contato não encontrado'},{status:404})}
+export async function DELETE(_req:NextRequest,{params}:Params){const auth=await requireLocalPermission('crm.write');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});if(!db)return NextResponse.json({error:'Banco indisponível'},{status:503});const{id}=await params;const [contact]=await db.update(contacts).set({isActive:false,updatedAt:new Date()}).where(eq(contacts.id,id)).returning();return contact?NextResponse.json({success:true,archived:true}):NextResponse.json({error:'Contato não encontrado'},{status:404})}

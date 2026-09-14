@@ -117,6 +117,8 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   phone: text('phone').notNull().unique(), // Ex: '5521996699191'
   email: text('email'),
+  jobTitle: text('job_title'),
+  photoUrl: text('photo_url'),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull().default(USER_ROLES.ADMIN),
   isActive: boolean('is_active').notNull().default(true),
@@ -187,6 +189,11 @@ export const clients = pgTable('clients', {
   index('clients_normalized_phone_idx').on(table.normalizedPhone),
   index('clients_created_at_idx').on(table.createdAt),
 ]);
+
+// 3b. Contatos são pessoas independentes, opcionalmente vinculadas a um cliente/empresa.
+export const contacts = pgTable('contacts', {
+  id: uuid('id').primaryKey().defaultRandom(), name: text('name').notNull(), phone: text('phone'), email: text('email'), title: text('title'), photoUrl: text('photo_url'), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), notes: text('notes'), isActive: boolean('is_active').notNull().default(true), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [index('contacts_client_idx').on(table.clientId), index('contacts_name_idx').on(table.name)])
 
 // 4. Endereços dos Clientes
 export const clientAddresses = pgTable('client_addresses', {
@@ -275,6 +282,11 @@ export const serviceRequests = pgTable('service_requests', {
   index('service_requests_client_id_idx').on(table.clientId),
   index('service_requests_created_at_idx').on(table.createdAt),
 ]);
+
+// 6b. Agenda local: fonte de verdade; Google é apenas destino de sincronização opcional.
+export const agendaEvents = pgTable('agenda_events', {
+  id: uuid('id').primaryKey().defaultRandom(), title: text('title').notNull(), description: text('description'), startsAt: timestamp('starts_at').notNull(), endsAt: timestamp('ends_at').notNull(), location: text('location'), status: text('status').notNull().default('SCHEDULED'), contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'set null' }), googleEventId: text('google_event_id'), googleSyncStatus: text('google_sync_status').notNull().default('NOT_CONNECTED'), googleSyncedAt: timestamp('google_synced_at'), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [index('agenda_events_starts_at_idx').on(table.startsAt), index('agenda_events_contact_idx').on(table.contactId), index('agenda_events_client_idx').on(table.clientId)])
 
 // 7. Documentos Oficiais Gerados (Orçamentos, Recibos e Laudos)
 export const officialDocuments = pgTable('official_documents', {
@@ -408,6 +420,11 @@ export const sofiaResponseProfiles = pgTable('sofia_response_profiles', {
 }, (table) => [
   index('sofia_response_profiles_audience_idx').on(table.audience),
 ]);
+
+// 10b. Preferência Google e tokens cifrados. Nunca persiste token OAuth em texto puro.
+export const googleIntegrations = pgTable('google_integrations', {
+  id: uuid('id').primaryKey().defaultRandom(), userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(), primaryEmail: text('primary_email'), status: text('status').notNull().default('DISCONNECTED'), tokenCiphertext: text('token_ciphertext'), tokenIv: text('token_iv'), tokenTag: text('token_tag'), connectedAt: timestamp('connected_at'), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
 
 // 11. Catálogo editável de serviços RR
 export const serviceCatalog = pgTable('service_catalog', {

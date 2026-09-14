@@ -1,0 +1,6 @@
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { randomBytes } from 'crypto'
+import { requireLocalPermission } from '@/lib/require-local-permission'
+import { createOAuthState, getGoogleOAuthSetupError } from '@/lib/google-oauth'
+export async function GET(){const auth=await requireLocalPermission('settings.manage');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});const err=getGoogleOAuthSetupError();if(err)return NextResponse.json({error:err},{status:503});const nonce=randomBytes(24).toString('base64url');const state=createOAuthState(auth.access.id,nonce,process.env.GOOGLE_TOKEN_ENCRYPTION_KEY!);const store=await cookies();store.set('rrd_google_oauth_nonce',nonce,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:600});const params=new URLSearchParams({client_id:process.env.GOOGLE_OAUTH_CLIENT_ID!,redirect_uri:'https://rrd.vibedocode.pro/api/google/oauth/callback',response_type:'code',scope:'https://www.googleapis.com/auth/calendar.events',access_type:'offline',prompt:'consent',state});return NextResponse.redirect('https://accounts.google.com/o/oauth2/v2/auth?'+params.toString())}

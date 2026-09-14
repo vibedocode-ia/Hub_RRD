@@ -12,6 +12,8 @@ export interface SessionUser {
   phone: string;
   email: string | null;
   role: string;
+  jobTitle: string | null;
+  photoUrl: string | null;
 }
 
 /**
@@ -66,6 +68,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
           phone: users.phone,
           email: users.email,
           role: users.role,
+          jobTitle: users.jobTitle,
+          photoUrl: users.photoUrl,
           isActive: users.isActive,
         },
       })

@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 const cards = [
   { href: '/portal/settings/sofia', title: 'Sofia', description: 'Perfis de atendimento, contexto, dados permitidos e respostas.', icon: Bot, tone: 'border-cyan-800/70 bg-cyan-950/20' },
   { href: '/portal/settings/pessoas', title: 'Acessos', description: 'Pessoas locais, papéis, permissões e sessões do Hub RRD.', icon: UserRoundCog, tone: 'border-violet-800/70 bg-violet-950/20' },
+  { href: '/portal/settings/google', title: 'Google do Hub', description: 'Gmail operacional, Calendar e futuras integrações com Drive e Contacts.', icon: Settings, tone: 'border-sky-800/70 bg-sky-950/20' },
   { href: '/portal/operacional#equipes', title: 'Equipes', description: 'Equipes de campo, líderes, contatos e disponibilidade.', icon: Users, tone: 'border-emerald-800/70 bg-emerald-950/20' },
   { href: '/portal/operacional#frotas', title: 'Frotas', description: 'Veículos, placas, checklists e disponibilidade operacional.', icon: Truck, tone: 'border-amber-800/70 bg-amber-950/20' },
   { href: '/portal/operacional#equipamentos', title: 'Equipamentos', description: 'Recursos técnicos e status de uso na operação.', icon: Wrench, tone: 'border-blue-800/70 bg-blue-950/20' },

@@ -71,6 +71,13 @@
       "when": 1789334901798,
       "tag": "0009_rrd_local_sofia_access",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789334901799,
+      "tag": "0010_contacts_agenda_google",
+      "breakpoints": true
     }
   ]
 }

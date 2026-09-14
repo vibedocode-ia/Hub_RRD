@@ -1,0 +1,9 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { eq } from 'drizzle-orm'
+import { agendaEvents, db } from '@/db'
+import { requireLocalPermission } from '@/lib/require-local-permission'
+import { UpdateAgendaEventSchema } from '@/lib/validation/contacts-agenda'
+import { syncAgendaEventToGoogle } from '@/lib/google-calendar'
+type Params={params:Promise<{id:string}>}
+export async function PATCH(req:NextRequest,{params}:Params){const auth=await requireLocalPermission('operations.write');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});if(!db)return NextResponse.json({error:'Banco indisponível'},{status:503});const parsed=UpdateAgendaEventSchema.safeParse(await req.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:'Dados de agenda inválidos.'},{status:422});const{id}=await params;const patch:any={...parsed.data,updatedAt:new Date()};if(patch.startsAt)patch.startsAt=new Date(patch.startsAt);if(patch.endsAt)patch.endsAt=new Date(patch.endsAt);const[event]=await db.update(agendaEvents).set(patch).where(eq(agendaEvents.id,id)).returning();if(!event)return NextResponse.json({error:'Evento não encontrado'},{status:404});const sync=event.status==='SCHEDULED'?await syncAgendaEventToGoogle(event):{synced:false,reason:'CANCELLED' as const};return NextResponse.json({success:true,event,sync})}
+export async function DELETE(_req:NextRequest,{params}:Params){const auth=await requireLocalPermission('operations.write');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});if(!db)return NextResponse.json({error:'Banco indisponível'},{status:503});const{id}=await params;const[event]=await db.update(agendaEvents).set({status:'CANCELLED',updatedAt:new Date()}).where(eq(agendaEvents.id,id)).returning();return event?NextResponse.json({success:true,cancelled:true}):NextResponse.json({error:'Evento não encontrado'},{status:404})}

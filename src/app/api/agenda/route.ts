@@ -1,0 +1,8 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { asc, eq } from 'drizzle-orm'
+import { agendaEvents, db } from '@/db'
+import { requireLocalPermission } from '@/lib/require-local-permission'
+import { CreateAgendaEventSchema } from '@/lib/validation/contacts-agenda'
+import { syncAgendaEventToGoogle } from '@/lib/google-calendar'
+export async function GET(){const auth=await requireLocalPermission('operations.read');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});if(!db)return NextResponse.json({error:'Banco indisponível'},{status:503});return NextResponse.json({success:true,events:await db.select().from(agendaEvents).where(eq(agendaEvents.status,'SCHEDULED')).orderBy(asc(agendaEvents.startsAt))})}
+export async function POST(req:NextRequest){const auth=await requireLocalPermission('operations.write');if(!auth)return NextResponse.json({error:'Permissão insuficiente'},{status:403});if(!db)return NextResponse.json({error:'Banco indisponível'},{status:503});const parsed=CreateAgendaEventSchema.safeParse(await req.json().catch(()=>null));if(!parsed.success)return NextResponse.json({error:'Dados de agenda inválidos.'},{status:422});const[event]=await db.insert(agendaEvents).values({...parsed.data,startsAt:new Date(parsed.data.startsAt),endsAt:new Date(parsed.data.endsAt),createdById:auth.access.id}).returning();const sync=await syncAgendaEventToGoogle(event);return NextResponse.json({success:true,event,sync},{status:201})}
