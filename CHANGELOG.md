@@ -1,5 +1,19 @@
 # Changelog
 
+## V0.12.22 — 2026-09-14
+
+### Fixed
+- Corrige o erro `Dados de perfil inválidos` causado pelo envio de campos internos não aceitos pela API.
+
+### Added
+- Permite escolher a foto diretamente pelo dispositivo, com preview e remoção.
+- Aceita imagens JPG, PNG e WebP de até 2 MB, sem depender de colar URL.
+
+### Verification
+- 3 testes de perfil aprovados.
+- Typecheck aprovado.
+- Build de produção aprovado com `/portal/perfil` e `/api/profile`.
+
 ## V0.12.21 — 2026-09-14
 
 ### Changed
