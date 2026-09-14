@@ -1,5 +1,19 @@
 # Changelog
 
+## V0.12.21 — 2026-09-14
+
+### Changed
+- Evolui Meu perfil do Hub RRD para uma experiência completa de identidade pessoal e profissional.
+- Adiciona resumo visual com avatar/foto, iniciais, cargo e contexto do Hub.
+- Adiciona empresa, WhatsApp, cidade, estado, Instagram, website e observações pessoais.
+- Adiciona validação server-side de telefone, e-mail e URLs seguras.
+- Registra alterações de perfil em auditoria local sem expor dados sensíveis.
+
+### Verification
+- 17 testes automatizados aprovados.
+- Typecheck aprovado após limpeza dos artefatos antigos do Next.js.
+- Build de produção aprovado com 27 páginas e `/portal/perfil`.
+
 ## V0.12.07 — 2026-09-12
 
 ### Added
