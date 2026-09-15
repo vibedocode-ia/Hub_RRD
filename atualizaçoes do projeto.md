@@ -1,3 +1,6 @@
+### V0.12.26 (2026-09-15) - Inclui emissão e envio de documentos nas permissões padrão do papel ADMIN.
+- **Release:** Site + Hub RRD.
+
 ### V0.12.25 (2026-09-15) - Permite papéis locais iguais e antecipa bloqueio de papel superior no formulário de pessoas.
 - **Release:** Site + Hub RRD.
 

@@ -34,7 +34,7 @@ const allPermissions = [...RRD_PERMISSIONS] as RrdPermission[]
 
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<LocalUserRole, readonly RrdPermission[]> = {
   OWNER: allPermissions,
-  ADMIN: allPermissions.filter((permission) => permission !== 'documents.send'),
+  ADMIN: allPermissions,
   OPERATOR: [
     'crm.read',
     'crm.write',
