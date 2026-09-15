@@ -99,7 +99,7 @@ export default async function DocumentosPage() {
                     </span>
                     <span className="text-sm font-bold text-slate-100">{doc.clientName}</span>
                     <span className="text-[10px] font-bold uppercase bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded-full">
-                      {doc.docType === 'RECIBO_GARANTIA' ? 'Recibo + Garantia' : 'Laudo / OS'}
+                      {doc.docType === 'RECIBO_GARANTIA' ? 'Recibo + Garantia' : doc.docType === 'ORCAMENTO_TECNICO' ? 'Orçamento Técnico' : doc.docType === 'ORCAMENTO' ? 'Orçamento' : 'Laudo / OS'}
                     </span>
                   </div>
                   <div className="text-xs text-slate-400">

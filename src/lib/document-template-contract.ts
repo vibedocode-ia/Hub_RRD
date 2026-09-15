@@ -10,7 +10,7 @@ const field = z.object({
 
 const input = z.object({
   name: z.string().trim().min(2).max(120),
-  docType: z.enum(['RECIBO_GARANTIA', 'LAUDO_TECNICO', 'ORCAMENTO']),
+  docType: z.enum(['RECIBO_GARANTIA', 'LAUDO_TECNICO', 'ORCAMENTO', 'ORCAMENTO_TECNICO']),
   version: z.string().regex(/^[A-Z][A-Z0-9_]{2,63}$/),
   description: z.string().trim().max(500).optional(),
   fields: z.array(field).min(1).max(80).refine(values => new Set(values.map(value => value.key)).size === values.length, 'Campos duplicados.'),

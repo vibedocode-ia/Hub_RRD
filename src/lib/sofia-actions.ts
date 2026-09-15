@@ -167,7 +167,7 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
   if (action === 'create_equipment' && !clean(data.name, 160)) return { ok: false, error: 'Equipamento inválido.' }
   if (action === 'update_equipment' && (!isUuid(data.equipmentId) || !['name', 'code', 'isActive'].some(key => data[key] !== undefined))) return { ok: false, error: 'Equipamento inválido.' }
   if (action === 'update_service_request' && (!isUuid(data.requestId) || !['leadStatus', 'priority', 'serviceType', 'problemReported', 'problemFound', 'status', 'scheduledAt', 'assignedTeamId', 'vehicleId', 'equipmentId', 'totalAmount', 'paymentMethod', 'internalNotes', 'customerNotes', 'warrantyDays', 'cancelReason'].some(key => data[key] !== undefined))) return { ok: false, error: 'Chamado inválido.' }
-  if (action === 'list_documents' && data.docType !== undefined && !['ORCAMENTO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO'].includes(clean(data.docType, 32))) return { ok: false, error: 'Tipo de documento inválido.' }
+  if (action === 'list_documents' && data.docType !== undefined && !['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO'].includes(clean(data.docType, 32))) return { ok: false, error: 'Tipo de documento inválido.' }
   if (action === 'update_document' && (!isUuid(data.documentId) || !['status', 'paymentMethod', 'warrantyTerms', 'technicalNotes'].some(key => data[key] !== undefined))) return { ok: false, error: 'Documento inválido.' }
   if (action === 'archive_document' && !isUuid(data.documentId)) return { ok: false, error: 'Documento inválido.' }
   return { ok: true, action, data }

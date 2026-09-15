@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { serviceRequestId, docType, amount, paymentMethod, warrantyDays, warrantyTerms, amountInWords, technicalNotes } = body;
-    if (!serviceRequestId || !['RECIBO_GARANTIA', 'LAUDO_TECNICO', 'ORCAMENTO'].includes(docType)) {
+    if (!serviceRequestId || !['RECIBO_GARANTIA', 'LAUDO_TECNICO', 'ORCAMENTO', 'ORCAMENTO_TECNICO'].includes(docType)) {
       return NextResponse.json({ error: 'Informe o chamado e um tipo de documento válido.' }, { status: 400 });
     }
     if (!db) return NextResponse.json({ error: 'Banco de dados indisponível' }, { status: 500 });
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const formattedDate = now.toLocaleDateString('pt-BR');
     const fullDateText = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     const suffix = Math.floor(1000 + Math.random() * 9000);
-    const docNumber = docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : docType === 'LAUDO_TECNICO' ? `OS-${year}-${suffix}` : `ORC-${year}-${suffix}`;
+    const docNumber = docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : docType === 'LAUDO_TECNICO' ? `OS-${year}-${suffix}` : docType === 'ORCAMENTO_TECNICO' ? `ORCT-${year}-${suffix}` : `ORC-${year}-${suffix}`;
     const resolvedPayment = String(paymentMethod || serviceRequest.paymentMethod || '').trim();
     if (!resolvedPayment) return NextResponse.json({ error: 'Informe a forma de pagamento.' }, { status: 400 });
 
@@ -95,8 +95,19 @@ export async function POST(req: NextRequest) {
             warrantyDays: Number(warrantyDays || serviceRequest.warrantyDays || 30),
             warrantyTerms: String(warrantyTerms || '').trim(),
           },
-        } : {
-          type: 'ORCAMENTO' as const,
+        } : docType === 'ORCAMENTO_TECNICO' ? {
+     type: 'ORCAMENTO_TECNICO' as const,
+     data: {
+       docNumber, issueDate: formattedDate, issueCity: 'Niterói', serviceTitle: serviceRequest.serviceType,
+       contractorName: cli.name, contractorDocument: cli.document, contractorAddress: fullAddress,
+       contractedName: 'RR DESENTUPIDORA E DEDETIZADORA', contractedDocument: '53.102.506/0001-78', contractedContact: '21 99669-9191',
+       object: serviceRequest.serviceType, scopeItems: String(serviceRequest.problemReported || '').split(/\n|•|-/).map((item) => item.trim()).filter(Boolean),
+       responsibility: 'Todo o serviço e sua responsabilidade técnica será de inteira responsabilidade da empresa RR DESENTUPIDORA E DEDETIZADORA, deixando a contratante isenta de custos adicionais.',
+       totalAmount: formattedAmount, amountInWords: amountText, includedDescription: String(serviceRequest.problemReported || '').trim(),
+       paymentMethod: resolvedPayment, validityDays: '7 dias', executionDeadline: 'Imediato / a combinar', warranty: String(warrantyTerms || '30 dias no mesmo ponto desentupido').trim(),
+     },
+   } : {
+     type: 'ORCAMENTO' as const,
           data: {
             docNumber, issueDate: formattedDate, contractor: cli.name,
             object: serviceRequest.serviceType, serviceScope: serviceRequest.problemReported,

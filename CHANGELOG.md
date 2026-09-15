@@ -1,5 +1,17 @@
 # Changelog
 
+## V0.12.28 — 2026-09-15
+
+### Added
+- Adiciona o modelo canônico **Orçamento Técnico** baseado no PDF fornecido pela RR Desentupidora.
+- Preserva a fonte PDF de referência e cria renderer separado em duas páginas, sem substituir o modelo de orçamento existente.
+- Inclui contratante, contratada, CNPJs, endereço da obra, objeto, escopo, responsabilidade, valor por extenso, condições comerciais, garantia e assinaturas.
+- Expõe `ORCAMENTO_TECNICO` na biblioteca de modelos, no renderer, na emissão e na listagem de documentos.
+
+### Verification
+- 7/7 testes focais aprovados.
+- Typecheck, build de produção e `git diff --check` aprovados.
+
 ## V0.12.24 — 2026-09-15
 
 ### Fixed
