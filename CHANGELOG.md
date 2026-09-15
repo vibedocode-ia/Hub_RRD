@@ -1,5 +1,16 @@
 # Changelog
 
+## V0.12.24 — 2026-09-15
+
+### Fixed
+- A criação de pessoa local em Pessoas e Acessos RRD agora aceita e persiste o status `isActive` explicitamente selecionado, inclusive contas inicialmente inativas.
+
+### Security
+- O contrato de criação permanece estrito; campos desconhecidos, grants da Central e permissões fora do papel local continuam rejeitados. A mudança não cria acesso Central ou WhatsApp.
+
+### Verification
+- Regressão de criação ativa/inativa, testes focais de RBAC/Sofia, suíte de segurança, typecheck e build de produção aprovados.
+
 ## V0.12.23 — 2026-09-14
 
 ### Fixed

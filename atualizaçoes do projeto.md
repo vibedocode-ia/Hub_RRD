@@ -1,3 +1,6 @@
+### V0.12.24 (2026-09-15) - Corrige criação de pessoa local com status ativo ou inativo explícito
+- **Release:** Site + Hub RRD.
+
 ### V0.12.08 (2026-09-12) - Retenção auditável de documentos e proveniência canônica de modelos
 - **Release:** Site + Hub RRD.
 

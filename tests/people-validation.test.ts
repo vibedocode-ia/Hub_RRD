@@ -2,13 +2,27 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CreateLocalPersonSchema, UpdateLocalPersonSchema } from '../src/lib/validation/people'
 
-test('create local person accepts only a local role and declared permissions', () => {
+test('create local person accepts an explicitly active local account', () => {
   const parsed = CreateLocalPersonSchema.safeParse({
     name: 'Operador QA',
     phone: '5521999999999',
     password: 'senha-temporaria-segura',
     role: 'OPERATOR',
     permissions: ['crm.read', 'documents.prepare'],
+    isActive: true,
+  })
+
+  assert.equal(parsed.success, true)
+})
+
+test('create local person accepts an explicitly inactive local account', () => {
+  const parsed = CreateLocalPersonSchema.safeParse({
+    name: 'Operador QA',
+    phone: '5521999999999',
+    password: 'senha-temporaria-segura',
+    role: 'OPERATOR',
+    permissions: ['crm.read', 'documents.prepare'],
+    isActive: false,
   })
 
   assert.equal(parsed.success, true)

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       email: input.email || null,
       passwordHash: hashPassword(input.password),
       role: input.role,
-      isActive: true,
+      isActive: input.isActive,
     }).returning()
     await tx.insert(userPermissions).values(input.permissions.map((permission) => ({ userId: person.id, permissionKey: permission, grantedById: actor.id })))
     await tx.insert(auditEvents).values({ actorUserId: actor.id, action: 'person.created', targetType: 'user', targetId: person.id, metadata: { role: person.role, permissionCount: input.permissions.length } })
