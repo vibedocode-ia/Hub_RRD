@@ -26,10 +26,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   if (target.id === actor.id) {
     if (input.isActive === false) return NextResponse.json({ error: 'Você não pode desativar a própria conta.' }, { status: 409 })
     if (input.role || input.permissions) return NextResponse.json({ error: 'Sua própria conta não pode alterar papel ou permissões.' }, { status: 403 })
-  } else if (!isRoleManageableBy(actor.role, target.role as typeof actor.role)) return NextResponse.json({ error: 'Não é permitido alterar pessoa com papel igual ou superior ao seu.' }, { status: 403 })
+  } else if (!isRoleManageableBy(actor.role, target.role as typeof actor.role)) return NextResponse.json({ error: 'Não é permitido alterar pessoa com papel superior ao seu.' }, { status: 403 })
 
   const nextRole = input.role ?? target.role as typeof actor.role
-  if (nextRole !== target.role && !isRoleManageableBy(actor.role, nextRole)) return NextResponse.json({ error: 'Não é permitido atribuir papel igual ou superior ao seu.' }, { status: 403 })
+  if (nextRole !== target.role && !isRoleManageableBy(actor.role, nextRole)) return NextResponse.json({ error: 'Não é permitido atribuir papel superior ao seu.' }, { status: 403 })
   if (input.permissions && !permissionsAreAllowedForRole(nextRole, input.permissions)) return NextResponse.json({ error: 'As permissões precisam ser compatíveis com o papel local resultante.' }, { status: 422 })
   if (input.permissions?.some((permission) => !actor.permissions.includes(permission))) return NextResponse.json({ error: 'Não é permitido delegar uma permissão que você não possui.' }, { status: 403 })
 

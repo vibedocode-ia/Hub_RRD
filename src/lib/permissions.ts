@@ -64,12 +64,12 @@ export function hasPermission(user: LocalUserAccess | null | undefined, permissi
   return Boolean(user?.isActive && user.permissions.includes(permission))
 }
 
-/** A person may manage only roles below their own local authority. */
+/** A person may manage roles at or below their own local authority. */
 export function permissionsAreAllowedForRole(role: LocalUserRole, permissions: readonly RrdPermission[]): boolean {
   const allowed = new Set(DEFAULT_PERMISSIONS_BY_ROLE[role])
   return permissions.every((permission) => allowed.has(permission))
 }
 
 export function isRoleManageableBy(actorRole: LocalUserRole, targetRole: LocalUserRole): boolean {
-  return roleRank[actorRole] > roleRank[targetRole]
+  return roleRank[actorRole] >= roleRank[targetRole]
 }

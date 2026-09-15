@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Dados de pessoa inválidos.', details: parsed.error.flatten() }, { status: 422 })
   const input = parsed.data
 
-  if (!isRoleManageableBy(actor.role, input.role)) return NextResponse.json({ error: 'Não é permitido criar pessoa com papel igual ou superior ao seu.' }, { status: 403 })
+  if (!isRoleManageableBy(actor.role, input.role)) return NextResponse.json({ error: 'Não é permitido criar pessoa com papel superior ao seu.' }, { status: 403 })
   if (input.permissions.some((permission) => !actor.permissions.includes(permission))) return NextResponse.json({ error: 'Não é permitido delegar uma permissão que você não possui.' }, { status: 403 })
 
   const existing = await db.select({ id: users.id }).from(users).where(eq(users.phone, input.phone)).limit(1)

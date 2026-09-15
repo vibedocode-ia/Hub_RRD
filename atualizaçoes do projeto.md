@@ -1,3 +1,6 @@
+### V0.12.25 (2026-09-15) - Permite papéis locais iguais e antecipa bloqueio de papel superior no formulário de pessoas.
+- **Release:** Site + Hub RRD.
+
 ### V0.12.24 (2026-09-15) - Corrige criação de pessoa local com status ativo/inativo explícito
 - **Release:** Site + Hub RRD.
 
