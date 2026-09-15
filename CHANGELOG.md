@@ -1,5 +1,13 @@
 # Changelog
 
+## V0.12.29 — 2026-09-15
+
+### Added
+- Adiciona o botão **Emitir Orçamento Técnico** à fila de rascunhos da Sofia, conectado ao tipo `ORCAMENTO_TECNICO`.
+
+### Verification
+- Typecheck, build e testes focais aprovados antes do deploy.
+
 ## V0.12.28 — 2026-09-15
 
 ### Added
