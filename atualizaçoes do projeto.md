@@ -1,3 +1,6 @@
+### V0.12.27 (2026-09-15) - Mantém erros de criação e edição de pessoas exclusivamente no modal do formulário.
+- **Release:** Site + Hub RRD.
+
 ### V0.12.26 (2026-09-15) - Inclui emissão e envio de documentos nas permissões padrão do papel ADMIN.
 - **Release:** Site + Hub RRD.
 

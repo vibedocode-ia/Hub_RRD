@@ -53,7 +53,8 @@ function formatPeopleValidationError(error: unknown, details: unknown): string {
 
 export default function PeopleAccessClient({ currentUserId, currentUserRole }: { currentUserId: string, currentUserRole: LocalUserRole }) {
   const [people, setPeople] = useState<Person[]>([])
-  const [error, setError] = useState('')
+  const [pageError, setPageError] = useState('')
+  const [formError, setFormError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Person | null | undefined>(undefined)
@@ -64,13 +65,13 @@ export default function PeopleAccessClient({ currentUserId, currentUserRole }: {
     setLoading(true)
     const response = await fetch('/api/settings/people')
     const payload = await response.json().catch(() => ({}))
-    if (!response.ok) setError(payload.error || 'Não foi possível carregar as pessoas.')
-    else setPeople(payload.people || [])
+    if (!response.ok) setPageError(payload.error || 'Não foi possível carregar as pessoas.')
+    else { setPeople(payload.people || []); setPageError('') }
     setLoading(false)
   }
   useEffect(() => { void load() }, [])
 
-  function open(person?: Person) { setError(''); setMessage(''); setEditing(person ?? null); setForm(formFor(person)) }
+  function open(person?: Person) { setFormError(''); setMessage(''); setEditing(person ?? null); setForm(formFor(person)) }
   function changeRole(role: LocalUserRole) { setForm((current) => ({ ...current, role, permissions: [...DEFAULT_PERMISSIONS_BY_ROLE[role]] })) }
   function toggle(permission: RrdPermission) { setForm((current) => ({ ...current, permissions: current.permissions.includes(permission) ? current.permissions.filter((item) => item !== permission) : [...current.permissions, permission] })) }
   const selectedRoleManageable = isRoleManageableBy(currentUserRole, form.role)
@@ -79,8 +80,8 @@ export default function PeopleAccessClient({ currentUserId, currentUserRole }: {
     event.preventDefault()
     const isNew = editing === null
     const isSelf = !isNew && editing?.id === currentUserId
-    if (!isSelf && !selectedRoleManageable) { setError('Escolha um papel igual ou inferior ao seu antes de salvar.'); return }
-    setSaving(true); setError(''); setMessage('')
+    if (!isSelf && !selectedRoleManageable) { setFormError('Escolha um papel igual ou inferior ao seu antes de salvar.'); return }
+    setSaving(true); setFormError(''); setMessage('')
     const payload = {
       name: form.name, ...(isNew ? { phone: form.phone, password: form.password } : {}),
       ...(form.email ? { email: form.email } : (!isNew ? { email: null } : {})),
@@ -90,7 +91,7 @@ export default function PeopleAccessClient({ currentUserId, currentUserRole }: {
     const response = await fetch(isNew ? '/api/settings/people' : `/api/settings/people/${editing?.id}`, { method: isNew ? 'POST' : 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
     const result = await response.json().catch(() => ({}))
     setSaving(false)
-    if (!response.ok) { setError(formatPeopleValidationError(result.error, result.details)); return }
+    if (!response.ok) { setFormError(formatPeopleValidationError(result.error, result.details)); return }
     setMessage(isNew ? 'Pessoa criada com acesso local ao Hub RRD.' : 'Acessos atualizados e sessões revogadas quando aplicável.')
     setEditing(undefined); await load()
   }
@@ -101,9 +102,9 @@ export default function PeopleAccessClient({ currentUserId, currentUserRole }: {
       <button onClick={() => open()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-cyan-500"><Plus className="h-4 w-4" /> Nova pessoa</button>
     </div>
     {message && <p className="rounded-xl border border-emerald-800 bg-emerald-950/30 p-3 text-xs text-emerald-300">{message}</p>}
-    {error && <p className="rounded-xl border border-red-800 bg-red-950/30 p-3 text-xs text-red-300">{error}</p>}
+    {pageError && <p className="rounded-xl border border-red-800 bg-red-950/30 p-3 text-xs text-red-300">{pageError}</p>}
     {loading ? <p className="text-sm text-slate-400">Carregando pessoas...</p> : <div className="grid gap-3">{people.map((person) => <article key={person.id} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><h3 className="font-bold text-slate-100">{person.name}</h3><span className={person.isActive ? 'rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400' : 'rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-400'}>{person.isActive ? 'ATIVO' : 'DESATIVADO'}</span></div><p className="mt-1 text-xs text-slate-400">{person.phone} · {person.role}</p><p className="mt-2 text-[11px] text-slate-500">{person.permissions.map((permission) => labels[permission]).join(' · ') || 'Sem permissões'}</p></div><button onClick={() => open(person)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-cyan-300 hover:bg-slate-700"><Pencil className="h-3.5 w-3.5" /> Editar</button></div></article>)}</div>}
-    {editing !== undefined && <div className="fixed inset-0 z-[100] flex items-end bg-slate-950/80 p-3 sm:items-center sm:justify-center"><form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"><div className="mb-5 flex items-center justify-between"><div><h3 className="font-black text-slate-100">{editing === null ? 'Nova pessoa local' : 'Editar pessoa local'}</h3><p className="text-xs text-slate-400">Nunca cria acesso na Central Sofia.</p></div><button type="button" onClick={() => setEditing(undefined)} className="text-slate-400 hover:text-white"><X /></button></div>{error && <p className="mb-4 rounded-xl bg-red-950/40 p-3 text-xs text-red-300">{error}</p>}<div className="grid gap-3 sm:grid-cols-2"><Field label="Nome"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Field><Field label="Telefone (DDI+DDD)"><input required disabled={editing !== null} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value.replace(/\D/g, '') })} /></Field><Field label="E-mail (opcional)"><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></Field><Field label={editing === null ? 'Senha temporária' : 'Nova senha (opcional)'}><input type="password" required={editing === null} minLength={12} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></Field><Field label="Papel local"><select value={form.role} onChange={(event) => changeRole(event.target.value as LocalUserRole)}>{LOCAL_USER_ROLES.map((role) => <option key={role} disabled={!isRoleManageableBy(currentUserRole, role)}>{role}</option>)}</select>{!selectedRoleManageable && <p className="text-[11px] font-medium text-amber-300">Escolha um papel igual ou inferior ao seu antes de salvar.</p>}</Field><label className="flex items-center gap-2 pt-6 text-xs font-bold text-slate-300"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} /> Conta ativa</label></div><div className="mt-5"><p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Áreas permitidas</p><div className="grid gap-2 sm:grid-cols-2">{RRD_PERMISSIONS.map((permission) => <label key={permission} className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-2 text-xs text-slate-300"><input type="checkbox" checked={form.permissions.includes(permission)} onChange={() => toggle(permission)} /> {labels[permission]}</label>)}</div></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setEditing(undefined)} className="rounded-xl px-4 py-2 text-xs font-bold text-slate-400">Cancelar</button><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"><CheckCircle2 className="h-4 w-4" /> {saving ? 'Salvando...' : 'Salvar acessos'}</button></div></form></div>}
+    {editing !== undefined && <div className="fixed inset-0 z-[100] flex items-end bg-slate-950/80 p-3 sm:items-center sm:justify-center"><form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"><div className="mb-5 flex items-center justify-between"><div><h3 className="font-black text-slate-100">{editing === null ? 'Nova pessoa local' : 'Editar pessoa local'}</h3><p className="text-xs text-slate-400">Nunca cria acesso na Central Sofia.</p></div><button type="button" onClick={() => setEditing(undefined)} className="text-slate-400 hover:text-white"><X /></button></div>{formError && <p className="mb-4 rounded-xl bg-red-950/40 p-3 text-xs text-red-300">{formError}</p>}<div className="grid gap-3 sm:grid-cols-2"><Field label="Nome"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Field><Field label="Telefone (DDI+DDD)"><input required disabled={editing !== null} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value.replace(/\D/g, '') })} /></Field><Field label="E-mail (opcional)"><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></Field><Field label={editing === null ? 'Senha temporária' : 'Nova senha (opcional)'}><input type="password" required={editing === null} minLength={12} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></Field><Field label="Papel local"><select value={form.role} onChange={(event) => changeRole(event.target.value as LocalUserRole)}>{LOCAL_USER_ROLES.map((role) => <option key={role} disabled={!isRoleManageableBy(currentUserRole, role)}>{role}</option>)}</select>{!selectedRoleManageable && <p className="text-[11px] font-medium text-amber-300">Escolha um papel igual ou inferior ao seu antes de salvar.</p>}</Field><label className="flex items-center gap-2 pt-6 text-xs font-bold text-slate-300"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} /> Conta ativa</label></div><div className="mt-5"><p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Áreas permitidas</p><div className="grid gap-2 sm:grid-cols-2">{RRD_PERMISSIONS.map((permission) => <label key={permission} className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 p-2 text-xs text-slate-300"><input type="checkbox" checked={form.permissions.includes(permission)} onChange={() => toggle(permission)} /> {labels[permission]}</label>)}</div></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setEditing(undefined)} className="rounded-xl px-4 py-2 text-xs font-bold text-slate-400">Cancelar</button><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"><CheckCircle2 className="h-4 w-4" /> {saving ? 'Salvando...' : 'Salvar acessos'}</button></div></form></div>}
   </section>
 }
 
