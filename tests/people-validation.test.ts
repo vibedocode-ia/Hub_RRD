@@ -9,9 +9,29 @@ test('create local person accepts only a local role and declared permissions', (
     password: 'senha-temporaria-segura',
     role: 'OPERATOR',
     permissions: ['crm.read', 'documents.prepare'],
+    isActive: true,
   })
 
   assert.equal(parsed.success, true)
+})
+
+test('create local person accepts the explicitly selected active status', () => {
+  const basePerson = {
+    name: 'Operador QA',
+    phone: '5521999999999',
+    password: 'senha-temporaria-segura',
+    role: 'OPERATOR' as const,
+    permissions: ['crm.read', 'documents.prepare'],
+  }
+
+  const active = CreateLocalPersonSchema.safeParse({ ...basePerson, isActive: true })
+  const inactive = CreateLocalPersonSchema.safeParse({ ...basePerson, isActive: false })
+
+  assert.equal(active.success, true)
+  assert.equal(inactive.success, true)
+  assert.equal(CreateLocalPersonSchema.safeParse(basePerson).success, false)
+  if (active.success) assert.equal(active.data.isActive, true)
+  if (inactive.success) assert.equal(inactive.data.isActive, false)
 })
 
 test('create local person rejects a central grant field and undeclared permission', () => {

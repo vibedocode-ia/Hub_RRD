@@ -30,6 +30,7 @@ export const CreateLocalPersonSchema = z.object({
   password: z.string().min(12).max(256),
   role,
   permissions: z.array(permission).min(1).max(RRD_PERMISSIONS.length),
+  isActive: z.boolean(),
 }).strict().superRefine(permissionsAllowedForRole)
 
 export const UpdateLocalPersonSchema = z.object({

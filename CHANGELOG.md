@@ -1,5 +1,17 @@
 # Changelog
 
+## V0.12.24 — 2026-09-15
+
+### Fixed
+- A criação local em Pessoas e Acessos RRD aceita e persiste o status `isActive` explicitamente selecionado, tanto ativo quanto inativo.
+- O contrato de criação permanece estrito e rejeita campos desconhecidos; status omitido é rejeitado em vez de assumir estado silenciosamente.
+
+### Security
+- A mudança permanece limitada a `users` e às permissões locais allowlisted; não cria nem altera Hub, grants da Central Sofia, acesso WhatsApp ou permissões fora do papel permitido.
+
+### Verification
+- Regressões focais, suíte de segurança (38/38), typecheck, build e `git diff --check` aprovados localmente.
+
 ## V0.12.23 — 2026-09-14
 
 ### Fixed
