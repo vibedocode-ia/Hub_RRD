@@ -89,6 +89,45 @@ Isso não equivale a dizer que todos os fluxos estão prontos. A auditoria encon
 - O endpoint de frotas/equipes usa arquivamento, não exclusão física; isso é correto para preservar histórico, mas a UI deve chamar de Arquivar e explicar restauração/irreversibilidade.
 - O formato compacto de algumas páginas reduz legibilidade e dificulta revisão; refatorar antes de ampliar regras.
 
+## 7. Achados adicionais confirmados por auditoria independente
+
+### Interface e produto
+
+- Serviços existe em `/portal/servicos`, mas não aparece na sidebar desktop (`src/app/portal/layout.tsx`).
+- Estoque exibe movimentações explicitamente mockadas em `src/components/portal/estoque-client.tsx`; “Ver Todo Histórico” não possui ação.
+- Contatos possui criação, busca e filtro, mas não possui edição, arquivamento ou detalhe completo.
+- Agenda cria e lista eventos, mas não expõe edição, cancelamento e detalhe na UI.
+- Chamados lista todos os status com texto de “abertos”, não oferece filtros suficientes e o `clientId` recebido pela URL de Novo Chamado não é consumido.
+- Propostas não possuem criação/edição direta, busca/paginação ou detalhe completo.
+- Contas bancárias possuem criação, mas não edição, arquivamento ou garantia de única conta primária.
+- Catálogo de serviços tem campo de busca sem filtro implementado e defaults inseridos durante carregamento GET.
+- Rascunhos Sofia tratam chamados como rascunhos sem filtrar adequadamente evento/intenção e não oferecem revisão/rejeição completa.
+
+### Segurança e dados
+
+- Login sem rate limit/bloqueio progressivo em `src/app/api/auth/login/route.ts`.
+- Fallback por senha de ambiente precisa ficar estritamente isolado de qualquer ambiente exposto.
+- `/api/sofia/actions` deve verificar autorização local além do segredo e confirmar pertencimento de identidades ao Hub.
+- Callback Google deve usar o `userId` do state, em vez da integração global mais recente.
+- Payloads Sofia podem armazenar PII integral em `rawPayload`; auditoria precisa ser sanitizada.
+- Cadeia Drizzle declara 17 migrations, mas snapshots em `src/db/migrations/meta/` estão incompletos.
+- Reconciliação de migrations não deve fabricar histórico apenas pela existência de tabelas.
+- Inicialização de produção executa migration automaticamente sem gate explícito de backup/saúde.
+- Lançamentos financeiros aceitam valores/status/datas sem schema fechado e não geram auditoria.
+- Contas financeiras não garantem única conta principal.
+- Estoque aceita `NaN`, `Infinity`, negativos ilimitados e saldo abaixo de zero no endpoint direto.
+- Chamados aceitam enums/valores sem validação completa e possuem exclusão física sem transação/auditoria.
+- Criação/edição CRM, Sofia, documentos/propostas e cliente/endereço precisam de transações quando a operação envolve múltiplas entidades.
+- Emissão documental usa aleatoriedade para número e pode deixar entidades parcialmente criadas.
+
+### Testes e entrega
+
+- Não há script geral `npm test`/`test:unit`/`test:integration`.
+- A suíte atual é forte em contratos e segurança estática, mas não substitui testes reais HTTP/PostgreSQL.
+- Faltam testes de concorrência, rollback, conflitos de agenda, invariantes financeiras/estoque, OAuth multiusuário, rate limit e isolamento de tenant.
+- `package.json` declara Next `^16.3.5`, enquanto o build auditado reportou Next `15.5.25`; reconciliar lockfile e runtime.
+
+
 ## 6. Critério de conclusão da auditoria de correções
 
 Uma frente só pode ser marcada concluída quando houver:

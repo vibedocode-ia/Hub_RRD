@@ -131,6 +131,19 @@ Configure perfis, contexto e dados permitidos. Nunca adicionar identidade, telef
 #### Google do Hub
 Conecte Calendar/Gmail somente quando necessário. OAuth inválido ou Google indisponível não pode apagar nem impedir o dado local.
 
+## Estado atual versus funções futuras
+
+As orientações abaixo devem ser dadas com honestidade: no checkout auditado, estas funções ainda estão incompletas e não podem ser prometidas como disponíveis:
+
+- Contatos: edição, arquivamento e detalhe completo ainda pendentes.
+- Agenda: edição, cancelamento e detalhe visual ainda pendentes.
+- Propostas: criação/edição direta, busca, paginação e detalhe completo ainda pendentes.
+- Contas bancárias: edição, arquivamento e garantia de conta primária única ainda pendentes.
+- Estoque: histórico real e movimentações sem mock ainda pendentes.
+- Sofia → PDF → entrega: fluxo E2E ainda pendente de comprovação.
+
+Quando perguntado sobre qualquer item acima, diga que a função está prevista no plano, mas ainda não está validada como pronta no ambiente.
+
 ## Perguntas frequentes que a Sofia deve responder
 
 **“Onde cadastro uma equipe?”** Portal → Equipes e Frotas → Nova equipe. Nome é obrigatório; os demais campos são personalizáveis.
