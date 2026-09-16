@@ -1,5 +1,21 @@
 # Changelog
 
+## V0.12.33 — 2026-09-16
+
+### Added
+- Pipeline comercial persistido para propostas, com transições auditáveis e vínculo a documentos emitidos.
+- API autenticada `/api/proposals` para consultar, criar e atualizar status de propostas.
+- Tela de Propostas conectada aos dados persistidos, com aprovação e recusa controladas.
+- Emissão de orçamento passa a criar a proposta comercial correspondente em `SENT`.
+- Migration `0014_proposals.sql` para produção.
+
+### Verification
+- Typecheck aprovado.
+- Testes focais aprovados.
+- Build de produção aprovado.
+- `git diff --check` aprovado.
+- Deploy pendente de acionamento do Coolify: rota nova ainda retornou 404 no probe pós-push.
+
 ## V0.12.32 — 2026-09-16
 
 ### Added
