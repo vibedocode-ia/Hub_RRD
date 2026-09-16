@@ -241,8 +241,10 @@ export const clientAddresses = pgTable('client_addresses', {
 export const teams = pgTable('teams', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(), // Ex: 'Equipe Alpha (Hidrojato)'
-  leaderName: text('leader_name').notNull(),
+  leaderName: text('leader_name'),
   phone: text('phone'),
+  description: text('description'),
+  participants: jsonb('participants').$type<string[]>().default([]).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -252,7 +254,10 @@ export const vehicles = pgTable('vehicles', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(), // Ex: 'Caminhão Vácuo Heavy 01', 'VACOL Compacto 4x4'
   plate: text('plate'),
-  type: text('type').notNull(), // 'CAMINHAO_VACUO' | 'VACOL_COMPACTO' | 'VAN_HIDRO'
+  type: text('type'), // livre: tipo/modelo operacional
+  description: text('description'),
+  notes: text('notes'),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -303,7 +308,7 @@ export const serviceRequests = pgTable('service_requests', {
 
 // 6b. Agenda local: fonte de verdade; Google é apenas destino de sincronização opcional.
 export const agendaEvents = pgTable('agenda_events', {
-  id: uuid('id').primaryKey().defaultRandom(), title: text('title').notNull(), description: text('description'), startsAt: timestamp('starts_at').notNull(), endsAt: timestamp('ends_at').notNull(), location: text('location'), status: text('status').notNull().default('SCHEDULED'), contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'set null' }), googleEventId: text('google_event_id'), googleSyncStatus: text('google_sync_status').notNull().default('NOT_CONNECTED'), googleSyncedAt: timestamp('google_synced_at'), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  id: uuid('id').primaryKey().defaultRandom(), title: text('title').notNull(), description: text('description'), startsAt: timestamp('starts_at').notNull(), endsAt: timestamp('ends_at').notNull(), location: text('location'), status: text('status').notNull().default('SCHEDULED'), contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'set null' }), teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }), vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }), googleEventId: text('google_event_id'), googleSyncStatus: text('google_sync_status').notNull().default('NOT_CONNECTED'), googleSyncedAt: timestamp('google_synced_at'), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [index('agenda_events_starts_at_idx').on(table.startsAt), index('agenda_events_contact_idx').on(table.contactId), index('agenda_events_client_idx').on(table.clientId)])
 
 // 7. Documentos Oficiais Gerados (Orçamentos, Recibos e Laudos)

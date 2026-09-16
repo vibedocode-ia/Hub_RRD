@@ -29,6 +29,8 @@ export const CreateAgendaEventSchema = z.object({
   contactId: optionalUuid,
   clientId: optionalUuid,
   serviceRequestId: optionalUuid,
+  teamId: optionalUuid,
+  vehicleId: optionalUuid,
 }).strict().superRefine((data, ctx) => {
   if (Date.parse(data.endsAt) <= Date.parse(data.startsAt)) ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'O fim deve ser posterior ao início.' })
 })
@@ -42,6 +44,8 @@ export const UpdateAgendaEventSchema = z.object({
   contactId: optionalUuid,
   clientId: optionalUuid,
   serviceRequestId: optionalUuid,
+  teamId: optionalUuid,
+  vehicleId: optionalUuid,
   status: z.enum(['SCHEDULED', 'CANCELLED']).optional(),
 }).strict()
 

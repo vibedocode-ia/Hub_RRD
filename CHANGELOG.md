@@ -1,5 +1,17 @@
 # Changelog
 
+## V0.12.38 — 2026-09-16
+
+### Added
+- Implementa CRUD ativo de equipes com nome obrigatório, líder, participantes, telefone, descrição e arquivamento seguro.
+- Implementa CRUD ativo de veículos/frotas com tipo, placa, descrição, observações, equipe vinculada e arquivamento seguro.
+- Adiciona vínculo equipe-veículo com limpeza segura ao arquivar equipe.
+- Adiciona seleção de equipe e veículo na criação de eventos da Agenda.
+- Permite manter histórico operacional sem exclusão física dos cadastros.
+
+### Verification
+- Typecheck, testes de autorização operacional, build e `git diff --check` aprovados.
+
 ## V0.12.37 — 2026-09-16
 
 ### Added

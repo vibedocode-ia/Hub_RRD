@@ -178,6 +178,6 @@ export function safeStockSummary(item: { id: string; nome: string; categoria: st
   return { id: item.id, name: item.nome, category: item.categoria, quantity: item.quantidade, unit: item.unidade, lowStock: Number.isFinite(quantity) && quantity <= Number(item.nivelCritico) }
 }
 
-export function safeVehicleSummary(vehicle: { id: string; name: string; plate: string | null; type: string; isActive: boolean }) {
+export function safeVehicleSummary(vehicle: { id: string; name: string; plate: string | null; type: string | null; isActive: boolean }) {
   return { id: vehicle.id, name: vehicle.name, plate: vehicle.plate ? `***${vehicle.plate.slice(-3)}` : null, type: vehicle.type, active: vehicle.isActive }
 }

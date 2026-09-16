@@ -1,0 +1,11 @@
+ALTER TABLE "teams" ALTER COLUMN "leader_name" DROP NOT NULL;
+ALTER TABLE "teams" ADD COLUMN IF NOT EXISTS "description" text;
+ALTER TABLE "teams" ADD COLUMN IF NOT EXISTS "participants" jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE "vehicles" ALTER COLUMN "type" DROP NOT NULL;
+ALTER TABLE "vehicles" ADD COLUMN IF NOT EXISTS "description" text;
+ALTER TABLE "vehicles" ADD COLUMN IF NOT EXISTS "notes" text;
+ALTER TABLE "vehicles" ADD COLUMN IF NOT EXISTS "team_id" uuid REFERENCES "teams"("id") ON DELETE SET NULL;
+ALTER TABLE "agenda_events" ADD COLUMN IF NOT EXISTS "team_id" uuid REFERENCES "teams"("id") ON DELETE SET NULL;
+ALTER TABLE "agenda_events" ADD COLUMN IF NOT EXISTS "vehicle_id" uuid REFERENCES "vehicles"("id") ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS "vehicles_team_id_idx" ON "vehicles" USING btree ("team_id");
+CREATE INDEX IF NOT EXISTS "agenda_events_team_id_idx" ON "agenda_events" USING btree ("team_id");
