@@ -171,6 +171,18 @@ export const sessions = pgTable('sessions', {
   index('sessions_user_id_idx').on(table.userId),
 ]);
 
+// 2b. Recuperação controlada: o token bruto nunca é persistido.
+export const passwordRecoveryTokens = pgTable('password_recovery_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  tokenHash: text('token_hash').unique().notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('password_recovery_user_active_idx').on(table.userId, table.expiresAt),
+]);
+
 // 3. Clientes (PF / PJ / Condomínios / Restaurantes / Indústrias)
 export const clients = pgTable('clients', {
   id: uuid('id').primaryKey().defaultRandom(),

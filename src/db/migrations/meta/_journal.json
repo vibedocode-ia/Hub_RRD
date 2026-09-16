@@ -92,6 +92,13 @@
       "when": 1789351807449,
       "tag": "0012_local_profile_details",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789351807450,
+      "tag": "0013_password_recovery_tokens",
+      "breakpoints": true
     }
   ]
 }
