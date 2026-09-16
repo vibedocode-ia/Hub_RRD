@@ -1,5 +1,17 @@
 # Changelog
 
+## V0.12.37 — 2026-09-16
+
+### Added
+- Adiciona seletor de período por mês e ano no Financeiro.
+- Calcula receitas, despesas, saldo, previsão e atrasados no período selecionado.
+- Separa Receita Anual como acumulado do ano selecionado.
+- Preserva mês/ano nos links dos cards, blocos e listas.
+- Torna entradas, saídas, saldo, movimentações e documentos navegáveis.
+
+### Verification
+- Typecheck, build e `git diff --check` aprovados.
+
 ## V0.12.36 — 2026-09-16
 
 ### Added
