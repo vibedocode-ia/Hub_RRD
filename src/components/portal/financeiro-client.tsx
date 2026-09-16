@@ -23,6 +23,9 @@ export function FinanceiroClient({
   const entradas = lancamentos.filter(l => l.tipo === 'RECEITA').reduce((acc, l) => acc + Number(l.valor), 0);
   const saidas = lancamentos.filter(l => l.tipo === 'DESPESA').reduce((acc, l) => acc + Number(l.valor), 0);
   const saldo = entradas - saidas;
+  const aReceber = lancamentos.filter(l => l.tipo === 'RECEITA' && l.status === 'PENDENTE').reduce((acc, l) => acc + Number(l.valor), 0);
+  const emAtraso = lancamentos.filter(l => l.tipo === 'RECEITA' && l.status === 'ATRASADO').reduce((acc, l) => acc + Number(l.valor), 0);
+  const previsao = saldo + aReceber;
 
   const alertDocumentLock = (docNumber: string) => {
     alert(`DOCUMENTO TRAVADO (${docNumber})\n\nEste Recibo/OS Fiscal já foi emitido e assinado digitalmente. Para estornar ou alterar, é necessário gerar um evento de cancelamento oficial.\n\nProteção contra fraude financeira ativa.`);
@@ -47,6 +50,17 @@ export function FinanceiroClient({
             <Plus className="w-4 h-4" /> Novo Lançamento
           </button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <FinanceMetric label="Saldo Atual" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
+        <FinanceMetric label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
+        <FinanceMetric label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
+        <FinanceMetric label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
+        <FinanceMetric label="Previsão do Mês" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric label="Receita Anual" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
       </div>
 
       {/* DRE Simplificada (Visão de Caixa) */}
@@ -187,3 +201,5 @@ export function FinanceiroClient({
     </div>
   );
 }
+
+function FinanceMetric({label,value,tone,icon}:{label:string,value:number,tone:'cyan'|'emerald'|'red'|'amber'|'blue',icon:React.ReactNode}){const colors={cyan:'bg-cyan-500/10 text-cyan-400',emerald:'bg-emerald-500/10 text-emerald-400',red:'bg-red-500/10 text-red-400',amber:'bg-amber-500/10 text-amber-400',blue:'bg-blue-500/10 text-blue-400'};return <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4"><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${colors[tone]}`}>{icon}</div><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-100">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value)}</p></div>}

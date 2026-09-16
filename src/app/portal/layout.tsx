@@ -44,6 +44,7 @@ export default async function PortalLayout({
     { section: 'Operação', label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
     { section: 'Operação', label: 'Equipes e Frotas', href: '/portal/operacional', icon: Briefcase },
     { section: 'Operação', label: 'Estoque', href: '/portal/estoque', icon: Package },
+    { section: 'Gestão', label: 'Propostas', href: '/portal/propostas', icon: FileText },
     { section: 'Gestão', label: 'Financeiro', href: '/portal/financeiro', icon: CircleDollarSign },
     { section: 'Gestão', label: 'Documentos', href: '/portal/documentos', icon: FileText },
     { section: 'Sofia', label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode },

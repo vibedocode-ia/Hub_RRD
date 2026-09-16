@@ -1,5 +1,23 @@
 # Changelog
 
+## V0.12.31 — 2026-09-15
+
+### Added
+- Evolui Contatos para cards operacionais com indicadores, busca, filtros e cadastro.
+- Evolui o Catálogo de Serviços com indicadores de emergência, avaliação, preço configurado, garantia e cards operacionais.
+- Adiciona a rota Propostas com visão dos orçamentos emitidos e acesso ao PDF.
+- Adiciona indicadores financeiros inspirados no painel VibeDoCode: saldo, receitas, despesas, a receber, atraso, previsão, receita anual e resultado.
+- Inclui Propostas na navegação desktop e mobile.
+
+### Notes
+- Os estados comerciais completos de proposta (aprovada, recusada, expirada e não contabilizar) permanecem pendentes de entidade própria e não são inferidos de documentos emitidos.
+
+### Verification
+- Typecheck aprovado.
+- Testes focais aprovados.
+- Build de produção aprovado.
+- `git diff --check` aprovado.
+
 ## V0.12.30 — 2026-09-15
 
 ### Added
