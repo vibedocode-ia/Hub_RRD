@@ -73,3 +73,11 @@ export function permissionsAreAllowedForRole(role: LocalUserRole, permissions: r
 export function isRoleManageableBy(actorRole: LocalUserRole, targetRole: LocalUserRole): boolean {
   return roleRank[actorRole] >= roleRank[targetRole]
 }
+
+/** Password authority is deliberately stricter than general role management.
+ * A person may change their own password; an administrator may reset only a
+ * strictly lower local role, never a peer or superior.
+ */
+export function canChangePasswordFor(actorRole: LocalUserRole, targetRole: LocalUserRole, isSelf: boolean): boolean {
+  return isSelf || roleRank[actorRole] > roleRank[targetRole]
+}

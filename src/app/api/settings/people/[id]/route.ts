@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { auditEvents, db, sessions, userPermissions, users } from '@/db'
 import { hashPassword } from '@/lib/auth-crypto'
 import { getCurrentLocalAccess } from '@/lib/local-access'
-import { isRoleManageableBy, permissionsAreAllowedForRole } from '@/lib/permissions'
+import { canChangePasswordFor, isRoleManageableBy, permissionsAreAllowedForRole } from '@/lib/permissions'
 import { UpdateLocalPersonSchema } from '@/lib/validation/people'
 
 function personIdFromParams(context: { params: Promise<{ id: string }> }) {
@@ -27,6 +27,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     if (input.isActive === false) return NextResponse.json({ error: 'Você não pode desativar a própria conta.' }, { status: 409 })
     if (input.role || input.permissions) return NextResponse.json({ error: 'Sua própria conta não pode alterar papel ou permissões.' }, { status: 403 })
   } else if (!isRoleManageableBy(actor.role, target.role as typeof actor.role)) return NextResponse.json({ error: 'Não é permitido alterar pessoa com papel superior ao seu.' }, { status: 403 })
+  if (input.password && !canChangePasswordFor(actor.role, target.role as typeof actor.role, target.id === actor.id)) return NextResponse.json({ error: 'Só é permitido alterar a senha de uma pessoa com papel estritamente inferior ao seu.' }, { status: 403 })
 
   const nextRole = input.role ?? target.role as typeof actor.role
   if (nextRole !== target.role && !isRoleManageableBy(actor.role, nextRole)) return NextResponse.json({ error: 'Não é permitido atribuir papel superior ao seu.' }, { status: 403 })

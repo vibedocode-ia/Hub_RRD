@@ -9,6 +9,9 @@ export default function ProfileClient({ profile: initial }: { profile: Profile }
   const [profile, setProfile] = useState(initial)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [passwords, setPasswords] = useState({ currentPassword: '', password: '', confirmation: '' })
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const update = (key: keyof Profile, value: string | null) => setProfile((current) => ({ ...current, [key]: value }))
   const initials = profile.name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'RR'
@@ -32,6 +35,17 @@ export default function ProfileClient({ profile: initial }: { profile: Profile }
     setProfile(data.profile); setMessage({ ok: true, text: 'Perfil salvo com sucesso.' })
   }
 
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setPasswordMessage(null)
+    if (passwords.password !== passwords.confirmation) { setPasswordMessage({ ok: false, text: 'A confirmação da nova senha não confere.' }); return }
+    setPasswordSaving(true)
+    const response = await fetch('/api/auth/change-password', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ currentPassword: passwords.currentPassword, password: passwords.password }) })
+    const data = await response.json().catch(() => ({})); setPasswordSaving(false)
+    if (!response.ok) { setPasswordMessage({ ok: false, text: data.error || 'Não foi possível alterar a senha.' }); return }
+    setPasswords({ currentPassword: '', password: '', confirmation: '' })
+    setPasswordMessage({ ok: true, text: data.message || 'Senha alterada. Entre novamente para continuar.' })
+  }
+
   return <div className="mx-auto max-w-5xl space-y-6">
     <header><div className="flex items-center gap-2"><UserCircle2 className="h-6 w-6 text-cyan-400" /><h1 className="text-2xl font-black tracking-tight text-slate-100">Meu perfil</h1></div><p className="mt-1 text-sm text-slate-400">Essas informações aparecem no topo do Hub RR Operacional.</p></header>
     <form onSubmit={save} className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/70 shadow-2xl shadow-black/20">
@@ -41,6 +55,11 @@ export default function ProfileClient({ profile: initial }: { profile: Profile }
       <section className="border-t border-slate-800 p-6 sm:p-8"><div><h3 className="text-sm font-black text-slate-100">Foto de perfil</h3><p className="mt-1 text-xs text-slate-500">Escolha uma imagem do seu dispositivo. JPG, PNG ou WebP de até 2 MB.</p></div><div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center"><div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-cyan-400/40 bg-gradient-to-br from-cyan-400 to-emerald-400 text-2xl font-black text-slate-950">{profile.photoUrl ? <img src={profile.photoUrl} alt="Prévia da foto de perfil" className="h-full w-full object-cover" /> : initials}</div><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => choosePhoto(event.target.files?.[0])} /><div className="flex flex-wrap gap-2"><button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-cyan-400"><Camera className="h-4 w-4" />Escolher imagem</button>{profile.photoUrl && <button type="button" onClick={() => update('photoUrl', null)} className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-slate-800">Remover</button>}</div></div></section><section className="border-t border-slate-800 p-6 sm:p-8"><div><h3 className="text-sm font-black text-slate-100">Presença pública</h3><p className="mt-1 text-xs text-slate-500">Links opcionais para sua presença profissional.</p></div><div className="mt-5 grid gap-5 md:grid-cols-2"><Field label="Instagram" icon={<Link2 className="h-4 w-4" />} type="url" placeholder="https://instagram.com/..." value={profile.instagramUrl || ''} onChange={(v) => update('instagramUrl', v)} /><Field label="Website" icon={<Globe className="h-4 w-4" />} type="url" placeholder="https://..." value={profile.websiteUrl || ''} onChange={(v) => update('websiteUrl', v)} /></div></section>
       <section className="border-t border-slate-800 p-6 sm:p-8"><Field label="Observações pessoais" placeholder="Informações opcionais sobre você..." value={profile.personalNotes || ''} onChange={(v) => update('personalNotes', v)} textarea /></section>
       <footer className="flex flex-col-reverse gap-3 border-t border-slate-800 bg-slate-950/40 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-8"><div className="min-h-6 text-xs">{message && <span className={`inline-flex items-center gap-1.5 ${message.ok ? 'text-emerald-300' : 'text-red-300'}`}>{message.ok ? <CheckCircle2 className="h-4 w-4" /> : <X className="h-4 w-4" />}{message.text}</span>}</div><div className="flex justify-end gap-3"><a href="/portal/dashboard" className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-slate-800">Cancelar</a><button type="submit" disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{saving ? 'Salvando...' : 'Salvar perfil'}</button></div></footer>
+    </form>
+    <form onSubmit={changePassword} className="rounded-3xl border border-amber-700/50 bg-amber-950/10 p-6 sm:p-8">
+      <h2 className="text-lg font-black text-slate-100">Alterar senha</h2><p className="mt-1 text-xs text-slate-400">Para sua segurança, informe a senha atual. Ao confirmar, todas as suas sessões serão encerradas.</p>
+      <div className="mt-5 grid gap-4 md:grid-cols-3"><Field label="Senha atual" type="password" required value={passwords.currentPassword} onChange={(currentPassword) => setPasswords({ ...passwords, currentPassword })} /><Field label="Nova senha" type="password" required value={passwords.password} onChange={(password) => setPasswords({ ...passwords, password })} /><Field label="Confirmar nova senha" type="password" required value={passwords.confirmation} onChange={(confirmation) => setPasswords({ ...passwords, confirmation })} /></div>
+      <div className="mt-5 flex items-center justify-between gap-3"><p className={`text-xs ${passwordMessage?.ok ? 'text-emerald-300' : 'text-red-300'}`}>{passwordMessage?.text}</p><button disabled={passwordSaving} className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-black text-slate-950 disabled:opacity-60">{passwordSaving ? 'Alterando...' : 'Alterar senha'}</button></div>
     </form>
   </div>
 }
