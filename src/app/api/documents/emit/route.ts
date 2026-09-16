@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
-import { db, serviceRequests, clients, clientAddresses, officialDocuments, documentTemplates, DOC_STATUS } from '../../../../db';
+import { db, serviceRequests, clients, clientAddresses, officialDocuments, documentTemplates, DOC_STATUS, proposals, auditEvents } from '../../../../db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
 import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
 import { moneyToWords } from '../../../../lib/documents/money-to-words';
@@ -140,6 +140,21 @@ export async function POST(req: NextRequest) {
 
     if (docType === 'RECIBO_GARANTIA') {
       await db.update(serviceRequests).set({ status: 'CONCLUIDO' }).where(eq(serviceRequests.id, serviceRequestId));
+    }
+
+    if (docType === 'ORCAMENTO' || docType === 'ORCAMENTO_TECNICO') {
+      const [proposal] = await db.insert(proposals).values({
+        clientId: cli.id,
+        serviceRequestId,
+        officialDocumentId: documentRecord.id,
+        title: `${docType === 'ORCAMENTO_TECNICO' ? 'Orçamento Técnico' : 'Orçamento'} — ${serviceRequest.serviceType}`,
+        description: serviceRequest.problemReported,
+        totalValue: numericAmount.toFixed(2),
+        status: 'SENT',
+        sentAt: now,
+        createdById: user.id,
+      }).returning();
+      await db.insert(auditEvents).values({ actorUserId: user.id, action: 'proposal.created_from_document', targetType: 'proposal', targetId: proposal.id, metadata: { documentId: documentRecord.id, docType } });
     }
 
     return NextResponse.json({

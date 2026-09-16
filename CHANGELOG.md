@@ -1,5 +1,19 @@
 # Changelog
 
+## V0.12.32 — 2026-09-16
+
+### Added
+- Cria entidade persistida `proposals` para o pipeline comercial do HubRRD.
+- Adiciona estados DRAFT, SENT, NEGOTIATION, APPROVED, REJECTED, EXPIRED, CANCELLED e NOT_COUNTED.
+- Adiciona API autenticada de criação, consulta e transição de propostas.
+- Registra mudanças de status em auditoria local sanitizada.
+- Liga a emissão de ORCAMENTO/ORCAMENTO_TECNICO à criação automática de proposta enviada.
+- Conecta propostas a cliente, chamado e documento oficial, preservando o snapshot documental.
+- Substitui a visão estática de propostas por dados persistidos e ações de aprovação/recusa.
+
+### Verification
+- Typecheck, testes focais, build e `git diff --check` aprovados.
+
 ## V0.12.31 — 2026-09-15
 
 ### Added

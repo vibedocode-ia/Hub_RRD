@@ -338,6 +338,27 @@ export const officialDocuments = pgTable('official_documents', {
   index('official_docs_service_request_idx').on(table.serviceRequestId),
 ]);
 
+// 7a. Pipeline comercial de propostas; documento oficial é um snapshot separado.
+export const proposals = pgTable('proposals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  clientId: uuid('client_id').references(() => clients.id).notNull(),
+  serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'set null' }),
+  officialDocumentId: uuid('official_document_id').references(() => officialDocuments.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  totalValue: numeric('total_value', { precision: 10, scale: 2 }).notNull(),
+  status: text('status').notNull().default('DRAFT'),
+  validUntil: timestamp('valid_until'),
+  sentAt: timestamp('sent_at'),
+  approvedAt: timestamp('approved_at'),
+  rejectedAt: timestamp('rejected_at'),
+  convertedAt: timestamp('converted_at'),
+  notes: text('notes'),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [index('proposals_status_idx').on(table.status), index('proposals_client_idx').on(table.clientId), index('proposals_created_idx').on(table.createdAt)]);
+
 // 7b. Modelos canônicos de documentos. O PDF original é preservado no banco para sobreviver ao deploy.
 export const documentTemplates = pgTable('document_templates', {
   id: uuid('id').primaryKey().defaultRandom(),
