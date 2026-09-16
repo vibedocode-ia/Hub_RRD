@@ -1,3 +1,6 @@
+### V0.12.35 (2026-09-16) - Corrige o alvo GodAdmin da recuperação para o papel OWNER vigente no RRD.
+- **Segurança:** o emissor continua exigindo exatamente um OWNER ativo, segredo interno e token de uso único.
+
 ### V0.12.31 (2026-09-16) - Recuperação segura de senha por link único para o GodAdmin ativo.
 - **Segurança:** token persistido apenas como hash, expiração de 15 minutos, uso único, emissão interna autenticada e revogação de sessões após cadastro da nova senha.
 

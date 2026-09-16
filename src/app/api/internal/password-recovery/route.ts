@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (!db) return NextResponse.json({ error: 'Banco indisponível.' }, { status: 503 })
 
   const activeGodAdmins = await db.select({ id: users.id }).from(users)
-    .where(and(eq(users.role, USER_ROLES.SUPER_ADMIN), eq(users.isActive, true))).limit(2)
+    .where(and(eq(users.role, USER_ROLES.OWNER), eq(users.isActive, true))).limit(2)
   if (activeGodAdmins.length !== 1) return NextResponse.json({ error: 'Recuperação indisponível para esta configuração de acesso.' }, { status: 409 })
 
   const rawToken = randomBytes(32).toString('base64url')

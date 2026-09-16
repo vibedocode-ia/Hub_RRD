@@ -13,11 +13,11 @@ test('password recovery persists only a hash, has expiry and a single-use marker
   assert.match(schema, /usedAt: timestamp\('used_at'\)/)
 })
 
-test('internal issuer is secret-gated and issues only for exactly one active GodAdmin', () => {
+test('internal issuer is secret-gated and issues only for exactly one active GodAdmin owner', () => {
   const issuer = read('src/app/api/internal/password-recovery/route.ts')
   assert.match(issuer, /PASSWORD_RECOVERY_ISSUER_SECRET/)
   assert.match(issuer, /timingSafeEqual/)
-  assert.match(issuer, /eq\(users\.role, USER_ROLES\.SUPER_ADMIN\)/)
+  assert.match(issuer, /eq\(users\.role, USER_ROLES\.OWNER\)/)
   assert.match(issuer, /activeGodAdmins\.length !== 1/)
   assert.match(issuer, /createHash\('sha256'\)/)
   assert.doesNotMatch(issuer, /console\.(?:log|warn).*token/i)
