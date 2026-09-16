@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { CircleDollarSign, TrendingUp, TrendingDown, FileText, Plus, Wallet, Lock } from 'lucide-react';
 import { ModalNovoLancamento } from './ModalNovoLancamento';
 
@@ -9,15 +10,17 @@ export function FinanceiroClient({
   initialDocumentos,
   clientOptions,
   initialType,
+  initialStatus,
 }: { 
   initialLancamentos: any[]; 
   initialDocumentos: any[];
   clientOptions: Array<{ id: string; name: string }>;
   initialType?: 'RECEITA' | 'DESPESA';
+  initialStatus?: string;
 }) {
   const [lancamentos, setLancamentos] = useState(initialLancamentos);
   const [isNovoLancamentoOpen, setIsNovoLancamentoOpen] = useState(false);
-  const visibleLancamentos = initialType ? lancamentos.filter(l => l.tipo === initialType) : lancamentos;
+  const visibleLancamentos = lancamentos.filter(l => (!initialType || l.tipo === initialType) && (!initialStatus || l.status === initialStatus));
 
   // Totais reativos
   const entradas = lancamentos.filter(l => l.tipo === 'RECEITA').reduce((acc, l) => acc + Number(l.valor), 0);
@@ -43,6 +46,7 @@ export function FinanceiroClient({
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/portal/financeiro/contas" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold text-xs border border-slate-700/80 transition">Conta da Empresa →</Link>
           <button 
             onClick={() => setIsNovoLancamentoOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700/80 transition"
@@ -53,14 +57,14 @@ export function FinanceiroClient({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <FinanceMetric label="Saldo Atual" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
-        <FinanceMetric label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
-        <FinanceMetric label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric label="Previsão do Mês" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric label="Receita Anual" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro" label="Saldo Atual" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro?tipo=RECEITA" label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro?tipo=DESPESA" label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro?status=PENDENTE&tipo=RECEITA" label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro?status=ATRASADO&tipo=RECEITA" label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro" label="Previsão do Mês" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro?tipo=RECEITA" label="Receita Anual" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href="/portal/financeiro" label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
       </div>
 
       {/* DRE Simplificada (Visão de Caixa) */}
@@ -121,7 +125,7 @@ export function FinanceiroClient({
                   </tr>
                 ) : (
                   visibleLancamentos.map((l) => (
-                    <tr key={l.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                    <tr key={l.id} onClick={() => { window.location.href = `/portal/financeiro?tipo=${l.tipo}&status=${l.status}`; }} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer">
                       <td className="py-3 px-6 text-slate-200">
                         <div className="font-medium">{l.descricao}</div>
                         <div className="text-xs text-slate-500">{l.categoria} • <span className={l.status === 'EFETIVADO' ? 'text-emerald-400/80' : 'text-amber-400/80'}>{l.status}</span></div>
@@ -167,7 +171,7 @@ export function FinanceiroClient({
                   initialDocumentos.map((doc) => (
                     <tr 
                       key={doc.id} 
-                      onClick={() => alertDocumentLock(doc.docNumber)}
+                      onClick={() => { window.location.href = `/portal/documentos/preview/${doc.id}`; }}
                       className="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer group"
                     >
                       <td className="py-3 px-6 text-slate-200">
@@ -202,4 +206,4 @@ export function FinanceiroClient({
   );
 }
 
-function FinanceMetric({label,value,tone,icon}:{label:string,value:number,tone:'cyan'|'emerald'|'red'|'amber'|'blue',icon:React.ReactNode}){const colors={cyan:'bg-cyan-500/10 text-cyan-400',emerald:'bg-emerald-500/10 text-emerald-400',red:'bg-red-500/10 text-red-400',amber:'bg-amber-500/10 text-amber-400',blue:'bg-blue-500/10 text-blue-400'};return <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4"><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${colors[tone]}`}>{icon}</div><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-100">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value)}</p></div>}
+function FinanceMetric({href,label,value,tone,icon}:{href:string,label:string,value:number,tone:'cyan'|'emerald'|'red'|'amber'|'blue',icon:React.ReactNode}){const colors={cyan:'bg-cyan-500/10 text-cyan-400',emerald:'bg-emerald-500/10 text-emerald-400',red:'bg-red-500/10 text-red-400',amber:'bg-amber-500/10 text-amber-400',blue:'bg-blue-500/10 text-blue-400'};return <Link href={href} className="block bg-slate-900/60 border border-slate-800 rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${colors[tone]}`}>{icon}</div><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-100">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value)}</p><p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-cyan-400">Abrir detalhes →</p></Link>}

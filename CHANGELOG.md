@@ -1,5 +1,21 @@
 # Changelog
 
+## V0.12.34 — 2026-09-16
+
+### Added
+- Cria cadastro persistido de contas bancárias da empresa com banco, agência, conta, Pix, cartão e conta principal.
+- Adiciona `/portal/financeiro/contas` e API autenticada de contas.
+- Transforma indicadores financeiros em links vivos para as visões filtradas correspondentes.
+- Transforma movimentações recentes em navegação para tipo/status.
+- Transforma emissões recentes em acesso direto ao preview oficial.
+- Adiciona filtro de status financeiro na página do Financeiro.
+
+### UX rule
+- Cards, indicadores, gráficos, blocos e ações do HubRRD devem conduzir a uma tela, filtro, detalhe ou ação real; nenhum elemento deve ser apenas decorativo.
+
+### Verification
+- Typecheck, testes focais, build e `git diff --check` aprovados.
+
 ## V0.12.33 — 2026-09-16
 
 ### Added

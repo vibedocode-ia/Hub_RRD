@@ -498,6 +498,10 @@ export const insumos = pgTable('insumos', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const companyAccounts = pgTable('company_accounts', {
+  id: uuid('id').primaryKey().defaultRandom(), name: text('name').notNull(), bankName: text('bank_name').notNull(), accountType: text('account_type').notNull().default('CONTA_CORRENTE'), agency: text('agency'), accountNumber: text('account_number'), accountDigit: text('account_digit'), pixKey: text('pix_key'), cardLastFour: text('card_last_four'), notes: text('notes'), isPrimary: boolean('is_primary').notNull().default(false), isActive: boolean('is_active').notNull().default(true), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [index('company_accounts_active_idx').on(table.isActive)]);
+
 // 13. Lançamentos Financeiros (Fluxo de Caixa)
 export const financeiroLancamentos = pgTable('financeiro_lancamentos', {
   id: uuid('id').primaryKey().defaultRandom(),
