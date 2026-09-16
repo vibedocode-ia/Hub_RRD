@@ -298,6 +298,8 @@ export const serviceRequests = pgTable('service_requests', {
   warrantyDays: integer('warranty_days').default(30), // Configurável por serviço/documento
   warrantyUntil: timestamp('warranty_until'),
   cancelReason: text('cancel_reason'),
+  archivedAt: timestamp('archived_at'),
+  archivedById: uuid('archived_by_id').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [
@@ -502,6 +504,20 @@ export const insumos = pgTable('insumos', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const stockMovements = pgTable('stock_movements', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  insumoId: uuid('insumo_id').references(() => insumos.id, { onDelete: 'restrict' }).notNull(),
+  direction: text('direction').notNull(),
+  quantity: numeric('quantity', { precision: 10, scale: 2 }).notNull(),
+  reason: text('reason'),
+  source: text('source').notNull().default('MANUAL'),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('stock_movements_insumo_created_idx').on(table.insumoId, table.createdAt),
+  index('stock_movements_created_idx').on(table.createdAt),
+]);
 
 export const companyAccounts = pgTable('company_accounts', {
   id: uuid('id').primaryKey().defaultRandom(), name: text('name').notNull(), bankName: text('bank_name').notNull(), accountType: text('account_type').notNull().default('CONTA_CORRENTE'), agency: text('agency'), accountNumber: text('account_number'), accountDigit: text('account_digit'), pixKey: text('pix_key'), cardLastFour: text('card_last_four'), notes: text('notes'), isPrimary: boolean('is_primary').notNull().default(false), isActive: boolean('is_active').notNull().default(true), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),

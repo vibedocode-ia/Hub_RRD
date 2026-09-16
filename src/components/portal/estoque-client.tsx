@@ -7,10 +7,12 @@ import { ModalMovimentacaoEstoque } from './ModalMovimentacaoEstoque';
 
 export function EstoqueClient({ 
   initialInsumos, 
-  initialEquipamentos 
+  initialEquipamentos,
+  initialMovements,
 }: { 
   initialInsumos: any[]; 
-  initialEquipamentos: any[]; 
+  initialEquipamentos: any[];
+  initialMovements: Array<{ id: string; direction: string; quantity: string; reason: string | null; source: string; createdAt: Date | string; insumoName: string; unit: string }>;
 }) {
   const [insumos, setInsumos] = useState(initialInsumos);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function EstoqueClient({
                     <th className="pb-3 font-semibold">Insumo</th>
                     <th className="pb-3 font-semibold">Categoria</th>
                     <th className="pb-3 font-semibold">Estoque Atual</th>
-                    <th className="pb-3 font-semibold text-right">Ações (Mocked)</th>
+                    <th className="pb-3 font-semibold text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
@@ -170,32 +172,25 @@ export function EstoqueClient({
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {/* Mocked entries */}
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
-                    <ArrowRightLeft className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-200">Saída: K-Othrine WG</p>
-                    <p className="text-xs text-slate-400">Equipe Alpha • -5 Litros</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Hoje, 09:30</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
-                    <ArrowRightLeft className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-200">Entrada: K-Othrine WG</p>
-                    <p className="text-xs text-slate-400">Reposição Compra • +50 Litros</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Ontem, 16:45</p>
-                  </div>
-                </div>
+                {initialMovements.length === 0 ? (
+                  <p className="text-sm text-slate-400">Nenhuma movimentação registrada.</p>
+                ) : initialMovements.map((movement) => {
+                  const inbound = movement.direction === 'ENTRADA';
+                  const createdAt = new Date(movement.createdAt);
+                  return (
+                    <div key={movement.id} className="flex items-start gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${inbound ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        <ArrowRightLeft className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-200">{inbound ? 'Entrada' : 'Saída'}: {movement.insumoName}</p>
+                        <p className="text-xs text-slate-400">{movement.reason || movement.source} • {inbound ? '+' : '-'}{movement.quantity} {movement.unit}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{createdAt.toLocaleString('pt-BR')}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <button className="w-full mt-6 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-bold rounded-lg border border-slate-700 transition">
-                Ver Todo Histórico
-              </button>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CircleDollarSign, TrendingUp, TrendingDown, FileText, Plus, Wallet, Lock } from 'lucide-react';
 import { ModalNovoLancamento } from './ModalNovoLancamento';
+import { summarizeFinancialEntries } from '@/lib/financial-summary';
 
 export function FinanceiroClient({ 
   initialLancamentos, 
@@ -29,14 +30,15 @@ export function FinanceiroClient({
   const monthEntries = lancamentos.filter(l => { const d = new Date(l.data); return d.getFullYear() === selectedYear && (annualView || d.getMonth() + 1 === selectedMonth); });
   const visibleLancamentos = monthEntries.filter(l => (!initialType || l.tipo === initialType) && (!initialStatus || l.status === initialStatus));
 
-  // Totais reativos
-  const entradas = monthEntries.filter(l => l.tipo === 'RECEITA' && l.status !== 'CANCELADO').reduce((acc, l) => acc + Number(l.valor), 0);
-  const saidas = monthEntries.filter(l => l.tipo === 'DESPESA' && l.status !== 'CANCELADO').reduce((acc, l) => acc + Number(l.valor), 0);
-  const receitaAnual = lancamentos.filter(l => { const d = new Date(l.data); return d.getFullYear() === selectedYear && l.tipo === 'RECEITA' && l.status !== 'CANCELADO'; }).reduce((acc, l) => acc + Number(l.valor), 0);
-  const saldo = entradas - saidas;
-  const aReceber = monthEntries.filter(l => l.tipo === 'RECEITA' && l.status === 'PENDENTE').reduce((acc, l) => acc + Number(l.valor), 0);
-  const emAtraso = monthEntries.filter(l => l.tipo === 'RECEITA' && (l.status === 'ATRASADO' || (l.status === 'PENDENTE' && new Date(l.data) < new Date()))).reduce((acc, l) => acc + Number(l.valor), 0);
-  const previsao = saldo + aReceber;
+  // Totais financeiros: realizados, pendentes e previsão são conjuntos distintos.
+  const summary = summarizeFinancialEntries(lancamentos, { month: selectedMonth, year: selectedYear, annual: annualView });
+  const entradas = summary.receivedRevenue;
+  const saidas = summary.effectiveExpenses;
+  const receitaAnual = summarizeFinancialEntries(lancamentos, { month: selectedMonth, year: selectedYear, annual: true }).receivedRevenue;
+  const saldo = summary.cashBalance;
+  const aReceber = summary.receivable;
+  const emAtraso = summary.overdueReceivable;
+  const previsao = summary.forecast;
   const periodQuery = `mes=${selectedMonth}&ano=${selectedYear}`;
 
   const alertDocumentLock = (docNumber: string) => {
@@ -77,12 +79,12 @@ export function FinanceiroClient({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Saldo Atual" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Saldo Realizado" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
         <FinanceMetric href={`/portal/financeiro?${periodQuery}&tipo=RECEITA`} label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
         <FinanceMetric href={`/portal/financeiro?${periodQuery}&tipo=DESPESA`} label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
         <FinanceMetric href={`/portal/financeiro?${periodQuery}&status=PENDENTE&tipo=RECEITA`} label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
         <FinanceMetric href={`/portal/financeiro?${periodQuery}&status=ATRASADO&tipo=RECEITA`} label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Previsão do Mês" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Previsão de Caixa" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
         <FinanceMetric href={`/portal/financeiro?${periodQuery}&visao=ANO&tipo=RECEITA`} label="Receita Anual" value={receitaAnual} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
         <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
       </div>

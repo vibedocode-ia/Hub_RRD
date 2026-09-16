@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db, serviceRequests, clients, clientAddresses, officialDocuments, documentTemplates, DOC_STATUS, proposals, auditEvents } from '../../../../db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
 import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       .from(serviceRequests)
       .innerJoin(clients, eq(serviceRequests.clientId, clients.id))
       .leftJoin(clientAddresses, eq(serviceRequests.addressId, clientAddresses.id))
-      .where(eq(serviceRequests.id, serviceRequestId))
+      .where(and(eq(serviceRequests.id, serviceRequestId), isNull(serviceRequests.archivedAt)))
       .limit(1);
     if (!records.length) return NextResponse.json({ error: 'Chamado não encontrado.' }, { status: 404 });
 

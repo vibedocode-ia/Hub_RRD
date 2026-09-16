@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
-import { and, asc, desc, eq, gte, ilike, or, sql } from 'drizzle-orm'
-import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, teams, vehicles } from '@/db'
+import { and, asc, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm'
+import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, stockMovements, teams, vehicles } from '@/db'
+import { validateStockAdjustment } from '@/lib/inventory'
+import { FinancialEntrySchema } from '@/lib/validation/financeiro'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
       }
       if (action === 'get_financial_summary') {
         const rows = await db.select().from(financeiroLancamentos).limit(500)
-        const summary = rows.reduce((acc, row) => { const value = Number(row.valor) || 0; if (row.status === 'EFETIVADO' && row.tipo === 'RECEITA') acc.revenue += value; if (row.status === 'EFETIVADO' && row.tipo === 'DESPESA') acc.expenses += value; if (row.status === 'PENDENTE' && row.tipo === 'RECEITA') acc.receivable += value; if (row.status === 'PENDENTE' && row.tipo === 'DESPESA') acc.payable += value; return acc }, { revenue: 0, expenses: 0, receivable: 0, payable: 0 })
+        const summary = rows.reduce((acc, row) => { const value = Number(row.valor) || 0; if (row.status === 'EFETIVADO' && row.tipo === 'RECEITA') acc.revenue += value; if (row.status === 'EFETIVADO' && row.tipo === 'DESPESA') acc.expenses += value; if ((row.status === 'PENDENTE' || row.status === 'ATRASADO') && row.tipo === 'RECEITA') acc.receivable += value; if (row.status === 'PENDENTE' && row.tipo === 'DESPESA') acc.payable += value; return acc }, { revenue: 0, expenses: 0, receivable: 0, payable: 0 })
         return reply({ success: true, action, summary: { ...summary, cash: summary.revenue - summary.expenses } }, 200, correlationId)
       }
       if (action === 'list_teams') {
@@ -108,17 +110,27 @@ export async function POST(req: NextRequest) {
       const replay = await db.select({ id: sofiaEvents.id }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
       if (replay[0]) return reply({ success: true, alreadyProcessed: true, action }, 200, correlationId)
       if (action === 'adjust_stock') {
-        const itemId = String(data.itemId); const amount = Number(String(data.quantity).replace(',', '.')); const direction = String(data.direction)
-        const [before] = await db.select().from(insumos).where(eq(insumos.id, itemId)).limit(1)
-        if (!before) return reply({ success: false, error: 'Item de estoque não encontrado.' }, 404, correlationId)
-        if (direction === 'SAIDA' && Number(before.quantidade) < amount) return reply({ success: false, error: 'Estoque insuficiente para esta saída.' }, 422, correlationId)
-        const delta = direction === 'ENTRADA' ? amount : -amount
-        const [updated] = await db.update(insumos).set({ quantidade: sql`${insumos.quantidade} + ${delta}`, updatedAt: new Date() }).where(eq(insumos.id, itemId)).returning()
-        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, itemId, direction, amount }, intentDetected: 'inventory_adjust', status: 'PROCESSED' })
-        return reply({ success: true, action, item: safeStockSummary(updated) }, 200, correlationId)
+        const itemId = String(data.itemId); const direction = String(data.direction) as 'ENTRADA' | 'SAIDA'
+        const amount = Number(String(data.quantity).replace(',', '.'))
+        const result = await db.transaction(async (tx) => {
+          const [before] = await tx.select().from(insumos).where(eq(insumos.id, itemId)).limit(1)
+          if (!before) return { error: 'Item de estoque não encontrado.', status: 404 as const }
+          const validation = validateStockAdjustment(amount, { direction, available: Number(before.quantidade) })
+          if (!validation.ok) return { error: validation.error, status: 422 as const }
+          const delta = direction === 'ENTRADA' ? validation.quantity : -validation.quantity
+          const [updated] = await tx.update(insumos).set({ quantidade: sql`${insumos.quantidade} + ${delta}`, updatedAt: new Date() }).where(direction === 'SAIDA' ? and(eq(insumos.id, itemId), gte(insumos.quantidade, validation.quantity.toFixed(2))) : eq(insumos.id, itemId)).returning()
+          if (!updated) return { error: 'Estoque insuficiente para esta saída.', status: 422 as const }
+          await tx.insert(stockMovements).values({ insumoId: itemId, direction, quantity: validation.quantity.toFixed(2), source: 'SOFIA' })
+          await tx.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, itemId, direction, amount: validation.quantity }, intentDetected: 'inventory_adjust', status: 'PROCESSED' })
+          return { updated }
+        })
+        if ('error' in result) return reply({ success: false, error: result.error }, result.status, correlationId)
+        return reply({ success: true, action, item: safeStockSummary(result.updated) }, 200, correlationId)
       }
       if (action === 'create_financial_entry') {
-        const [entry] = await db.insert(financeiroLancamentos).values({ tipo: String(data.type), valor: String(data.amount).replace(',', '.'), descricao: clean(data.description, 300), categoria: clean(data.category, 100) || 'GERAL', status: clean(data.status, 16) || 'EFETIVADO', data: data.date ? new Date(String(data.date)) : new Date() }).returning()
+        const input = FinancialEntrySchema.safeParse({ tipo: data.type, valor: data.amount, descricao: data.description, categoria: data.category || 'GERAL', status: data.status || 'EFETIVADO', data: data.date })
+        if (!input.success) return reply({ success: false, error: 'Lançamento financeiro inválido.' }, 422, correlationId)
+        const [entry] = await db.insert(financeiroLancamentos).values({ tipo: input.data.tipo, valor: input.data.valor.toFixed(2), descricao: input.data.descricao, categoria: input.data.categoria || 'GERAL', status: input.data.status, data: new Date(`${input.data.data}T12:00:00.000Z`) }).returning()
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, entryId: entry.id, type: entry.tipo, amount: entry.valor }, intentDetected: 'financial_create_entry', status: 'PROCESSED' })
         return reply({ success: true, action, entry: { id: entry.id, type: entry.tipo, amount: entry.valor, description: entry.descricao, status: entry.status } }, 201, correlationId)
       }
@@ -179,15 +191,18 @@ export async function POST(req: NextRequest) {
         if (data.totalAmount !== undefined) values.totalAmount = String(data.totalAmount).replace(',', '.')
         if (data.warrantyDays !== undefined) values.warrantyDays = Number(data.warrantyDays)
         if (data.scheduledAt !== undefined) values.scheduledAt = data.scheduledAt ? new Date(String(data.scheduledAt)) : null
-        const [request] = await db.update(serviceRequests).set(values as any).where(eq(serviceRequests.id, String(data.requestId))).returning()
+        const [request] = await db.update(serviceRequests).set(values as any).where(and(eq(serviceRequests.id, String(data.requestId)), isNull(serviceRequests.archivedAt))).returning()
         if (!request) return reply({ success: false, error: 'Chamado não encontrado.' }, 404, correlationId)
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, requestId: request.id, fields: Object.keys(data).filter(key => key !== 'requestId') }, intentDetected: 'service_request_update', status: 'PROCESSED' })
         return reply({ success: true, action, request: { id: request.id, code: request.code, status: request.status } }, 200, correlationId)
       }
       if (action === 'update_document' || action === 'archive_document') {
-        const documentId = String(data.documentId); const values: Record<string, unknown> = { updatedAt: new Date() }
+        const documentId = String(data.documentId)
+        const active = await db.select({ id: officialDocuments.id }).from(officialDocuments).innerJoin(serviceRequests, eq(officialDocuments.serviceRequestId, serviceRequests.id)).where(and(eq(officialDocuments.id, documentId), isNull(serviceRequests.archivedAt))).limit(1)
+        if (!active.length) return reply({ success: false, error: 'Documento não encontrado ou chamado arquivado.' }, 404, correlationId)
+        const values: Record<string, unknown> = { updatedAt: new Date() }
         if (action === 'archive_document') values.status = 'ARQUIVADO'; else { if (data.status !== undefined) values.status = clean(data.status, 32); if (data.paymentMethod !== undefined) values.paymentMethod = clean(data.paymentMethod, 64); if (data.warrantyTerms !== undefined) values.warrantyTerms = clean(data.warrantyTerms, 4000); if (data.technicalNotes !== undefined) values.technicalNotes = clean(data.technicalNotes, 4000) }
-        const [document] = await db.update(officialDocuments).set(values as any).where(eq(officialDocuments.id, documentId)).returning()
+        const [document] = await db.update(officialDocuments).set(values as any).where(and(eq(officialDocuments.id, documentId), sql`exists (select 1 from ${serviceRequests} where ${serviceRequests.id} = ${officialDocuments.serviceRequestId} and ${serviceRequests.archivedAt} is null)`)).returning()
         if (!document) return reply({ success: false, error: 'Documento não encontrado.' }, 404, correlationId)
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, documentId, fields: Object.keys(data).filter(key => key !== 'documentId') }, intentDetected: action === 'archive_document' ? 'document_archive' : 'document_update', status: 'PROCESSED' })
         return reply({ success: true, action, document: { id: document.id, docNumber: document.docNumber, status: document.status } }, 200, correlationId)

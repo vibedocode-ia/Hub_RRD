@@ -120,6 +120,20 @@
       "when": 1789351807453,
       "tag": "0016_operational_crud",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789376400000,
+      "tag": "0017_stock_movements",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789376400001,
+      "tag": "0018_service_request_archive",
+      "breakpoints": true
     }
   ]
 }

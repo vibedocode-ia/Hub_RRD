@@ -31,7 +31,7 @@ export async function GET() {
       if (!bucket) continue
       if (entry.tipo === 'RECEITA') {
         if (entry.status === 'EFETIVADO') bucket.revenue += money(entry.valor)
-        else if (entry.status === 'PENDENTE') bucket.forecast += money(entry.valor)
+        else if (entry.status === 'PENDENTE' || entry.status === 'ATRASADO') bucket.forecast += money(entry.valor)
       }
       if (entry.tipo === 'DESPESA' && entry.status === 'EFETIVADO') bucket.expenses += money(entry.valor)
     }

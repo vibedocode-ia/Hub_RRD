@@ -1,5 +1,21 @@
 # Changelog
 
+## V0.12.39 — 2026-09-16
+
+### Fixed
+- Fecha invariantes P0 de estoque: quantidade normalizada em saldo, ledger e auditoria; histórico persistido e saída atômica inclusive via Sofia.
+- Fecha invariantes P0 financeiros: datas de calendário válidas, previsão e recebíveis incluem títulos atrasados no Portal, Dashboard e Sofia.
+- Torna arquivamento de chamados preservador e idempotente; bloqueia edição, emissão e mutação de documentos vinculados a chamados arquivados, inclusive pela Sofia.
+- Remove movimentações fictícias da tela de Estoque e exibe histórico persistido.
+
+### Database
+- Adiciona migrations `0017_stock_movements` e `0018_service_request_archive` ao journal Drizzle.
+
+### Verification
+- Revisões independentes Terra aprovadas após correções.
+- 61 testes de regressão, 69 testes de segurança, typecheck, build e `git diff --check` aprovados localmente.
+- Validação da migration com banco real permanece gate de produção; não foi simulada sem conexão autorizada.
+
 ## V0.12.38 — 2026-09-16
 
 ### Added

@@ -17,7 +17,8 @@ test('parses only closed inventory, financial and fleet domain actions', () => {
   assert.equal(parseSofiaDomainAction({ action: 'archive_vehicle', data: { vehicleId: '55555555-5555-4555-8555-555555555555' }, ...trusted }).ok, true)
   assert.equal(parseSofiaDomainAction({ action: 'archive_vehicle', data: { vehicleName: '[TESTE SOFIA] Caminhão Vacol' }, ...trusted }).ok, true)
   assert.equal(parseSofiaDomainAction({ action: 'archive_vehicle', data: { vehicleId: '55555555-5555-4555-8555-555555555555', vehicleName: 'duplicado' }, ...trusted }).ok, false)
-  assert.equal(parseSofiaDomainAction({ action: 'create_financial_entry', data: { type: 'DROP TABLE', amount: '5000' }, ...trusted }).ok, false)
+  assert.equal(parseSofiaDomainAction({ action: 'create_financial_entry', data: { type: 'RECEITA', amount: '5000', description: 'Entrada teste', category: 'Teste', status: 'EFETIVADO', date: '2026-02-31' }, ...trusted }).ok, false)
+  assert.equal(parseSofiaDomainAction({ action: 'update_financial_entry', data: { entryId: '66666666-6666-4666-8666-666666666666', date: '2026-02-31' }, ...trusted }).ok, false)
 })
 
 test('owner-level operational catalog accepts only typed finance, team, vehicle, equipment, request and document actions', () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isFinancialCalendarDate } from '@/lib/validation/financeiro'
 
 const central = z.object({
   centralContactId: z.string().uuid(),
@@ -138,7 +139,8 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
   }
   if (action === 'create_financial_entry') {
     if (!['RECEITA', 'DESPESA'].includes(clean(data.type, 16)) || !decimal(data.amount) || !clean(data.description, 300)) return { ok: false, error: 'Lançamento financeiro inválido.' }
-    if (data.status && !['PENDENTE', 'EFETIVADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
+    if (data.status && !['PENDENTE', 'EFETIVADO', 'ATRASADO', 'CANCELADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
+    if (data.date !== undefined && (typeof data.date !== 'string' || !isFinancialCalendarDate(data.date))) return { ok: false, error: 'Data financeira inválida.' }
   }
   if (action === 'archive_vehicle') {
     const hasId = isUuid(data.vehicleId)
@@ -157,8 +159,9 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
   if (action === 'update_financial_entry') {
     if (!isUuid(data.entryId) || !['type', 'amount', 'description', 'category', 'status', 'date'].some(key => data[key] !== undefined)) return { ok: false, error: 'Lançamento financeiro inválido.' }
     if (data.type !== undefined && !['RECEITA', 'DESPESA'].includes(clean(data.type, 16))) return { ok: false, error: 'Tipo financeiro inválido.' }
-    if (data.status !== undefined && !['PENDENTE', 'EFETIVADO', 'CANCELADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
+    if (data.status !== undefined && !['PENDENTE', 'EFETIVADO', 'ATRASADO', 'CANCELADO'].includes(clean(data.status, 16))) return { ok: false, error: 'Status financeiro inválido.' }
     if (data.amount !== undefined && !decimal(data.amount)) return { ok: false, error: 'Valor financeiro inválido.' }
+    if (data.date !== undefined && (typeof data.date !== 'string' || !isFinancialCalendarDate(data.date))) return { ok: false, error: 'Data financeira inválida.' }
   }
   if (action === 'create_team' && (!clean(data.name, 160) || !clean(data.leaderName, 160))) return { ok: false, error: 'Equipe inválida.' }
   if (action === 'update_team' && (!isUuid(data.teamId) || !['name', 'leaderName', 'phone', 'isActive'].some(key => data[key] !== undefined))) return { ok: false, error: 'Equipe inválida.' }
