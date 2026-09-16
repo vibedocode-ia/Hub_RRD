@@ -1,6 +1,20 @@
 # Changelog
 
-## V0.12.34 — 2026-09-16
+## V0.12.36 — 2026-09-16
+
+### Added
+- Adiciona seletor de período por mês e ano no Financeiro.
+- Corrige receitas, despesas, saldo, previsão e atrasados para respeitarem o mês/ano selecionado.
+- Calcula Receita Anual pelo acumulado do ano selecionado, separado do resultado mensal.
+- Carrega histórico financeiro suficiente para os cálculos temporais.
+- Propaga o período selecionado aos links dos cards e listas.
+- Torna os blocos de entradas, saídas, saldo e movimentações recentes navegáveis.
+- Adiciona visão anual via `visao=ANO`.
+
+### Verification
+- Typecheck, testes focais, build e `git diff --check` aprovados.
+
+## V0.12.35 — 2026-09-16
 
 ### Added
 - Cria cadastro persistido de contas bancárias da empresa com banco, agência, conta, Pix, cartão e conta principal.

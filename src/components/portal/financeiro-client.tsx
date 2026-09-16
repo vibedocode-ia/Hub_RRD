@@ -11,24 +11,33 @@ export function FinanceiroClient({
   clientOptions,
   initialType,
   initialStatus,
+  selectedMonth,
+  selectedYear,
+  annualView,
 }: { 
   initialLancamentos: any[]; 
   initialDocumentos: any[];
   clientOptions: Array<{ id: string; name: string }>;
   initialType?: 'RECEITA' | 'DESPESA';
   initialStatus?: string;
+  selectedMonth: number;
+  selectedYear: number;
+  annualView: boolean;
 }) {
   const [lancamentos, setLancamentos] = useState(initialLancamentos);
   const [isNovoLancamentoOpen, setIsNovoLancamentoOpen] = useState(false);
-  const visibleLancamentos = lancamentos.filter(l => (!initialType || l.tipo === initialType) && (!initialStatus || l.status === initialStatus));
+  const monthEntries = lancamentos.filter(l => { const d = new Date(l.data); return d.getFullYear() === selectedYear && (annualView || d.getMonth() + 1 === selectedMonth); });
+  const visibleLancamentos = monthEntries.filter(l => (!initialType || l.tipo === initialType) && (!initialStatus || l.status === initialStatus));
 
   // Totais reativos
-  const entradas = lancamentos.filter(l => l.tipo === 'RECEITA').reduce((acc, l) => acc + Number(l.valor), 0);
-  const saidas = lancamentos.filter(l => l.tipo === 'DESPESA').reduce((acc, l) => acc + Number(l.valor), 0);
+  const entradas = monthEntries.filter(l => l.tipo === 'RECEITA' && l.status !== 'CANCELADO').reduce((acc, l) => acc + Number(l.valor), 0);
+  const saidas = monthEntries.filter(l => l.tipo === 'DESPESA' && l.status !== 'CANCELADO').reduce((acc, l) => acc + Number(l.valor), 0);
+  const receitaAnual = lancamentos.filter(l => { const d = new Date(l.data); return d.getFullYear() === selectedYear && l.tipo === 'RECEITA' && l.status !== 'CANCELADO'; }).reduce((acc, l) => acc + Number(l.valor), 0);
   const saldo = entradas - saidas;
-  const aReceber = lancamentos.filter(l => l.tipo === 'RECEITA' && l.status === 'PENDENTE').reduce((acc, l) => acc + Number(l.valor), 0);
-  const emAtraso = lancamentos.filter(l => l.tipo === 'RECEITA' && l.status === 'ATRASADO').reduce((acc, l) => acc + Number(l.valor), 0);
+  const aReceber = monthEntries.filter(l => l.tipo === 'RECEITA' && l.status === 'PENDENTE').reduce((acc, l) => acc + Number(l.valor), 0);
+  const emAtraso = monthEntries.filter(l => l.tipo === 'RECEITA' && (l.status === 'ATRASADO' || (l.status === 'PENDENTE' && new Date(l.data) < new Date()))).reduce((acc, l) => acc + Number(l.valor), 0);
   const previsao = saldo + aReceber;
+  const periodQuery = `mes=${selectedMonth}&ano=${selectedYear}`;
 
   const alertDocumentLock = (docNumber: string) => {
     alert(`DOCUMENTO TRAVADO (${docNumber})\n\nEste Recibo/OS Fiscal já foi emitido e assinado digitalmente. Para estornar ou alterar, é necessário gerar um evento de cancelamento oficial.\n\nProteção contra fraude financeira ativa.`);
@@ -56,46 +65,38 @@ export function FinanceiroClient({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <FinanceMetric href="/portal/financeiro" label="Saldo Atual" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro?tipo=RECEITA" label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro?tipo=DESPESA" label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro?status=PENDENTE&tipo=RECEITA" label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro?status=ATRASADO&tipo=RECEITA" label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro" label="Previsão do Mês" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro?tipo=RECEITA" label="Receita Anual" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric href="/portal/financeiro" label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Período</span>
+        <select aria-label="Selecionar mês" value={selectedMonth} onChange={(e) => { window.location.href = `/portal/financeiro?mes=${e.target.value}&ano=${selectedYear}`; }} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100">
+          {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map((name,index)=><option key={name} value={index+1}>{name}</option>)}
+        </select>
+        <select aria-label="Selecionar ano" value={selectedYear} onChange={(e) => { window.location.href = `/portal/financeiro?mes=${selectedMonth}&ano=${e.target.value}`; }} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100">
+          {[selectedYear-2,selectedYear-1,selectedYear,selectedYear+1].map(year=><option key={year} value={year}>{year}</option>)}
+        </select>
+        <span className="text-xs text-slate-500">Os cards e listas abaixo respeitam este período.</span>
       </div>
 
-      {/* DRE Simplificada (Visão de Caixa) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Saldo Atual" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}&tipo=RECEITA`} label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}&tipo=DESPESA`} label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}&status=PENDENTE&tipo=RECEITA`} label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}&status=ATRASADO&tipo=RECEITA`} label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Previsão do Mês" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}&visao=ANO&tipo=RECEITA`} label="Receita Anual" value={receitaAnual} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
+        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="w-16 h-16 text-emerald-500" />
-          </div>
-          <p className="text-sm font-medium text-slate-400 mb-1">Entradas (Mês)</p>
-          <p className="text-2xl font-black text-emerald-400">
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entradas)}
-          </p>
-        </div>
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingDown className="w-16 h-16 text-red-500" />
-          </div>
-          <p className="text-sm font-medium text-slate-400 mb-1">Saídas (Mês)</p>
-          <p className="text-2xl font-black text-red-400">
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saidas)}
-          </p>
-        </div>
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Wallet className="w-16 h-16 text-cyan-500" />
-          </div>
-          <p className="text-sm font-medium text-slate-400 mb-1">Saldo Líquido</p>
-          <p className={`text-2xl font-black ${saldo >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldo)}
-          </p>
-        </div>
+        <Link href={`/portal/financeiro?${periodQuery}&tipo=RECEITA`} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/50 transition">
+          <TrendingUp className="absolute right-4 top-4 h-16 w-16 text-emerald-500 opacity-10"/><p className="text-sm font-medium text-slate-400 mb-1">Entradas (Mês)</p><p className="text-2xl font-black text-emerald-400">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(entradas)}</p><p className="mt-2 text-[10px] font-bold uppercase text-cyan-400">Abrir receitas →</p>
+        </Link>
+        <Link href={`/portal/financeiro?${periodQuery}&tipo=DESPESA`} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-red-500/50 transition">
+          <TrendingDown className="absolute right-4 top-4 h-16 w-16 text-red-500 opacity-10"/><p className="text-sm font-medium text-slate-400 mb-1">Saídas (Mês)</p><p className="text-2xl font-black text-red-400">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(saidas)}</p><p className="mt-2 text-[10px] font-bold uppercase text-cyan-400">Abrir despesas →</p>
+        </Link>
+        <Link href={`/portal/financeiro?${periodQuery}`} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-cyan-500/50 transition">
+          <Wallet className="absolute right-4 top-4 h-16 w-16 text-cyan-500 opacity-10"/><p className="text-sm font-medium text-slate-400 mb-1">Saldo Líquido</p><p className={`text-2xl font-black ${saldo >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(saldo)}</p><p className="mt-2 text-[10px] font-bold uppercase text-cyan-400">Abrir composição →</p>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -105,7 +106,7 @@ export function FinanceiroClient({
             <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
               <CircleDollarSign className="w-5 h-5 text-emerald-400" /> Movimentações Recentes
             </h2>
-            <button className="text-xs text-emerald-400 hover:underline">Ver Todas</button>
+            <Link href={`/portal/financeiro?${periodQuery}`} className="text-xs text-emerald-400 hover:underline">Ver Todas →</Link>
           </div>
           <div className="p-0 overflow-x-auto">
             <table className="w-full text-left border-collapse">
