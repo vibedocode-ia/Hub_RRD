@@ -1,3 +1,5 @@
+### V0.12.30 (2026-09-15) - Atalho de editar perfil no cabeçalho e seção Segurança diretamente no painel pessoal.
+
 ### V0.12.28 (2026-09-15) - Autoalteração de senha com validação da senha atual, revogação de sessões e regra estrita para redefinição de subordinados.
 
 ### V0.12.27 (2026-09-15) - Mantém erros de criação e edição de pessoas exclusivamente no modal do formulário.

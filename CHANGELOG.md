@@ -1,5 +1,14 @@
 # Changelog
 
+## V0.12.30 — 2026-09-15
+
+### Added
+- O bloco de usuário no canto superior direito agora abre explicitamente a edição do próprio perfil, com sinal visual, tooltip e acessibilidade por teclado.
+- A seção **Segurança** fica diretamente no painel pessoal, com troca de senha protegida por senha atual e encerramento das sessões.
+
+### Verification
+- Testes de segurança, TypeScript e build aprovados.
+
 ## V0.12.29 — 2026-09-15
 
 ### Added

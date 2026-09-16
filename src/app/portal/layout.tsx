@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Package,
   CircleDollarSign,
-  Briefcase
+  Briefcase,
+  Pencil
 } from 'lucide-react';
 import LogoutButton from './components/LogoutButton';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -69,9 +70,9 @@ export default async function PortalLayout({
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/portal/perfil" className="flex items-center gap-2">
+          <Link href="/portal/perfil" aria-label="Abrir meu perfil para editar" title="Editar meu perfil" className="group flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 transition hover:border-cyan-500/40 hover:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-cyan-400">
             {user.photoUrl ? <img src={user.photoUrl} alt="Foto de perfil" className="h-9 w-9 rounded-full object-cover ring-2 ring-cyan-500/50" /> : <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 font-black text-slate-950">{user.name.slice(0,1).toUpperCase()}</div>}
-            <div className="text-right hidden sm:block"><div className="text-xs font-bold text-slate-200">{user.name}</div><div className="text-[10px] text-cyan-400">{user.jobTitle || user.role}</div></div>
+            <div className="text-right hidden sm:block"><div className="flex items-center justify-end gap-1 text-xs font-bold text-slate-200">{user.name}<Pencil className="h-3 w-3 text-cyan-400 opacity-0 transition group-hover:opacity-100" /></div><div className="text-[10px] text-cyan-400">{user.jobTitle || user.role}</div></div>
           </Link>
           <LogoutButton />
         </div>
