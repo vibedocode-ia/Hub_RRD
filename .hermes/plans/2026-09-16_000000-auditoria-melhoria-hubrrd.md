@@ -6,6 +6,24 @@
 
 **Base:** auditoria em `docs/AUDITORIA_HUBRRD_2026-09-16.md`.
 
+## Situação consolidada após V0.12.39
+
+### Fechado e comprovado
+
+- V0.12.39 publicada no commit `c0e47a1d9f37df7cd8cd8b8104e481eb695cfff8`, servida pelo runtime de produção.
+- Migrations `0017_stock_movements` e `0018_service_request_archive` comprovadas por suas estruturas no PostgreSQL de produção.
+- Lote P0 de estoque, financeiro, arquivamento de chamados e guardas de documentos corrigido, coberto por testes/revisão e publicado.
+- Sofia autenticada validada em modo consulta; `NumeroTeste` possui pessoa local técnica, permissão mínima `sofia.use` e homologação idempotente até o rascunho `PENDING_REVIEW`.
+
+### Deliberadamente não executado
+
+- Não emitir, anexar ou entregar PDF a partir do rascunho de homologação sem uma decisão operacional explícita.
+- Não tratar a existência do rascunho como E2E completo de WhatsApp/documentos.
+
+### Próxima prioridade recomendada
+
+Executar P1 de forma limitada e verificável, iniciando pela matriz de navegação e CRUD operacional já documentada. Antes de iniciar um novo lote, revisar este plano, criar teste RED, implementar, validar e abrir nova release.
+
 ## Ordem dos lotes
 
 ### Lote 0 — Baseline e produção

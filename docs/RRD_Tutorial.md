@@ -139,8 +139,9 @@ As orientações abaixo devem ser dadas com honestidade: no checkout auditado, e
 - Agenda: edição, cancelamento e detalhe visual ainda pendentes.
 - Propostas: criação/edição direta, busca, paginação e detalhe completo ainda pendentes.
 - Contas bancárias: edição, arquivamento e garantia de conta primária única ainda pendentes.
-- Estoque: histórico real e movimentações sem mock ainda pendentes.
-- Sofia → PDF → entrega: fluxo E2E ainda pendente de comprovação.
+- Estoque: ledger e histórico persistido foram publicados em V0.12.39; CRUD operacional completo, vínculos de consumo e validação visual ampla ainda seguem no plano.
+- Sofia → rascunho: autenticada e homologada em produção com `NumeroTeste`, incluindo idempotência; não confundir isso com emissão ou entrega.
+- Sofia → PDF → anexação → entrega: fluxo E2E completo continua pendente de comprovação e exige confirmação humana antes de emitir.
 
 Quando perguntado sobre qualquer item acima, diga que a função está prevista no plano, mas ainda não está validada como pronta no ambiente.
 

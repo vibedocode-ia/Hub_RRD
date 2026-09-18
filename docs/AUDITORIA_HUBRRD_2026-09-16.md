@@ -128,6 +128,33 @@ Isso não equivale a dizer que todos os fluxos estão prontos. A auditoria encon
 - `package.json` declara Next `^16.3.5`, enquanto o build auditado reportou Next `15.5.25`; reconciliar lockfile e runtime.
 
 
+## 5.1. Adendo pós-release — V0.12.39 (17/09/2026)
+
+> Este adendo registra evidências posteriores ao commit originalmente auditado. Ele não reescreve o histórico dos achados; diferencia o que foi corrigido/publicado do que continua pendente.
+
+### P0 fechado nesta release
+
+- **Estoque:** `stock_movements` passou a existir como ledger persistido; ajustes usam quantidade normalizada, transação e bloqueio de saldo negativo nos caminhos portal, API e Sofia.
+- **Financeiro:** datas de calendário, valores positivos e status foram unificados; realizado, pendente e atrasado têm semântica consistente no portal, dashboard e Sofia.
+- **Arquivamento de chamado:** chamados são arquivados com preservação de histórico, condição idempotente e auditoria; listagens operacionais excluem registros arquivados.
+- **Documentos vinculados:** edição/arquivamento por API direta e Sofia exigem, na própria mutação, que o chamado vinculado permaneça ativo; emissão em chamado arquivado é bloqueada.
+
+### Evidência publicada e de runtime
+
+- Release publicada: `V0.12.39`, commit `c0e47a1d9f37df7cd8cd8b8104e481eb695cfff8`.
+- O primeiro build falhou ao exportar layers por cancelamento transitório do BuildKit; o rebuild forçado posterior concluiu o rollout.
+- Produção respondeu HTTP 200 no domínio público e serviu `V0.12.39`.
+- O container ativo foi confirmado na imagem do commit V0.12.39.
+- PostgreSQL de produção contém `stock_movements`, `service_requests.archived_at` e `service_requests.archived_by_id`, comprovando os efeitos das migrations `0017` e `0018`.
+- Sofia autenticada em produção respondeu ação somente leitura de resumo financeiro na versão V0.12.39.
+- Homologação controlada com `NumeroTeste` foi persistida como rascunho `PENDING_REVIEW`; o replay com a mesma correlation ID foi idempotente. Não houve emissão, PDF, anexação, envio ou entrega.
+
+### Limites ainda abertos
+
+- Não havia, na verificação, chamados/documentos arquivados preexistentes para provar a guarda correspondente com dado real de produção; a regra tem cobertura local e revisão independente, mas não essa prova de runtime específica.
+- O fluxo completo `mensagem WhatsApp → revisão humana → confirmação → emissão → PDF → anexação → entrega` continua **não validado E2E**. A homologação parou deliberadamente no rascunho pendente de revisão.
+- Os achados P1/P2 desta auditoria permanecem no plano; V0.12.39 não deve ser interpretada como conclusão integral de CRUDs, navegação, Google ou documentação operacional.
+
 ## 6. Critério de conclusão da auditoria de correções
 
 Uma frente só pode ser marcada concluída quando houver:
