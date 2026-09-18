@@ -1,5 +1,18 @@
 # Changelog
 
+## V0.12.41 — 2026-09-18
+
+### Added
+- Completa a operação de Contatos no portal com edição e arquivamento lógico acessíveis por cada card.
+- Reutiliza os contratos autenticados existentes de criação, atualização e arquivamento, atualizando a lista somente após resposta bem-sucedida.
+- Exibe confirmação explícita antes de arquivar e esclarece que o histórico é preservado.
+- Trata falhas HTTP e de transporte sem travar o formulário, restaurando controles e mostrando feedback ao operador.
+
+### Verification
+- TDD RED→GREEN para ações de edição, arquivamento e recuperação de falha de transporte.
+- Revisão independente aprovada.
+- 65 testes unitários, 73 testes de segurança, typecheck, build e `git diff --check` aprovados.
+
 ## V0.12.40 — 2026-09-18
 
 ### Fixed
