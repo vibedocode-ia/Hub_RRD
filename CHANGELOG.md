@@ -1,5 +1,16 @@
 # Changelog
 
+## V0.12.42 — 2026-09-18
+
+### Fixed
+- Fecha a ponte operacional de Contatos para CRM: contatos vinculados passam a oferecer atalho explícito para a ficha do cliente.
+- Protege as fichas CRM de consulta e edição com `crm.read` antes de qualquer leitura de banco, impedindo acesso direto por sessão sem permissão.
+
+### Verification
+- TDD RED→GREEN para navegação condicional Contato → CRM e para guards de acesso nas duas rotas CRM.
+- Revisão independente aprovada após correção de autorização.
+- 68 testes unitários, 76 testes de segurança, typecheck, build e `git diff --check` aprovados.
+
 ## V0.12.41 — 2026-09-18
 
 ### Added

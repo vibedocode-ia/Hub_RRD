@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 import { ArrowLeft } from 'lucide-react';
 import { db, clients, clientAddresses } from '@/db';
 import { eq } from 'drizzle-orm';
@@ -8,6 +9,7 @@ import EditClientForm from './EditClientForm';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }> };
 export default async function EditClientPage({ params }: Props) {
+  if (!await requireLocalPermission('crm.read')) redirect('/portal');
   const { id } = await params;
   if (!db) return <div>Banco indisponível.</div>;
   const [client] = await db.select().from(clients).where(eq(clients.id, id)).limit(1);

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import DeleteResourceButton from '@/components/DeleteResourceButton';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 import { db, clients, clientAddresses, serviceRequests, officialDocuments, financeiroLancamentos } from '@/db';
 import { buildCrmProfile } from '@/lib/crm-profile';
 import { eq, desc } from 'drizzle-orm';
@@ -45,6 +46,7 @@ function formatCurrency(value: unknown) {
 }
 
 export default async function ClientDetailPage({ params }: PageProps) {
+  if (!await requireLocalPermission('crm.read')) redirect('/portal');
   const { id } = await params;
 
   if (!db) {
