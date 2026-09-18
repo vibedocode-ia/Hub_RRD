@@ -40,6 +40,30 @@ export async function POST(req: NextRequest) {
         const activeTeams = await db.select({ name: teams.name, leaderName: teams.leaderName }).from(teams).where(eq(teams.isActive, true)).orderBy(asc(teams.name)).limit(20)
         return reply({ success: true, action: input.action, teams: activeTeams }, 200, correlationId)
       }
+      if (input.action === 'update_service_draft') {
+        const [replay] = await db.select({ id: sofiaEvents.id }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
+        if (replay) return reply({ success: true, alreadyProcessed: true, action: input.action }, 200, correlationId)
+        const [draft] = await db.select().from(sofiaDrafts).where(and(
+          eq(sofiaDrafts.id, input.draftId),
+          eq(sofiaDrafts.senderPhone, input.senderPhone),
+          eq(sofiaDrafts.centralHubId, input.centralHubId),
+          eq(sofiaDrafts.centralContactId, input.centralContactId),
+          eq(sofiaDrafts.centralClientId, input.centralClientId),
+          eq(sofiaDrafts.centralRole, input.centralRole),
+          eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.COLLECTING),
+        )).limit(1)
+        if (!draft) return reply({ success: false, error: 'Rascunho em coleta não encontrado para esta conversa.' }, 409, correlationId)
+        const previous = draft.draftPayload as Record<string, unknown>
+        const next = { ...previous, ...Object.fromEntries(Object.entries(input).filter(([key, value]) => !['action', 'centralContactId', 'centralClientId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key) && value !== undefined)), address: { ...(previous.address && typeof previous.address === 'object' ? previous.address as Record<string, unknown> : {}), ...(input.address || {}) } }
+        const pendingFields = pendingDraftFields(next as any); const status = pendingFields.length ? SOFIA_DRAFT_STATUS.COLLECTING : SOFIA_DRAFT_STATUS.PENDING_REVIEW
+        const [updated] = await db.transaction(async tx => {
+          const [row] = await tx.update(sofiaDrafts).set({ draftPayload: next, pendingFields, conversationSummary: input.conversationSummary, status, updatedAt: new Date() }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.COLLECTING))).returning()
+          if (!row) throw new Error('DRAFT_NOT_COLLECTING')
+          await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: correlationId, rawPayload: { action: input.action, draftId: draft.id, receivedFields: Object.keys(input).filter(key => !['conversationSummary'].includes(key)) }, intentDetected: draft.intent, status })
+          return [row]
+        })
+        return reply({ success: true, action: input.action, draftId: updated.id, pendingFields, nextAction: pendingFields.length ? 'collect_missing_fields' : 'review_draft' }, 200, correlationId)
+      }
       const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
       if (existing[0]) return reply({ success: true, alreadyProcessed: true, draftId: existing[0].id, pendingFields: existing[0].pendingFields }, existing[0].status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 200, correlationId)
       const pendingFields = pendingDraftFields(input); const status = pendingFields.length ? SOFIA_DRAFT_STATUS.COLLECTING : SOFIA_DRAFT_STATUS.PENDING_REVIEW

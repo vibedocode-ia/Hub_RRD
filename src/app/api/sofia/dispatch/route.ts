@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { db, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, userPermissions, users } from '../../../../db';
 import { canUseRrdSofia, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '../../../../lib/sofia-local-access';
 import { SofiaDispatchSchema } from '../../../../lib/validation/sofia';
+import { resolveDocumentIdentity } from '../../../../lib/document-identity';
 import { VERSION } from '../../../../lib/version';
 
 const SOFIA_ALLOWED_DISPATCH_ROLES = ['hub_owner', 'hub_admin', 'hub_operator'];
@@ -146,6 +147,9 @@ export async function POST(req: NextRequest) {
     
     if (!payload.customerName) {
       pendingFields.push({ field: 'customer.name', label: 'Nome do cliente', requiredFor: 'service_request' });
+    }
+    if (!payload.customerDocument || !resolveDocumentIdentity(payload.customerDocument)) {
+      pendingFields.push({ field: 'customer.document', label: 'CPF ou CNPJ válido', requiredFor: 'document_issue' });
     }
     if (!payload.address?.street) {
       pendingFields.push({ field: 'address.street', label: 'Logradouro', requiredFor: 'service_request' });

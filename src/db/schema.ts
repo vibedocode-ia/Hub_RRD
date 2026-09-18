@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // ==========================================
@@ -402,7 +403,10 @@ export const attachments = pgTable('attachments', {
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('attachments_document_idx').on(table.documentId),
+  uniqueIndex('attachments_one_official_pdf_per_document').on(table.documentId).where(sql`${table.fileType} = 'OFFICIAL_DOCUMENT_PDF'`),
+]);
 
 // 9. Eventos e Logs de Auditoria da Sofia (WhatsApp API)
 export const sofiaEvents = pgTable('sofia_events', {

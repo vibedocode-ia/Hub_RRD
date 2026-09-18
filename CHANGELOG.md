@@ -1,5 +1,16 @@
 # Changelog
 
+## V0.12.43 — 2026-09-18
+
+### Fixed
+- Vincula cada complemento conversacional da Sofia a um rascunho documental opaco e específico da conversa, sem seleção por telefone ou heurística.
+- Revalida no HubRRD o rascunho, pessoa, Hub, papel e estado de coleta antes de qualquer atualização.
+- Uniformiza CPF/CNPJ válido e tipo PF/PJ derivado na cadeia Sofia, CRM e emissão.
+- Impede que atualizações genéricas alterem entrega documental; somente a rota protegida de entrega pode marcar um documento como enviado.
+
+### Verification
+- 72 testes unitários, 80 testes de segurança, TypeScript, build e `git diff --check` aprovados.
+
 ## V0.12.42 — 2026-09-18
 
 ### Fixed
