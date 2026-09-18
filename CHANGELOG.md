@@ -1,5 +1,17 @@
 # Changelog
 
+## V0.12.40 — 2026-09-18
+
+### Fixed
+- Torna o Catálogo de Serviços acessível também pela sidebar desktop, preservando paridade com a navegação principal mobile.
+- Adiciona contrato de navegação que exige a rota `/portal/servicos` nos arrays efetivamente renderizados no desktop e no mobile.
+- Expõe `npm run test:unit` como comando padrão para toda a suíte de contratos unitários.
+
+### Verification
+- TDD observado: o contrato falhou antes da correção da sidebar e antes da criação do comando padrão de testes.
+- Revisão independente aprovada.
+- 63 testes unitários, 70 testes de segurança, typecheck, build e `git diff --check` aprovados.
+
 ## V0.12.39 — 2026-09-16
 
 ### Fixed

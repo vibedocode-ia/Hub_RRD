@@ -1,7 +1,7 @@
 // RR Desentupidora — Site + Hub RRD · versionamento VibeDoCode (obrigatório)
-export const VERSION          = 'V0.12.39';
-export const APP_VERSION      = '0.12.39';
-export const APP_VERSION_DATE = '2026-09-16';
+export const VERSION          = 'V0.12.40';
+export const APP_VERSION      = '0.12.40';
+export const APP_VERSION_DATE = '2026-09-18';
 export const APP_NAME         = 'RR Desentupidora';
 export const APP_DESCRIPTION  =
   'Desentupimento, limpa fossa e hidrojateamento em Niterói 24h. 5,0 ⭐ no Google. Ligue agora!';

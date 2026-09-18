@@ -42,6 +42,7 @@ export default async function PortalLayout({
     { section: 'Operação', label: 'Contatos', href: '/portal/contatos', icon: Users },
     { section: 'Operação', label: 'Agenda', href: '/portal/agenda', icon: ClipboardList },
     { section: 'Operação', label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
+    { section: 'Operação', label: 'Serviços', href: '/portal/servicos', icon: Wrench },
     { section: 'Operação', label: 'Equipes e Frotas', href: '/portal/operacional', icon: Briefcase },
     { section: 'Operação', label: 'Estoque', href: '/portal/estoque', icon: Package },
     { section: 'Gestão', label: 'Propostas', href: '/portal/propostas', icon: FileText },

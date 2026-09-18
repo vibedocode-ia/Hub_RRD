@@ -1,6 +1,6 @@
 {
   "name": "rrdesentupidora-site-hub",
-  "version": "0.12.39",
+  "version": "0.12.40",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,6 +13,7 @@
     "db:seed:rafael": "tsx scripts/seed-rafael.ts",
     "db:seed:users": "tsx scripts/seed-users.ts",
     "db:seed:operational": "tsx scripts/seed-operational-defaults.ts",
+    "test:unit": "tsx --test src/lib/__tests__/*.test.ts",
     "test:security": "node scripts/run-security-tests.mjs"
   },
   "dependencies": {
