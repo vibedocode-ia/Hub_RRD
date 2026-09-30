@@ -1,4 +1,20 @@
 # Atualizações do Projeto — RR Desentupidora
+## V0.13.00 — 2026-09-30
+
+### Added
+- Adiciona o módulo independente de Leads: cadastro obrigatório por nome e telefone, identificação normalizada, consulta e acompanhamento no Portal.
+- Adiciona solicitações e propostas comerciais próprias de Leads, mantendo o fluxo de Clientes existente inalterado.
+- Converte Lead aprovado para Cliente somente de forma transacional, auditável e idempotente; em duplicidade ambígua do CRM legado, bloqueia a conversão para revisão comercial em vez de criar dado incerto.
+- Inclui navegação de Leads para desktop e mobile, com permissões locais de CRM.
+
+### Database
+- Inclui somente a migration aditiva `0020_leads_isolated.sql`, com tabelas e índices `lead_*`; nenhuma tabela, coluna, restrição ou dado do CRM legado foi alterado.
+- A migration está versionada e validada em PostgreSQL descartável, mas não foi aplicada no banco de produção neste release.
+
+### Verification
+- Revisão independente aprovada após validações de concorrência para aprovação, proposta e conversão.
+- 86 testes unitários, 94 testes de segurança, TypeScript, build de produção e `git diff --check` aprovados.
+
 > Seguir norma VibeDoCode: `V[MAJOR].[MINOR].[PATCH]`
 
 ## V0.10.00 — 2026-09-04 — Lançamento do Hub RRD (MVP Interno Operacional)

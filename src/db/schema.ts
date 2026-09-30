@@ -238,6 +238,128 @@ export const clientAddresses = pgTable('client_addresses', {
   index('addresses_neighborhood_idx').on(table.neighborhood),
 ]);
 
+// 2c. Leads são um módulo comercial isolado. O fluxo de Cliente abaixo permanece inalterado.
+export const leads = pgTable('leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull(),
+  normalizedPhone: text('normalized_phone').notNull(),
+  email: text('email'),
+  document: text('document'),
+  normalizedDocument: text('normalized_document'),
+  sourceChannel: text('source_channel').notNull().default('PORTAL_MANUAL'),
+  status: text('status').notNull().default('NEW'),
+  priority: text('priority').notNull().default(PRIORITY_LEVELS.NORMAL),
+  serviceType: text('service_type'),
+  problemReported: text('problem_reported'),
+  notes: text('notes'),
+  convertedClientId: uuid('converted_client_id'),
+  convertedAt: timestamp('converted_at'),
+  convertedById: uuid('converted_by_id').references(() => users.id),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('leads_normalized_phone_unique').on(table.normalizedPhone),
+  uniqueIndex('leads_normalized_document_unique').on(table.normalizedDocument).where(sql`${table.normalizedDocument} is not null`),
+  index('leads_status_created_idx').on(table.status, table.createdAt),
+]);
+
+export const leadAddresses = pgTable('lead_addresses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }).notNull(),
+  street: text('street'),
+  number: text('number'),
+  complement: text('complement'),
+  floorOrUnit: text('floor_or_unit'),
+  neighborhood: text('neighborhood'),
+  city: text('city').notNull().default('Niterói'),
+  state: text('state').notNull().default('RJ'),
+  zipCode: text('zip_code'),
+  referencePoint: text('reference_point'),
+  serviceAccessNotes: text('service_access_notes'),
+  propertyType: text('property_type'),
+  needsCondominiumAuthorization: boolean('needs_condominium_authorization').notNull().default(false),
+  isMain: boolean('is_main').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('lead_addresses_lead_idx').on(table.leadId),
+  uniqueIndex('lead_addresses_one_main_per_lead').on(table.leadId).where(sql`${table.isMain} = true`),
+]);
+
+export const leadServiceRequests = pgTable('lead_service_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }).notNull(),
+  leadAddressId: uuid('lead_address_id').references(() => leadAddresses.id, { onDelete: 'set null' }),
+  serviceType: text('service_type').notNull(),
+  priority: text('priority').notNull().default(PRIORITY_LEVELS.NORMAL),
+  problemReported: text('problem_reported').notNull(),
+  problemFound: text('problem_found'),
+  desiredScheduleAt: timestamp('desired_schedule_at'),
+  estimatedTotal: numeric('estimated_total', { precision: 10, scale: 2 }),
+  internalNotes: text('internal_notes'),
+  customerNotes: text('customer_notes'),
+  status: text('status').notNull().default(REQUEST_STATUS.PENDING_REVIEW),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('lead_service_requests_lead_created_idx').on(table.leadId, table.createdAt),
+  index('lead_service_requests_status_created_idx').on(table.status, table.createdAt),
+]);
+
+export const leadProposals = pgTable('lead_proposals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'restrict' }).notNull(),
+  leadServiceRequestId: uuid('lead_service_request_id').references(() => leadServiceRequests.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  totalValue: numeric('total_value', { precision: 10, scale: 2 }).notNull(),
+  status: text('status').notNull().default('DRAFT'),
+  validUntil: timestamp('valid_until'),
+  sentAt: timestamp('sent_at'),
+  approvedAt: timestamp('approved_at'),
+  rejectedAt: timestamp('rejected_at'),
+  notes: text('notes'),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('lead_proposals_lead_status_created_idx').on(table.leadId, table.status, table.createdAt),
+  index('lead_proposals_status_created_idx').on(table.status, table.createdAt),
+]);
+
+export const leadDocuments = pgTable('lead_documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }).notNull(),
+  leadProposalId: uuid('lead_proposal_id').references(() => leadProposals.id, { onDelete: 'set null' }),
+  documentType: text('document_type').notNull(),
+  storagePath: text('storage_path').notNull(),
+  sha256: text('sha256').notNull(),
+  mimeType: text('mime_type').notNull(),
+  fileSize: integer('file_size'),
+  payloadSnapshot: jsonb('payload_snapshot').notNull().default({}),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('lead_documents_proposal_idx').on(table.leadProposalId),
+  index('lead_documents_lead_created_idx').on(table.leadId, table.createdAt),
+]);
+
+export const leadAuditEvents = pgTable('lead_audit_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }).notNull(),
+  actorUserId: uuid('actor_user_id').references(() => users.id),
+  action: text('action').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: uuid('target_id'),
+  metadata: jsonb('metadata').notNull().default({}),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('lead_audit_events_lead_created_idx').on(table.leadId, table.createdAt),
+  index('lead_audit_events_target_created_idx').on(table.targetType, table.targetId, table.createdAt),
+]);
+
 // 5. Cadastros de Apoio Operacional (Equipes, Veículos e Equipamentos)
 export const teams = pgTable('teams', {
   id: uuid('id').primaryKey().defaultRandom(),

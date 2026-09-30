@@ -39,6 +39,7 @@ export default async function PortalLayout({
   const navItems = [
     { section: 'Visão geral', label: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
     { section: 'Operação', label: 'CRM', href: '/portal/crm', icon: Users },
+    { section: 'Operação', label: 'Leads', href: '/portal/leads', icon: Users },
     { section: 'Operação', label: 'Contatos', href: '/portal/contatos', icon: Users },
     { section: 'Operação', label: 'Agenda', href: '/portal/agenda', icon: ClipboardList },
     { section: 'Operação', label: 'Chamados', href: '/portal/chamados', icon: ClipboardList },
