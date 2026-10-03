@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
 import { and, asc, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm'
-import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, stockMovements, teams, vehicles } from '@/db'
+import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, stockMovements, teams, userPermissions, users, vehicles } from '@/db'
 import { validateStockAdjustment } from '@/lib/inventory'
 import { FinancialEntrySchema } from '@/lib/validation/financeiro'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
+import { canExecuteRrdSofiaAction, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '@/lib/sofia-local-access'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
 
@@ -21,6 +22,17 @@ function authorized(req: NextRequest) {
 }
 function centralHubMatches(raw: unknown) { return Boolean(raw && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>).centralHubId === process.env.RRD_HUB_ID) }
 
+async function locallyAuthorizedForSofiaAction(senderPhone: unknown, centralRole: unknown): Promise<boolean> {
+  const phone = normalizeRrdPhone(senderPhone)
+  if (!phone || !db) return false
+  const [person] = await db.select({ phone: users.phone, isActive: users.isActive })
+    .from(users)
+    .innerJoin(userPermissions, and(eq(userPermissions.userId, users.id), eq(userPermissions.permissionKey, SOFIA_LOCAL_PERMISSION)))
+    .where(and(eq(users.phone, phone), eq(users.isActive, true)))
+    .limit(1)
+  return canExecuteRrdSofiaAction(person ? { ...person, permissions: [SOFIA_LOCAL_PERMISSION] } : null, phone, centralRole)
+}
+
 export async function POST(req: NextRequest) {
   const auth = authorized(req); if (!auth.ok) return reply({ success: false, error: auth.error }, auth.status)
   if (!db) return reply({ success: false, error: 'Banco de dados indisponível.' }, 503)
@@ -28,6 +40,10 @@ export async function POST(req: NextRequest) {
   if (!/^[A-Za-z0-9:_-]{8,160}$/.test(correlationId)) return reply({ success: false, error: 'Chave de idempotência obrigatória.' }, 400)
   const rawBody = await req.json().catch(() => null)
   if (!centralHubMatches(rawBody)) return reply({ success: false, error: 'Hub central não autorizado.' }, 403, correlationId)
+  const envelope = rawBody as Record<string, unknown>
+  if (!await locallyAuthorizedForSofiaAction(envelope.senderPhone, envelope.centralRole)) {
+    return reply({ success: false, error: 'Acesso indisponível ou revogado para este Hub.' }, 403, correlationId)
+  }
   try {
     const operational = SofiaActionRequest.safeParse(rawBody)
     if (operational.success) {

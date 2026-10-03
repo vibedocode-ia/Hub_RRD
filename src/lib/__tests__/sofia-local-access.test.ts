@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canUseRrdSofia, normalizeRrdPhone } from '../sofia-local-access'
+import { canExecuteRrdSofiaAction, canUseRrdSofia, normalizeRrdPhone } from '../sofia-local-access'
 
 test('active RRD person with Sofia permission may use the RRD Sofia dispatch', () => {
   assert.equal(canUseRrdSofia({ phone: '5521999999999', isActive: true, permissions: ['crm.read', 'sofia.use'] }, '+55 (21) 99999-9999'), true)
@@ -16,5 +16,10 @@ test('a deactivated RRD person is denied even when a stale Sofia permission exis
 
 test('phone matching is canonical and never accepts a different number', () => {
   assert.equal(normalizeRrdPhone('+55 (21) 99999-9999'), '5521999999999')
-  assert.equal(canUseRrdSofia({ phone: '5521999999999', isActive: true, permissions: ['sofia.use'] }, '+5521988888888'), false)
+  assert.equal(canUseRrdSofia({ phone: '5521999999999', isActive: true, permissions: ['sofia.use'] }, '+552****8888'), false)
+})
+
+test('an action envelope cannot authorize a person without local Sofia permission', () => {
+  const person = { phone: '5521999999999', isActive: true, permissions: ['crm.read'] }
+  assert.equal(canExecuteRrdSofiaAction(person, '+5521999999999', 'hub_owner'), false)
 })

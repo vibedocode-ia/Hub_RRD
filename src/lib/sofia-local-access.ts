@@ -29,3 +29,14 @@ export function canUseRrdSofia(person: RrdSofiaLocalAccess | null | undefined, s
     person.permissions.includes(SOFIA_LOCAL_PERMISSION),
   )
 }
+
+/** A Central envelope is never a substitute for Hub-local authorization. */
+export function canExecuteRrdSofiaAction(
+  person: RrdSofiaLocalAccess | null | undefined,
+  senderPhone: unknown,
+  centralRole: unknown,
+): boolean {
+  return canUseRrdSofia(person, senderPhone) &&
+    typeof centralRole === 'string' &&
+    ['hub_owner', 'hub_admin', 'hub_operator'].includes(centralRole)
+}
