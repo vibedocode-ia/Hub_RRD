@@ -6,6 +6,7 @@ import { validateStockAdjustment } from '@/lib/inventory'
 import { FinancialEntrySchema } from '@/lib/validation/financeiro'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { canExecuteRrdSofiaAction, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '@/lib/sofia-local-access'
+import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
 
@@ -18,9 +19,19 @@ function authorized(req: NextRequest) {
   if (!value?.startsWith('Bearer ')) return { ok: false as const, status: 401, error: 'Authorization Bearer obrigatório.' }
   const token = value.slice(7)
   if (token.length !== secret.length || !timingSafeEqual(Buffer.from(token), Buffer.from(secret))) return { ok: false as const, status: 401, error: 'Não autorizado.' }
-  return { ok: true as const }
+  return { ok: true as const, trustedGodAdmin: false }
 }
-function centralHubMatches(raw: unknown) { return Boolean(raw && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>).centralHubId === process.env.RRD_HUB_ID) }
+function godAdminTransport(req: NextRequest) {
+  // Independent secret. An ordinary Sofia Hub token must never claim GodAdmin by
+  // submitting centralRole in JSON. The HVD side re-reads the grant each call.
+  const secret = process.env.SOFIA_RRD_CENTRAL_SECRET
+  const legacy = process.env.SOFIA_HUB_SECRET
+  const header = req.headers.get('authorization')
+  if (!secret?.trim() || secret === legacy || !header?.startsWith('Bearer ')) return false
+  const token = header.slice(7)
+  return token.length === secret.length && timingSafeEqual(Buffer.from(token), Buffer.from(secret))
+}
+function centralHubMatches(raw: unknown) { return Boolean(process.env.RRD_HUB_ID && raw && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>).centralHubId === process.env.RRD_HUB_ID) }
 
 async function locallyAuthorizedForSofiaAction(senderPhone: unknown, centralRole: unknown): Promise<boolean> {
   const phone = normalizeRrdPhone(senderPhone)
@@ -34,15 +45,28 @@ async function locallyAuthorizedForSofiaAction(senderPhone: unknown, centralRole
 }
 
 export async function POST(req: NextRequest) {
-  const auth = authorized(req); if (!auth.ok) return reply({ success: false, error: auth.error }, auth.status)
+  const auth = authorized(req)
+  // Dedicated Central transport (independent secret) marks the turn as trusted
+  // GodAdmin. An ordinary Hub token is never trusted here.
+  const centralTransport = !auth.ok && godAdminTransport(req)
+  const effectiveAuth = centralTransport ? { ok: true as const, trustedGodAdmin: true } : { ...auth, trustedGodAdmin: false }
+  if (!effectiveAuth.ok) return reply({ success: false, error: effectiveAuth.error }, effectiveAuth.status)
   if (!db) return reply({ success: false, error: 'Banco de dados indisponível.' }, 503)
   const correlationId = req.headers.get('idempotency-key') || req.headers.get('x-correlation-id') || ''
   if (!/^[A-Za-z0-9:_-]{8,160}$/.test(correlationId)) return reply({ success: false, error: 'Chave de idempotência obrigatória.' }, 400)
   const rawBody = await req.json().catch(() => null)
   if (!centralHubMatches(rawBody)) return reply({ success: false, error: 'Hub central não autorizado.' }, 403, correlationId)
   const envelope = rawBody as Record<string, unknown>
-  if (!await locallyAuthorizedForSofiaAction(envelope.senderPhone, envelope.centralRole)) {
-    return reply({ success: false, error: 'Acesso indisponível ou revogado para este Hub.' }, 403, correlationId)
+  // GodAdmin Central is sovereign above the Hub: it is authorized by the dedicated
+  // transport + explicit envelope, NOT by a local RRD membership and NOT by a
+  // synthesized hub_owner role. Ordinary Hub traffic keeps the local gate below.
+  const godAdmin = authorizeRrdCentralEnvelope(rawBody, { expectedHubId: process.env.RRD_HUB_ID, trustedGodAdmin: effectiveAuth.trustedGodAdmin })
+  if (effectiveAuth.trustedGodAdmin !== godAdmin) return reply({ success: false, error: 'Autoridade Central não autorizada.' }, 403, correlationId)
+  if (!effectiveAuth.trustedGodAdmin) {
+    if (envelope.centralRole === 'god_admin') return reply({ success: false, error: 'Autoridade Central não autorizada.' }, 403, correlationId)
+    if (!await locallyAuthorizedForSofiaAction(envelope.senderPhone, envelope.centralRole)) {
+      return reply({ success: false, error: 'Acesso indisponível ou revogado para este Hub.' }, 403, correlationId)
+    }
   }
   try {
     const operational = SofiaActionRequest.safeParse(rawBody)

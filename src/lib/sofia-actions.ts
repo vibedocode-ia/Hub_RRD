@@ -10,6 +10,14 @@ const central = z.object({
   senderPhone: z.string().regex(/^\+[1-9]\d{7,14}$/),
 }).strict()
 
+// Distinct authority: never synthesize a contact/client or a Hub membership.
+const godAdminCentral = z.object({
+  centralGrantId: z.string().uuid(),
+  centralHubId: z.string().uuid(),
+  centralRole: z.literal('god_admin'),
+  senderPhone: z.string().regex(/^\+[1-9]\d{7,14}$/),
+}).strict()
+
 export const SofiaListServicesRequest = central.extend({ action: z.literal('list_services') }).strict()
 export const SofiaListActiveTeamsRequest = central.extend({ action: z.literal('list_active_teams') }).strict()
 export const SofiaCreateDraftRequest = central.extend({
@@ -82,7 +90,11 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ok: false, error: 'Payload inválido.' }
   const body = raw as Record<string, unknown>
   if (!ACTIONS.has(body.action as SofiaClientAction)) return { ok: false, error: 'Operação Sofia não suportada.' }
-  if (!['hub_owner', 'hub_admin', 'hub_operator'].includes(clean(body.centralRole, 32))) return { ok: false, error: 'Papel central não autorizado.' }
+  const godAdmin = body.centralRole === 'god_admin'
+  if (godAdmin) {
+    const envelope = Object.fromEntries(Object.entries(body).filter(([key]) => ['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key)))
+    if (!['list_clients', 'get_client_profile', 'update_client'].includes(String(body.action)) || !godAdminCentral.safeParse(envelope).success || Object.keys(body).some(key => !['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone', 'action', 'data'].includes(key))) return { ok: false, error: 'Autoridade Central inválida.' }
+  } else if (!['hub_owner', 'hub_admin', 'hub_operator'].includes(clean(body.centralRole, 32))) return { ok: false, error: 'Papel central não autorizado.' }
   if (!/^\+?[1-9]\d{7,14}$/.test(clean(body.senderPhone, 20))) return { ok: false, error: 'Identidade de origem inválida.' }
   const action = body.action as SofiaClientAction
   const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data as Record<string, unknown> : {}
