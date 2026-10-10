@@ -94,7 +94,9 @@ export async function renderStoredDocumentTemplate(input: { sourcePdfBase64: unk
     const values = parseValues(input.values, fields)
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const require = createRequire(import.meta.url)
-    const root = require.resolve('pdfjs-dist/package.json').replace(/package\.json$/, '')
+    // Vincula o resolver nativo para evitar que Turbopack troque o caminho por um ID de módulo.
+    const resolveNative = require.resolve.bind(require)
+    const root = resolveNative('pdfjs-dist/package.json').replace(/package\.json$/, '')
     document = await pdfjs.getDocument({ data: new Uint8Array(bytes), isEvalSupported: false, stopAtErrors: true, useSystemFonts: false, standardFontDataUrl: `${root}standard_fonts/`, cMapUrl: `${root}cmaps/`, cMapPacked: true, wasmUrl: `${root}wasm/`, verbosity: 0 }).promise
     if (document.numPages > TEMPLATE_RENDER_LIMITS.pages) throw new TemplateError('LIMIT_EXCEEDED', 'PDF excede 8 páginas.')
     let totalPixels = 0
