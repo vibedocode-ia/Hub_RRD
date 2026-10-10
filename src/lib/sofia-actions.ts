@@ -18,10 +18,17 @@ const godAdminCentral = z.object({
   senderPhone: z.string().regex(/^\+[1-9]\d{7,14}$/),
 }).strict()
 
+export const SofiaDocumentFields = z.record(
+  z.string().regex(/^[a-z][a-zA-Z0-9_]{1,63}$/).refine(key => !['constructor', 'prototype', '__proto__'].includes(key)),
+  z.string().max(2000),
+).refine(values => Object.keys(values).length <= 80, 'Campos demais.')
 export const SofiaListServicesRequest = central.extend({ action: z.literal('list_services') }).strict()
 export const SofiaListActiveTeamsRequest = central.extend({ action: z.literal('list_active_teams') }).strict()
 export const SofiaCreateDraftRequest = central.extend({
   action: z.literal('create_service_draft'),
+  templateId: z.string().uuid().optional(),
+  docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
+  documentFields: SofiaDocumentFields.optional(),
   intentDetected: z.enum(['CRIAR_ORCAMENTO', 'CRIAR_OS', 'CRIAR_RECIBO']).default('CRIAR_ORCAMENTO'),
   customerName: z.string().trim().min(1).max(160).optional(),
   customerPhone: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/).optional(),
@@ -43,6 +50,9 @@ export const SofiaCreateDraftRequest = central.extend({
 export const SofiaUpdateDraftRequest = central.extend({
   action: z.literal('update_service_draft'),
   draftId: z.string().uuid(),
+  templateId: z.string().uuid().optional(),
+  docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
+  documentFields: SofiaDocumentFields.optional(),
   customerName: z.string().trim().min(1).max(160).optional(),
   customerPhone: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/).optional(),
   customerDocument: z.string().trim().min(1).max(32).optional(),
@@ -52,6 +62,11 @@ export const SofiaUpdateDraftRequest = central.extend({
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
 }).strict()
+export const SofiaGetDocumentTemplateRequest = central.extend({
+  action: z.literal('get_document_template'),
+  docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']),
+  templateId: z.string().uuid().optional(),
+}).strict()
 export const SofiaIssueDraftRequest = central.extend({
   action: z.literal('issue_service_draft'),
   draftId: z.string().uuid(),
@@ -59,9 +74,11 @@ export const SofiaIssueDraftRequest = central.extend({
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).default('ORCAMENTO'),
   amount: z.string().trim().min(1).max(32).optional(),
   paymentMethod: z.string().trim().max(60).optional(),
+  templateId: z.string().uuid().optional(),
+  documentFields: SofiaDocumentFields.optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
 }).strict()
-export const SofiaActionRequest = z.union([SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest, SofiaIssueDraftRequest])
+export const SofiaActionRequest = z.union([SofiaGetDocumentTemplateRequest, SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest, SofiaIssueDraftRequest])
 export type SofiaActionRequest = z.infer<typeof SofiaActionRequest>
 
 export function pendingDraftFields(input: z.infer<typeof SofiaCreateDraftRequest>) {

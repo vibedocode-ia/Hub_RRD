@@ -1,3 +1,6 @@
+### V0.14.01 (2026-10-10) - Modelos PDF cadastrados como fonte da emissão e mapeamento visual dos campos
+- **Release:** Site + Hub RRD.
+
 ### V0.14.00 (2026-10-04) - GodAdmin Central CRUD: contrato aditivo sobre permissão local RRD
 - **Release:** Site + Hub RRD.
 

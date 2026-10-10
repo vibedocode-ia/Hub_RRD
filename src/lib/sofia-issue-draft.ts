@@ -5,8 +5,11 @@ import {
   SOFIA_DRAFT_STATUS, DOC_STATUS, users, userPermissions,
 } from '@/db'
 import { resolveDocumentIdentity } from '@/lib/document-identity'
-import { renderDocumentHTML } from '@/lib/documents/pdf-generator'
+import { renderRegisteredTemplate } from '@/lib/documents/registered-template'
+import { selectSofiaDocumentTemplate, unknownDocumentFields } from '@/lib/sofia-document-template'
 import { moneyToWords } from '@/lib/documents/money-to-words'
+import { normalizeTemplateFields } from '@/lib/document-template-contract'
+import { resolveTemplateValues } from '@/lib/documents/template-values'
 
 const text = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : ''
 const digits = (value: unknown) => typeof value === 'string' ? value.replace(/\D/g, '') : ''
@@ -21,12 +24,14 @@ export type IssueDraftInput = {
   docType: 'ORCAMENTO' | 'ORCAMENTO_TECNICO' | 'RECIBO_GARANTIA' | 'LAUDO_TECNICO'
   amount?: string
   paymentMethod?: string
+  templateId?: string
+  documentFields?: Record<string, string>
   correlationId: string
 }
 
 export type IssueDraftResult =
   | { ok: true; result: { draftId: string; documentId: string; docNumber: string; docType: string; customerName: string; totalValue: string; htmlSnapshot: string } }
-  | { ok: false; status: number; error: string }
+  | { ok: false; status: number; error: string; pendingFields?: Array<{key:string;label:string}> }
 
 /**
  * Confirms a PENDING_REVIEW Sofia draft (creates client + address + service
@@ -75,8 +80,9 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
     return { ok: false, status: 422, error: 'O rascunho ainda precisa de dados antes da emissão.' }
   }
 
-  const [template] = await db.select().from(documentTemplates).where(and(eq(documentTemplates.docType, input.docType), eq(documentTemplates.isActive, true))).limit(1)
+  const template = await selectSofiaDocumentTemplate(input.docType, input.templateId || (typeof payload.templateId === 'string' ? payload.templateId : undefined))
   if (!template) return { ok: false, status: 422, error: 'Não há modelo ativo para este tipo de documento.' }
+  if (unknownDocumentFields(template.fieldSchema, input.documentFields).length) return { ok: false, status: 400, error: 'Campo não permitido pelo modelo selecionado.' }
 
   const rawAmount = String(input.amount ?? payload.totalAmount ?? '').trim()
   const numericAmount = Number(rawAmount.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'))
@@ -104,7 +110,18 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
       : input.docType === 'ORCAMENTO_TECNICO'
         ? { type: 'ORCAMENTO_TECNICO' as const, data: { docNumber, issueDate: formattedDate, issueCity: 'Niterói', serviceTitle: payload.serviceType || 'DESENTUPIMENTO', contractorName: customerName, contractorDocument: documentIdentity.document, contractorAddress: fullAddress, contractedName: 'RR DESENTUPIDORA E DEDETIZADORA', contractedDocument: '53.102.506/0001-78', contractedContact: '21 99669-9191', object: payload.serviceType || 'DESENTUPIMENTO', scopeItems: problemReported.split(/\n|•|-/).map((i) => i.trim()).filter(Boolean), responsibility: 'Todo o serviço e sua responsabilidade técnica será de inteira responsabilidade da empresa RR DESENTUPIDORA E DEDETIZADORA, deixando a contratante isenta de custos adicionais.', totalAmount: formattedAmount, amountInWords: amountText, includedDescription: problemReported, paymentMethod: resolvedPayment, validityDays: '7 dias', executionDeadline: 'Imediato / a combinar', warranty: '30 dias no mesmo ponto desentupido' } }
         : { type: 'ORCAMENTO' as const, data: { docNumber, issueDate: formattedDate, contractor: customerName, object: payload.serviceType || 'DESENTUPIMENTO', serviceScope: problemReported, totalAmount: formattedAmount, paymentMethod: resolvedPayment, validityDays: '15 dias', executionDeadline: 'A combinar', guarantees: '' } }
-  const htmlSnapshot = renderDocumentHTML(documentPayload as any)
+  const storedFields = payload.documentFields && typeof payload.documentFields === 'object' ? payload.documentFields : {}
+  const confirmedFields = { ...storedFields, ...(input.documentFields || {}) }
+  if (unknownDocumentFields(template.fieldSchema, confirmedFields).length) return { ok: false, status: 422, error: 'O rascunho contém campos de outro modelo. Revise o modelo selecionado.' }
+  const fields = normalizeTemplateFields(template.fieldSchema)
+  const values = resolveTemplateValues(documentPayload.data as Record<string, unknown>, confirmedFields)
+  const missing = fields.filter(field => field.required && !String(values[field.key] ?? field.defaultValue ?? '').trim())
+  // Persistência vinculada ao mesmo rascunho: coleta posterior não perde valores já confirmados.
+  await db.update(sofiaDrafts).set({ draftPayload: { ...payload, documentFields: confirmedFields, docType: input.docType, templateId: template.id, totalAmount: rawAmount, paymentMethod: resolvedPayment }, updatedAt: now }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.PENDING_REVIEW), isNull(sofiaDrafts.serviceRequestId)))
+  if (missing.length) return { ok: false, status: 422, error: 'O modelo ainda precisa de informações.', pendingFields: missing.map(({key,label})=>({key,label})) }
+  const rendered = await renderRegisteredTemplate(template, documentPayload.data as Record<string, unknown>, confirmedFields)
+  if (!rendered.ok) return { ok: false, status: 422, error: rendered.error.message }
+  const htmlSnapshot = rendered.html
 
   const result = await db.transaction(async (tx) => {
     const [client] = await tx.insert(clients).values({ name: customerName, phone: customerPhone, normalizedPhone: customerPhone.replace(/\D/g, ''), type: documentIdentity.type, document: documentIdentity.document }).returning()
@@ -115,7 +132,7 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
       docType: input.docType, docNumber, serviceRequestId: request.id, clientId: client.id,
       templateVersion: template.version, totalValue: numericAmount.toFixed(2), amountInWords: amountText,
       paymentMethod: resolvedPayment, hasWarranty: true, warrantyDays: 30, warrantyTerms: null, technicalNotes: null,
-      documentPayloadSnapshot: { ...documentPayload, templateId: template.id, templateVersion: template.version },
+      documentPayloadSnapshot: { ...documentPayload, templateId: template.id, templateVersion: template.version, templateSourceSha256: template.sourceSha256, fieldSchemaSnapshot: rendered.fieldSchemaSnapshot, fieldValuesSnapshot: rendered.fieldValuesSnapshot },
       htmlSnapshot, status: DOC_STATUS.EMITIDO, issuedAt: now, createdById: operator.id,
     }).returning()
 
