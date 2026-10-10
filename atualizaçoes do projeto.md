@@ -1,3 +1,6 @@
+### V0.14.02 (2026-10-10) - Corrigir renderer PDF no runtime compilado
+- **Release:** Site + Hub RRD.
+
 ### V0.14.01 (2026-10-10) - Modelos PDF cadastrados como fonte da emissão e mapeamento visual dos campos
 - **Release:** Site + Hub RRD.
 
