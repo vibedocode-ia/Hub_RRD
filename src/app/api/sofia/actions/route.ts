@@ -6,6 +6,7 @@ import { validateStockAdjustment } from '@/lib/inventory'
 import { FinancialEntrySchema } from '@/lib/validation/financeiro'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { canExecuteRrdSofiaAction, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '@/lib/sofia-local-access'
+import { issueDraftDocument } from '@/lib/sofia-issue-draft'
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
@@ -103,6 +104,24 @@ export async function POST(req: NextRequest) {
           return [row]
         })
         return reply({ success: true, action: input.action, draftId: updated.id, pendingFields, nextAction: pendingFields.length ? 'collect_missing_fields' : 'review_draft' }, 200, correlationId)
+      }
+      if (input.action === 'issue_service_draft') {
+        const [replay] = await db.select({ id: sofiaEvents.id }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
+        if (replay) return reply({ success: true, alreadyProcessed: true, action: input.action }, 200, correlationId)
+        const issued = await issueDraftDocument({
+          draftId: input.draftId,
+          senderPhone: input.senderPhone,
+          centralHubId: input.centralHubId,
+          centralContactId: input.centralContactId,
+          centralClientId: input.centralClientId,
+          centralRole: input.centralRole,
+          docType: input.docType,
+          amount: input.amount,
+          paymentMethod: input.paymentMethod,
+          correlationId,
+        })
+        if (!issued.ok) return reply({ success: false, action: input.action, error: issued.error }, issued.status, correlationId)
+        return reply({ success: true, action: input.action, ...issued.result }, 201, correlationId)
       }
       const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
       if (existing[0]) return reply({ success: true, alreadyProcessed: true, draftId: existing[0].id, pendingFields: existing[0].pendingFields }, existing[0].status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 200, correlationId)

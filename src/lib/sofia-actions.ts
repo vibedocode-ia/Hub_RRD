@@ -52,7 +52,16 @@ export const SofiaUpdateDraftRequest = central.extend({
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
 }).strict()
-export const SofiaActionRequest = z.union([SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest])
+export const SofiaIssueDraftRequest = central.extend({
+  action: z.literal('issue_service_draft'),
+  draftId: z.string().uuid(),
+  // Document type to issue from the confirmed draft. Defaults to a plain quote.
+  docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).default('ORCAMENTO'),
+  amount: z.string().trim().min(1).max(32).optional(),
+  paymentMethod: z.string().trim().max(60).optional(),
+  conversationSummary: z.string().trim().min(1).max(4000),
+}).strict()
+export const SofiaActionRequest = z.union([SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest, SofiaIssueDraftRequest])
 export type SofiaActionRequest = z.infer<typeof SofiaActionRequest>
 
 export function pendingDraftFields(input: z.infer<typeof SofiaCreateDraftRequest>) {
