@@ -1,0 +1,1120 @@
+{
+  "RR_ORCAMENTO_TECNICO_V2": [
+    {
+      "key": "contractorName",
+      "type": "text",
+      "label": "Contratante",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.1209068,
+          "y": 0.21727516,
+          "width": 0.75398825,
+          "height": 0.03265064,
+          "fontSize": 11,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        },
+        {
+          "page": 1,
+          "x": 0.56759026,
+          "y": 0.78100327,
+          "width": 0.35096558,
+          "height": 0.01127931,
+          "fontSize": 6.7,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "contractorDocument",
+      "type": "text",
+      "label": "CNPJ do contratante",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.1729639,
+          "y": 0.24992579,
+          "width": 0.70193115,
+          "height": 0.01519739,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        },
+        {
+          "page": 1,
+          "x": 0.6565911,
+          "y": 0.79228258,
+          "width": 0.13602015,
+          "height": 0.01270407,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "contractorAddress",
+      "type": "textarea",
+      "label": "Endereço da obra",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.1209068,
+          "y": 0.26536064,
+          "width": 0.75398825,
+          "height": 0.01543485,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "contractorCity",
+      "type": "text",
+      "label": "Cidade da obra",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.1209068,
+          "y": 0.28138914,
+          "width": 0.75398825,
+          "height": 0.01662214,
+          "fontSize": 9,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "object",
+      "type": "text",
+      "label": "Objeto",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.1209068,
+          "y": 0.52122291,
+          "width": 0.75734677,
+          "height": 0.0284951,
+          "fontSize": 11.5,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "scopeItems",
+      "type": "items",
+      "label": "Escopo técnico",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.12258606,
+          "y": 0.63045414,
+          "width": 0.76070529,
+          "height": 0.09023449,
+          "fontSize": 10.3,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "responsibility",
+      "type": "textarea",
+      "label": "Responsabilidade",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.1209068,
+          "y": 0.79905016,
+          "width": 0.76574307,
+          "height": 0.06648857,
+          "fontSize": 10.3,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "totalAmount",
+      "type": "currency",
+      "label": "Valor total",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.11922754,
+          "y": 0.29563669,
+          "width": 0.3627204,
+          "height": 0.04511725,
+          "fontSize": 28,
+          "color": "#ffffff",
+          "background": "#2048a6"
+        },
+        {
+          "page": 1,
+          "x": 0.61460957,
+          "y": 0.29563669,
+          "width": 0.27539882,
+          "height": 0.04511725,
+          "fontSize": 28,
+          "color": "#ffffff",
+          "background": "#2048a6"
+        }
+      ]
+    },
+    {
+      "key": "amountInWords",
+      "type": "text",
+      "label": "Valor por extenso",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.11083123,
+          "y": 0.44048679,
+          "width": 0.77246012,
+          "height": 0.01662214,
+          "fontSize": 9,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "paymentMethod",
+      "type": "text",
+      "label": "Forma de pagamento",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.53926981,
+          "width": 0.40973971,
+          "height": 0.01436628,
+          "fontSize": 9.5,
+          "color": "#3f4652",
+          "background": "#e9f5fa"
+        }
+      ]
+    },
+    {
+      "key": "validityDays",
+      "type": "text",
+      "label": "Validade da proposta",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.56776492,
+          "width": 0.40973971,
+          "height": 0.01436628,
+          "fontSize": 9.5,
+          "color": "#3f4652",
+          "background": "#e9f5fa"
+        }
+      ]
+    },
+    {
+      "key": "executionDeadline",
+      "type": "text",
+      "label": "Prazo de execução",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.59626002,
+          "width": 0.40973971,
+          "height": 0.01436628,
+          "fontSize": 9.5,
+          "color": "#3f4652",
+          "background": "#e9f5fa"
+        }
+      ]
+    },
+    {
+      "key": "warranty",
+      "type": "text",
+      "label": "Garantia",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.62475512,
+          "width": 0.40973971,
+          "height": 0.01579104,
+          "fontSize": 9.5,
+          "color": "#3f4652",
+          "background": "#e9f5fa"
+        }
+      ]
+    },
+    {
+      "key": "acceptanceDate",
+      "type": "date",
+      "label": "Data de aceite",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.43324937,
+          "y": 0.84119917,
+          "width": 0.18807725,
+          "height": 0.01389136,
+          "fontSize": 9,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "docNumber",
+      "label": "Número do documento",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.76742233,
+          "y": 0.05342832,
+          "width": 0.19143577,
+          "height": 0.03086969,
+          "fontSize": 12,
+          "color": "#ffffff",
+          "background": "#2048a6"
+        },
+        {
+          "page": 1,
+          "x": 0.76742233,
+          "y": 0.06055209,
+          "width": 0.19143577,
+          "height": 0.03086969,
+          "fontSize": 12,
+          "color": "#ffffff",
+          "background": "#2048a6"
+        }
+      ]
+    },
+    {
+      "key": "serviceTitle",
+      "label": "Título do serviço",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.28043661,
+          "y": 0.0890472,
+          "width": 0.63476071,
+          "height": 0.02374592,
+          "fontSize": 14,
+          "color": "#ffffff",
+          "background": "#2048a6"
+        },
+        {
+          "page": 1,
+          "x": 0.28043661,
+          "y": 0.09854556,
+          "width": 0.63476071,
+          "height": 0.02374592,
+          "fontSize": 14,
+          "color": "#ffffff",
+          "background": "#2048a6"
+        }
+      ]
+    },
+    {
+      "key": "signatureNameContinuation",
+      "label": "Continuação do nome na assinatura",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.56759026,
+          "y": 0.79228258,
+          "width": 0.04869857,
+          "height": 0.01329771,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "includedDescription",
+      "label": "Descrição do valor contemplado",
+      "type": "textarea",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.26196474,
+          "y": 0.4096171,
+          "width": 0.62132662,
+          "height": 0.01543485,
+          "fontSize": 10.2,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    },
+    {
+      "key": "includedDescriptionContinuation",
+      "label": "Continuação da descrição do valor",
+      "type": "textarea",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.11083123,
+          "y": 0.42505194,
+          "width": 0.77246012,
+          "height": 0.01448501,
+          "fontSize": 9.5,
+          "color": "#3f4652",
+          "background": "#f4f5f7"
+        }
+      ]
+    }
+  ],
+  "RR_ORCAMENTO_V1": [
+    {
+      "key": "contractor",
+      "label": "Contratante",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.33417296,
+          "y": 0.22202434,
+          "width": 0.55583543,
+          "height": 0.02612051,
+          "fontSize": 16,
+          "color": "#3f4652",
+          "background": "#f1f2f5"
+        }
+      ]
+    },
+    {
+      "key": "object",
+      "label": "Objeto",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.33417296,
+          "y": 0.25764322,
+          "width": 0.55583543,
+          "height": 0.02374592,
+          "fontSize": 13.5,
+          "color": "#3f4652",
+          "background": "#f1f2f5"
+        }
+      ]
+    },
+    {
+      "key": "serviceScope",
+      "label": "Escopo dos serviços",
+      "type": "textarea",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.10915197,
+          "y": 0.36806174,
+          "width": 0.78085642,
+          "height": 0.18284357,
+          "fontSize": 10.4,
+          "color": "#3f4652",
+          "background": "#f1f2f5"
+        }
+      ]
+    },
+    {
+      "key": "reservoirs",
+      "label": "Reservatórios / itens atendidos",
+      "type": "items",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.10915197,
+          "y": 0.63045414,
+          "width": 0.78085642,
+          "height": 0.14128822,
+          "fontSize": 10.2,
+          "color": "#3f4652",
+          "background": "#f1f3f6"
+        }
+      ]
+    },
+    {
+      "key": "totalValue",
+      "label": "Valor total",
+      "type": "currency",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.11922754,
+          "y": 0.31700801,
+          "width": 0.35936188,
+          "height": 0.04511725,
+          "fontSize": 28,
+          "color": "#ffffff",
+          "background": "#163c99"
+        },
+        {
+          "page": 1,
+          "x": 0.565911,
+          "y": 0.31700801,
+          "width": 0.3240974,
+          "height": 0.04511725,
+          "fontSize": 28,
+          "color": "#ffffff",
+          "background": "#163c99"
+        }
+      ]
+    },
+    {
+      "key": "paymentMethod",
+      "label": "Forma de pagamento",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.54615613,
+          "width": 0.3627204,
+          "height": 0.01543485,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#e7f5fa"
+        }
+      ]
+    },
+    {
+      "key": "validityDays",
+      "label": "Validade da proposta",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.57583853,
+          "width": 0.3627204,
+          "height": 0.01543485,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#e7f5fa"
+        }
+      ]
+    },
+    {
+      "key": "executionDeadline",
+      "label": "Prazo de execução",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.1125105,
+          "y": 0.60552093,
+          "width": 0.3627204,
+          "height": 0.01662214,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#e7f5fa"
+        }
+      ]
+    },
+    {
+      "key": "guarantees",
+      "label": "Garantias",
+      "type": "textarea",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.54240134,
+          "y": 0.54378154,
+          "width": 0.34760705,
+          "height": 0.07717424,
+          "fontSize": 10.2,
+          "color": "#3f4652",
+          "background": "#f1f2f5"
+        }
+      ]
+    },
+    {
+      "key": "acceptanceDate",
+      "label": "Data de aceite",
+      "type": "date",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.75398825,
+          "y": 0.86435144,
+          "width": 0.17632242,
+          "height": 0.03086969,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "docNumber",
+      "label": "Número do documento",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.68178002,
+          "y": 0.05224102,
+          "width": 0.24853065,
+          "height": 0.02493321,
+          "fontSize": 17,
+          "color": "#ffffff",
+          "background": "#163d99"
+        },
+        {
+          "page": 1,
+          "x": 0.68178002,
+          "y": 0.05224102,
+          "width": 0.24853065,
+          "height": 0.02493321,
+          "fontSize": 17,
+          "color": "#ffffff",
+          "background": "#163d99"
+        }
+      ]
+    },
+    {
+      "key": "serviceTitle",
+      "label": "Título do serviço",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.26868178,
+          "y": 0.08311072,
+          "width": 0.66162888,
+          "height": 0.02255862,
+          "fontSize": 14.2,
+          "color": "#ffffff",
+          "background": "#163d99"
+        },
+        {
+          "page": 1,
+          "x": 0.26868178,
+          "y": 0.08311072,
+          "width": 0.66162888,
+          "height": 0.02255862,
+          "fontSize": 14.2,
+          "color": "#ffffff",
+          "background": "#163d99"
+        }
+      ]
+    },
+    {
+      "key": "includedDescription",
+      "label": "Descrição do valor contemplado",
+      "type": "textarea",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.25860621,
+          "y": 0.40783615,
+          "width": 0.63140218,
+          "height": 0.01567231,
+          "fontSize": 10.1,
+          "color": "#3f4652",
+          "background": "#f1f2f5"
+        }
+      ]
+    },
+    {
+      "key": "includedDescriptionContinuation",
+      "label": "Continuação da descrição do valor",
+      "type": "textarea",
+      "required": false,
+      "placements": [
+        {
+          "page": 1,
+          "x": 0.10915197,
+          "y": 0.42374592,
+          "width": 0.78085642,
+          "height": 0.03217572,
+          "fontSize": 10.1,
+          "color": "#3f4652",
+          "background": "#f1f2f5"
+        }
+      ]
+    }
+  ],
+  "RR_OS_RELATORIO_V1": [
+    {
+      "key": "clientName",
+      "label": "Cliente",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.07391535,
+          "y": 0.25502151,
+          "width": 0.85338627,
+          "height": 0.01401609,
+          "fontSize": 8.4,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        },
+        {
+          "page": 0,
+          "x": 0.56444446,
+          "y": 0.83478862,
+          "width": 0.35109789,
+          "height": 0.01033389,
+          "fontSize": 6.6,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "serviceDescription",
+      "label": "Serviço executado",
+      "type": "textarea",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.06551587,
+          "y": 0.3550346,
+          "width": 0.4670106,
+          "height": 0.01674804,
+          "fontSize": 8.1,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        },
+        {
+          "page": 0,
+          "x": 0.19906747,
+          "y": 0.49186962,
+          "width": 0.72655425,
+          "height": 0.01710438,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "technicalNotes",
+      "label": "Notas técnicas",
+      "type": "textarea",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.07055556,
+          "y": 0.53451178,
+          "width": 0.85674606,
+          "height": 0.01425365,
+          "fontSize": 8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "executionDate",
+      "label": "Data de execução",
+      "type": "date",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.72907409,
+          "y": 0.06746726,
+          "width": 0.19822752,
+          "height": 0.01710438,
+          "fontSize": 11,
+          "color": "#ffffff",
+          "background": "#053b70"
+        }
+      ]
+    },
+    {
+      "key": "clientDocument",
+      "label": "CNPJ do cliente",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.11339286,
+          "y": 0.27248223,
+          "width": 0.13607143,
+          "height": 0.01235316,
+          "fontSize": 7.7,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "clientAddress",
+      "label": "Endereço do cliente",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.26626324,
+          "y": 0.27248223,
+          "width": 0.66271827,
+          "height": 0.01235316,
+          "fontSize": 7.7,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "quantity",
+      "label": "Quantidade",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.57116404,
+          "y": 0.3550346,
+          "width": 0.0302381,
+          "height": 0.01674804,
+          "fontSize": 8.1,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "unitAmount",
+      "label": "Valor unitário",
+      "type": "currency",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.6400397,
+          "y": 0.3550346,
+          "width": 0.12431217,
+          "height": 0.01674804,
+          "fontSize": 8.1,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "subtotal",
+      "label": "Subtotal",
+      "type": "currency",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.77947092,
+          "y": 0.3550346,
+          "width": 0.15791006,
+          "height": 0.01674804,
+          "fontSize": 8.1,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "totalAmount",
+      "label": "Valor total",
+      "type": "currency",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.77947092,
+          "y": 0.39494482,
+          "width": 0.15791006,
+          "height": 0.01781706,
+          "fontSize": 10,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "paymentMethod",
+      "label": "Forma de pagamento",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.92730161,
+          "y": 0.43295454,
+          "width": 0.02015873,
+          "height": 0.0115217,
+          "fontSize": 7.2,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        },
+        {
+          "page": 0,
+          "x": 0.22678572,
+          "y": 0.65863729,
+          "width": 0.70051589,
+          "height": 0.01247194,
+          "fontSize": 7.4,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "warrantyDays",
+      "label": "Prazo de garantia em dias",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.16210979,
+          "y": 0.6434334,
+          "width": 0.01763889,
+          "height": 0.01128414,
+          "fontSize": 7.4,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    }
+  ],
+  "RR_RECIBO_V1": [
+    {
+      "key": "clientName",
+      "label": "Cliente",
+      "type": "text",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.30574075,
+          "y": 0.5355808,
+          "width": 0.61820108,
+          "height": 0.01674804,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "serviceDescription",
+      "label": "Serviço",
+      "type": "textarea",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.30574075,
+          "y": 0.59972222,
+          "width": 0.61820108,
+          "height": 0.01674804,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "amount",
+      "label": "Valor",
+      "type": "currency",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.10583334,
+          "y": 0.25834736,
+          "width": 0.63164023,
+          "height": 0.03349607,
+          "fontSize": 23,
+          "color": "#ffffff",
+          "background": "#053b70"
+        }
+      ]
+    },
+    {
+      "key": "paymentDate",
+      "label": "Data de pagamento",
+      "type": "date",
+      "required": true,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.71983468,
+          "y": 0.06853629,
+          "width": 0.20074736,
+          "height": 0.0169856,
+          "fontSize": 11,
+          "color": "#ffffff",
+          "background": "#053b70"
+        },
+        {
+          "page": 0,
+          "x": 0.30574075,
+          "y": 0.66386363,
+          "width": 0.07895503,
+          "height": 0.01437243,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "amountInWords",
+      "label": "Valor por extenso",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.10583334,
+          "y": 0.29208099,
+          "width": 0.63164023,
+          "height": 0.01900486,
+          "fontSize": 8.1,
+          "color": "#ffffff",
+          "background": "#053b70"
+        }
+      ]
+    },
+    {
+      "key": "receiptStatement",
+      "label": "Declaração integral do recebimento",
+      "type": "textarea",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.07895503,
+          "y": 0.34968948,
+          "width": 0.8449868,
+          "height": 0.10286382,
+          "fontSize": 10.2,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "clientDocument",
+      "label": "CNPJ do pagador",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.30574075,
+          "y": 0.56765151,
+          "width": 0.61820108,
+          "height": 0.01674804,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#f2f6fb"
+        }
+      ]
+    },
+    {
+      "key": "paymentMethod",
+      "label": "Forma de pagamento",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.30574075,
+          "y": 0.63179292,
+          "width": 0.61820108,
+          "height": 0.01674804,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#f2f6fb"
+        }
+      ]
+    },
+    {
+      "key": "paymentCity",
+      "label": "Local do pagamento",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.39477514,
+          "y": 0.66386363,
+          "width": 0.52916668,
+          "height": 0.01437243,
+          "fontSize": 7.8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    {
+      "key": "paymentDateAndPlace",
+      "label": "Local e data por extenso",
+      "type": "text",
+      "required": false,
+      "placements": [
+        {
+          "page": 0,
+          "x": 0.63835981,
+          "y": 0.76185746,
+          "width": 0.29566138,
+          "height": 0.01496633,
+          "fontSize": 8,
+          "color": "#3f4652",
+          "background": "#ffffff"
+        }
+      ]
+    }
+  ]
+}

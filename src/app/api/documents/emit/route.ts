@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull } from 'drizzle-orm';
 import { db, serviceRequests, clients, clientAddresses, officialDocuments, documentTemplates, DOC_STATUS, proposals, auditEvents } from '../../../../db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
-import { renderDocumentHTML } from '../../../../lib/documents/pdf-generator';
+import { renderRegisteredTemplate } from '../../../../lib/documents/registered-template';
+import { selectSofiaDocumentTemplate } from '../../../../lib/sofia-document-template';
 import { moneyToWords } from '../../../../lib/documents/money-to-words';
 
 export async function POST(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
     if (!db) return NextResponse.json({ error: 'Banco de dados indisponível' }, { status: 500 });
 
-    const [template] = await db.select().from(documentTemplates).where(and(eq(documentTemplates.docType, docType), eq(documentTemplates.isActive, true))).limit(1);
+    const template = await selectSofiaDocumentTemplate(docType);
     if (!template) return NextResponse.json({ error: 'Não há modelo ativo para este tipo de documento.' }, { status: 422 });
 
     const records = await db
@@ -117,7 +118,9 @@ export async function POST(req: NextRequest) {
           },
         };
 
-    const htmlSnapshot = renderDocumentHTML(documentPayload);
+    const rendered = await renderRegisteredTemplate(template, documentPayload.data as Record<string, unknown>);
+    if (!rendered.ok) return NextResponse.json({ error: rendered.error.message, code: rendered.error.code }, { status: 422 });
+    const htmlSnapshot = rendered.html;
     const [documentRecord] = await db.insert(officialDocuments).values({
       docType,
       docNumber,
@@ -131,7 +134,7 @@ export async function POST(req: NextRequest) {
       warrantyDays: Number(warrantyDays || serviceRequest.warrantyDays || 30),
       warrantyTerms: warrantyTerms || null,
       technicalNotes: technicalNotes || serviceRequest.problemFound || null,
-      documentPayloadSnapshot: { ...documentPayload, templateId: template.id, templateVersion: template.version, templateSourceSha256: template.sourceSha256 },
+      documentPayloadSnapshot: { ...documentPayload, templateId: template.id, templateVersion: template.version, templateSourceSha256: template.sourceSha256, fieldSchemaSnapshot: rendered.fieldSchemaSnapshot, fieldValuesSnapshot: rendered.fieldValuesSnapshot },
       htmlSnapshot,
       status: DOC_STATUS.EMITIDO,
       issuedAt: now,

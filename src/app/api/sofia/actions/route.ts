@@ -6,6 +6,7 @@ import { validateStockAdjustment } from '@/lib/inventory'
 import { FinancialEntrySchema } from '@/lib/validation/financeiro'
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { canExecuteRrdSofiaAction, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '@/lib/sofia-local-access'
+import { selectSofiaDocumentTemplate, publicSofiaDocumentTemplate, unknownDocumentFields } from '@/lib/sofia-document-template'
 import { issueDraftDocument } from '@/lib/sofia-issue-draft'
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
@@ -73,6 +74,14 @@ export async function POST(req: NextRequest) {
     const operational = SofiaActionRequest.safeParse(rawBody)
     if (operational.success) {
       const input = operational.data
+      if (input.action === 'get_document_template') {
+        const [operator] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, normalizeRrdPhone(input.senderPhone)!), eq(users.isActive, true))).limit(1)
+        const permissions = operator ? await db.select({ key: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, operator.id)) : []
+        if (!permissions.some(p => p.key === 'documents.issue') || !permissions.some(p => p.key === SOFIA_LOCAL_PERMISSION)) return reply({ success: false, error: 'Permissão insuficiente para consultar o modelo.' }, 403, correlationId)
+        const template = await selectSofiaDocumentTemplate(input.docType, input.templateId)
+        if (!template) return reply({ success: false, error: 'Modelo ativo não encontrado para este tipo de documento.' }, 404, correlationId)
+        return reply({ success: true, action: input.action, template: publicSofiaDocumentTemplate(template) }, 200, correlationId)
+      }
       if (input.action === 'list_services') {
         const services = await db.select({ name: serviceCatalog.name, category: serviceCatalog.category, description: serviceCatalog.description, basePrice: serviceCatalog.basePrice, priceNotes: serviceCatalog.priceNotes, requiresInspection: serviceCatalog.requiresInspection, emergencyEligible: serviceCatalog.isEmergencyEligible }).from(serviceCatalog).where(eq(serviceCatalog.status, 'ACTIVE')).orderBy(asc(serviceCatalog.displayOrder), asc(serviceCatalog.name)).limit(50)
         return reply({ success: true, action: input.action, services }, 200, correlationId)
@@ -91,14 +100,20 @@ export async function POST(req: NextRequest) {
           eq(sofiaDrafts.centralContactId, input.centralContactId),
           eq(sofiaDrafts.centralClientId, input.centralClientId),
           eq(sofiaDrafts.centralRole, input.centralRole),
-          eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.COLLECTING),
+          sql`${sofiaDrafts.status} in (${SOFIA_DRAFT_STATUS.COLLECTING}, ${SOFIA_DRAFT_STATUS.PENDING_REVIEW})`,
         )).limit(1)
         if (!draft) return reply({ success: false, error: 'Rascunho em coleta não encontrado para esta conversa.' }, 409, correlationId)
         const previous = draft.draftPayload as Record<string, unknown>
-        const next = { ...previous, ...Object.fromEntries(Object.entries(input).filter(([key, value]) => !['action', 'centralContactId', 'centralClientId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key) && value !== undefined)), address: { ...(previous.address && typeof previous.address === 'object' ? previous.address as Record<string, unknown> : {}), ...(input.address || {}) } }
+        const next: Record<string, unknown> = { ...previous, ...Object.fromEntries(Object.entries(input).filter(([key, value]) => !['action', 'centralContactId', 'centralClientId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key) && value !== undefined)), address: { ...(previous.address && typeof previous.address === 'object' ? previous.address as Record<string, unknown> : {}), ...(input.address || {}) } }
+        if (input.documentFields) {
+          const selected = await selectSofiaDocumentTemplate(input.docType || (typeof previous.docType === 'string' ? previous.docType : 'ORCAMENTO'), input.templateId || (typeof previous.templateId === 'string' ? previous.templateId : undefined))
+          if (!selected || unknownDocumentFields(selected.fieldSchema, input.documentFields).length) return reply({ success: false, error: 'Campos não pertencem ao modelo ativo.' }, 422, correlationId)
+          next.documentFields = { ...(previous.documentFields && typeof previous.documentFields === 'object' ? previous.documentFields as Record<string,string> : {}), ...input.documentFields }
+          next.templateId = selected.id
+        }
         const pendingFields = pendingDraftFields(next as any); const status = pendingFields.length ? SOFIA_DRAFT_STATUS.COLLECTING : SOFIA_DRAFT_STATUS.PENDING_REVIEW
         const [updated] = await db.transaction(async tx => {
-          const [row] = await tx.update(sofiaDrafts).set({ draftPayload: next, pendingFields, conversationSummary: input.conversationSummary, status, updatedAt: new Date() }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.COLLECTING))).returning()
+          const [row] = await tx.update(sofiaDrafts).set({ draftPayload: next, pendingFields, conversationSummary: input.conversationSummary, status, updatedAt: new Date() }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, draft.status))).returning()
           if (!row) throw new Error('DRAFT_NOT_COLLECTING')
           await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: correlationId, rawPayload: { action: input.action, draftId: draft.id, receivedFields: Object.keys(input).filter(key => !['conversationSummary'].includes(key)) }, intentDetected: draft.intent, status })
           return [row]
@@ -118,9 +133,14 @@ export async function POST(req: NextRequest) {
           docType: input.docType,
           amount: input.amount,
           paymentMethod: input.paymentMethod,
+          templateId: input.templateId,
+          documentFields: input.documentFields,
           correlationId,
         })
-        if (!issued.ok) return reply({ success: false, action: input.action, error: issued.error }, issued.status, correlationId)
+        if (!issued.ok) {
+          if (issued.pendingFields) return reply({ success: true, operationCompleted: false, action: input.action, draftId: input.draftId, nextAction: 'collect_document_fields', pendingFields: issued.pendingFields }, 200, correlationId)
+          return reply({ success: false, action: input.action, error: issued.error }, issued.status, correlationId)
+        }
         // The document HTML references its A4 template backgrounds with root-relative
         // URLs (/documents/templates/…). Return this Hub's PUBLIC origin so the caller
         // renders the PDF with the official template instead of a blank page. Behind a
@@ -135,6 +155,10 @@ export async function POST(req: NextRequest) {
       }
       const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
       if (existing[0]) return reply({ success: true, alreadyProcessed: true, draftId: existing[0].id, pendingFields: existing[0].pendingFields }, existing[0].status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 200, correlationId)
+      if (input.documentFields) {
+        const selected = await selectSofiaDocumentTemplate(input.docType || 'ORCAMENTO', input.templateId)
+        if (!selected || unknownDocumentFields(selected.fieldSchema, input.documentFields).length) return reply({ success: false, error: 'Campos não pertencem ao modelo ativo.' }, 422, correlationId)
+      }
       const pendingFields = pendingDraftFields(input); const status = pendingFields.length ? SOFIA_DRAFT_STATUS.COLLECTING : SOFIA_DRAFT_STATUS.PENDING_REVIEW
       const [event] = await db.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: correlationId, rawPayload: input, intentDetected: input.intentDetected, status }).returning()
       const [draft] = await db.insert(sofiaDrafts).values({ correlationId, centralContactId: input.centralContactId, centralClientId: input.centralClientId, centralHubId: input.centralHubId, centralRole: input.centralRole, senderPhone: input.senderPhone, intent: input.intentDetected, status, draftPayload: input, pendingFields, conversationSummary: input.conversationSummary, sourceEventId: event.id }).returning()

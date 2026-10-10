@@ -13,7 +13,10 @@ test('official document removal archives the record and preserves attachments', 
 
 test('document issuance resolves only an active canonical template and snapshots its provenance', () => {
   const route = read('src/app/api/documents/emit/route.ts')
-  assert.match(route, /and\(eq\(documentTemplates\.docType, docType\), eq\(documentTemplates\.isActive, true\)\)/)
+  assert.match(route, /selectSofiaDocumentTemplate\(docType\)/)
+  const selector = read('src/lib/sofia-document-template.ts')
+  assert.match(selector, /eq\(documentTemplates\.docType, docType\)/)
+  assert.match(selector, /eq\(documentTemplates\.isActive, true\)/)
   assert.match(route, /templateId:\s*template\.id/)
   assert.match(route, /templateSourceSha256:\s*template\.sourceSha256/)
 })
