@@ -122,9 +122,15 @@ export async function POST(req: NextRequest) {
         })
         if (!issued.ok) return reply({ success: false, action: input.action, error: issued.error }, issued.status, correlationId)
         // The document HTML references its A4 template backgrounds with root-relative
-        // URLs (/documents/templates/…). Return this Hub's origin so the caller can
-        // render the PDF with the official template instead of a blank page.
-        const assetBaseUrl = new URL(req.url).origin
+        // URLs (/documents/templates/…). Return this Hub's PUBLIC origin so the caller
+        // renders the PDF with the official template instead of a blank page. Behind a
+        // proxy the container's own req.url host is internal, so prefer the forwarded
+        // host header, then a configured public URL.
+        const forwardedHost = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(',')[0].trim()
+        const forwardedProto = (req.headers.get('x-forwarded-proto') || 'https').split(',')[0].trim()
+        const assetBaseUrl = /^[a-z0-9.-]+(?::\d+)?$/i.test(forwardedHost) && !/^localhost|^127\./i.test(forwardedHost)
+          ? `${forwardedProto === 'http' ? 'http' : 'https'}://${forwardedHost}`
+          : (process.env.COOLIFY_URL || '').replace(/\/+$/, '')
         return reply({ success: true, action: input.action, ...issued.result, assetBaseUrl }, 201, correlationId)
       }
       const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
