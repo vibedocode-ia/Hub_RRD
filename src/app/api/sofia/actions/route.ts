@@ -121,7 +121,11 @@ export async function POST(req: NextRequest) {
           correlationId,
         })
         if (!issued.ok) return reply({ success: false, action: input.action, error: issued.error }, issued.status, correlationId)
-        return reply({ success: true, action: input.action, ...issued.result }, 201, correlationId)
+        // The document HTML references its A4 template backgrounds with root-relative
+        // URLs (/documents/templates/…). Return this Hub's origin so the caller can
+        // render the PDF with the official template instead of a blank page.
+        const assetBaseUrl = new URL(req.url).origin
+        return reply({ success: true, action: input.action, ...issued.result, assetBaseUrl }, 201, correlationId)
       }
       const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
       if (existing[0]) return reply({ success: true, alreadyProcessed: true, draftId: existing[0].id, pendingFields: existing[0].pendingFields }, existing[0].status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 200, correlationId)
