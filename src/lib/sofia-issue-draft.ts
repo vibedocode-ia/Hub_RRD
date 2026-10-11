@@ -21,7 +21,7 @@ export type IssueDraftInput = {
   centralContactId: string
   centralClientId: string
   centralRole: string
-  docType: 'ORCAMENTO' | 'ORCAMENTO_TECNICO' | 'RECIBO_GARANTIA' | 'LAUDO_TECNICO'
+  docType?: 'ORCAMENTO' | 'ORCAMENTO_TECNICO' | 'RECIBO_GARANTIA' | 'LAUDO_TECNICO'
   amount?: string
   paymentMethod?: string
   templateId?: string
@@ -68,6 +68,7 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
   if (!draft) return { ok: false, status: 409, error: 'Rascunho não disponível para emissão.' }
 
   const payload = draft.draftPayload as Record<string, any>
+  const docType = input.docType ?? payload.docType ?? 'ORCAMENTO'
   const customerName = text(payload.customerName, 160)
   const customerPhone = text(payload.customerPhone, 32) || draft.senderPhone
   const address = payload.address || {}
@@ -80,11 +81,11 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
     return { ok: false, status: 422, error: 'O rascunho ainda precisa de dados antes da emissão.' }
   }
 
-  const template = await selectSofiaDocumentTemplate(input.docType, input.templateId || (typeof payload.templateId === 'string' ? payload.templateId : undefined))
+  const template = await selectSofiaDocumentTemplate(docType, input.templateId || (typeof payload.templateId === 'string' ? payload.templateId : undefined))
   if (!template) return { ok: false, status: 422, error: 'Não há modelo ativo para este tipo de documento.' }
-  if (unknownDocumentFields(template.fieldSchema, input.documentFields).length) return { ok: false, status: 400, error: 'Campo não permitido pelo modelo selecionado.' }
+  if (unknownDocumentFields(template.fieldSchema, input.documentFields).length) return { ok: false, status: 422, error: 'Campo não permitido pelo modelo selecionado.' }
 
-  const rawAmount = String(input.amount ?? payload.totalAmount ?? '').trim()
+  const rawAmount = String(input.amount ?? payload.amount ?? payload.totalAmount ?? '').trim()
   const numericAmount = Number(rawAmount.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'))
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) return { ok: false, status: 400, error: 'Informe um valor válido antes de emitir o documento.' }
 
@@ -101,13 +102,13 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
   const formattedDate = now.toLocaleDateString('pt-BR')
   const year = now.getFullYear()
   const suffix = Math.floor(1000 + Math.random() * 9000)
-  const docNumber = input.docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : input.docType === 'LAUDO_TECNICO' ? `OS-${year}-${suffix}` : input.docType === 'ORCAMENTO_TECNICO' ? `ORCT-${year}-${suffix}` : `ORC-${year}-${suffix}`
+  const docNumber = docType === 'RECIBO_GARANTIA' ? `REC-${year}-${suffix}` : docType === 'LAUDO_TECNICO' ? `OS-${year}-${suffix}` : docType === 'ORCAMENTO_TECNICO' ? `ORCT-${year}-${suffix}` : `ORC-${year}-${suffix}`
 
-  const documentPayload = input.docType === 'RECIBO_GARANTIA'
+  const documentPayload = docType === 'RECIBO_GARANTIA'
     ? { type: 'RECIBO_GARANTIA' as const, data: { docNumber, paymentDate: formattedDate, paymentDateExtended: formattedDate, amount: formattedAmount, amountInWords: amountText, clientName: customerName, clientDoc: documentIdentity.document, serviceDescription: problemReported, address: fullAddress, city: 'Niterói', paymentMethod: resolvedPayment, issuedAtCity: 'Niterói/RJ' } }
-    : input.docType === 'LAUDO_TECNICO'
+    : docType === 'LAUDO_TECNICO'
       ? { type: 'LAUDO_TECNICO' as const, data: { docNumber, executionDate: formattedDate, clientName: customerName, clientDoc: documentIdentity.document, clientAddress: fullAddress, serviceType: payload.serviceType || 'DESENTUPIMENTO', serviceDescription: problemReported, items: [{ description: problemReported, quantity: 1, unitPrice: formattedAmount, subtotal: formattedAmount }], totalAmount: formattedAmount, paymentMethod: resolvedPayment, technicalNotes: '', technicianName: 'LEONARDO SANTOS', warrantyDays: 30, warrantyTerms: '' } }
-      : input.docType === 'ORCAMENTO_TECNICO'
+      : docType === 'ORCAMENTO_TECNICO'
         ? { type: 'ORCAMENTO_TECNICO' as const, data: { docNumber, issueDate: formattedDate, issueCity: 'Niterói', serviceTitle: payload.serviceType || 'DESENTUPIMENTO', contractorName: customerName, contractorDocument: documentIdentity.document, contractorAddress: fullAddress, contractedName: 'RR DESENTUPIDORA E DEDETIZADORA', contractedDocument: '53.102.506/0001-78', contractedContact: '21 99669-9191', object: payload.serviceType || 'DESENTUPIMENTO', scopeItems: problemReported.split(/\n|•|-/).map((i) => i.trim()).filter(Boolean), responsibility: 'Todo o serviço e sua responsabilidade técnica será de inteira responsabilidade da empresa RR DESENTUPIDORA E DEDETIZADORA, deixando a contratante isenta de custos adicionais.', totalAmount: formattedAmount, amountInWords: amountText, includedDescription: problemReported, paymentMethod: resolvedPayment, validityDays: '7 dias', executionDeadline: 'Imediato / a combinar', warranty: '30 dias no mesmo ponto desentupido' } }
         : { type: 'ORCAMENTO' as const, data: { docNumber, issueDate: formattedDate, contractor: customerName, object: payload.serviceType || 'DESENTUPIMENTO', serviceScope: problemReported, totalAmount: formattedAmount, paymentMethod: resolvedPayment, validityDays: '15 dias', executionDeadline: 'A combinar', guarantees: '' } }
   const storedFields = payload.documentFields && typeof payload.documentFields === 'object' ? payload.documentFields : {}
@@ -117,7 +118,7 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
   const values = resolveTemplateValues(documentPayload.data as Record<string, unknown>, confirmedFields)
   const missing = fields.filter(field => field.required && !String(values[field.key] ?? field.defaultValue ?? '').trim())
   // Persistência vinculada ao mesmo rascunho: coleta posterior não perde valores já confirmados.
-  await db.update(sofiaDrafts).set({ draftPayload: { ...payload, documentFields: confirmedFields, docType: input.docType, templateId: template.id, totalAmount: rawAmount, paymentMethod: resolvedPayment }, updatedAt: now }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.PENDING_REVIEW), isNull(sofiaDrafts.serviceRequestId)))
+  await db.update(sofiaDrafts).set({ draftPayload: { ...payload, documentFields: confirmedFields, docType: docType, templateId: template.id, amount: rawAmount, totalAmount: rawAmount, paymentMethod: resolvedPayment }, updatedAt: now }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.PENDING_REVIEW), isNull(sofiaDrafts.serviceRequestId)))
   if (missing.length) return { ok: false, status: 422, error: 'O modelo ainda precisa de informações.', pendingFields: missing.map(({key,label})=>({key,label})) }
   const rendered = await renderRegisteredTemplate(template, documentPayload.data as Record<string, unknown>, confirmedFields)
   if (!rendered.ok) return { ok: false, status: 422, error: rendered.error.message }
@@ -126,25 +127,25 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
   const result = await db.transaction(async (tx) => {
     const [client] = await tx.insert(clients).values({ name: customerName, phone: customerPhone, normalizedPhone: customerPhone.replace(/\D/g, ''), type: documentIdentity.type, document: documentIdentity.document }).returning()
     const [clientAddress] = await tx.insert(clientAddresses).values({ clientId: client.id, street, number, neighborhood, city: text(address.city, 120) || 'Niterói', state: 'RJ', complement: text(address.complement, 120) || null, referencePoint: text(address.referencePoint, 200) || null, isMain: true }).returning()
-    const [request] = await tx.insert(serviceRequests).values({ code: `SOF-${year}-${draft.id.slice(0, 8)}`, clientId: client.id, addressId: clientAddress.id, sourceChannel: 'SOFIA_WHATSAPP', leadStatus: 'NOVO', priority: payload.priority || 'NORMAL', serviceType: payload.serviceType || 'DESENTUPIMENTO', problemReported, status: input.docType === 'RECIBO_GARANTIA' ? 'CONCLUIDO' : 'PENDING_REVIEW', totalAmount: numericAmount.toFixed(2), paymentMethod: resolvedPayment }).returning()
+    const [request] = await tx.insert(serviceRequests).values({ code: `SOF-${year}-${draft.id.slice(0, 8)}`, clientId: client.id, addressId: clientAddress.id, sourceChannel: 'SOFIA_WHATSAPP', leadStatus: 'NOVO', priority: payload.priority || 'NORMAL', serviceType: payload.serviceType || 'DESENTUPIMENTO', problemReported, status: docType === 'RECIBO_GARANTIA' ? 'CONCLUIDO' : 'PENDING_REVIEW', totalAmount: numericAmount.toFixed(2), paymentMethod: resolvedPayment }).returning()
 
     const [documentRecord] = await tx.insert(officialDocuments).values({
-      docType: input.docType, docNumber, serviceRequestId: request.id, clientId: client.id,
+      docType: docType, docNumber, serviceRequestId: request.id, clientId: client.id,
       templateVersion: template.version, totalValue: numericAmount.toFixed(2), amountInWords: amountText,
       paymentMethod: resolvedPayment, hasWarranty: true, warrantyDays: 30, warrantyTerms: null, technicalNotes: null,
       documentPayloadSnapshot: { ...documentPayload, templateId: template.id, templateVersion: template.version, templateSourceSha256: template.sourceSha256, fieldSchemaSnapshot: rendered.fieldSchemaSnapshot, fieldValuesSnapshot: rendered.fieldValuesSnapshot },
       htmlSnapshot, status: DOC_STATUS.EMITIDO, issuedAt: now, createdById: operator.id,
     }).returning()
 
-    if (input.docType === 'ORCAMENTO' || input.docType === 'ORCAMENTO_TECNICO') {
-      const [proposal] = await tx.insert(proposals).values({ clientId: client.id, serviceRequestId: request.id, officialDocumentId: documentRecord.id, title: `${input.docType === 'ORCAMENTO_TECNICO' ? 'Orçamento Técnico' : 'Orçamento'} — ${payload.serviceType || 'DESENTUPIMENTO'}`, description: problemReported, totalValue: numericAmount.toFixed(2), status: 'SENT', sentAt: now, createdById: operator.id }).returning()
-      await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'proposal.created_from_document', targetType: 'proposal', targetId: proposal.id, metadata: { documentId: documentRecord.id, docType: input.docType } })
+    if (docType === 'ORCAMENTO' || docType === 'ORCAMENTO_TECNICO') {
+      const [proposal] = await tx.insert(proposals).values({ clientId: client.id, serviceRequestId: request.id, officialDocumentId: documentRecord.id, title: `${docType === 'ORCAMENTO_TECNICO' ? 'Orçamento Técnico' : 'Orçamento'} — ${payload.serviceType || 'DESENTUPIMENTO'}`, description: problemReported, totalValue: numericAmount.toFixed(2), status: 'SENT', sentAt: now, createdById: operator.id }).returning()
+      await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'proposal.created_from_document', targetType: 'proposal', targetId: proposal.id, metadata: { documentId: documentRecord.id, docType: docType } })
     }
 
     const [updated] = await tx.update(sofiaDrafts).set({ status: SOFIA_DRAFT_STATUS.CONVERTED, serviceRequestId: request.id, reviewedById: operator.id, reviewedAt: now, convertedAt: now, updatedAt: now }).where(and(eq(sofiaDrafts.id, draft.id), eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.PENDING_REVIEW), isNull(sofiaDrafts.serviceRequestId))).returning()
     if (!updated) throw new Error('DRAFT_ALREADY_CONVERTED')
-    await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: input.correlationId, rawPayload: { action: 'issue_service_draft', draftId: draft.id, docType: input.docType, documentId: documentRecord.id }, intentDetected: draft.intent, status: 'PROCESSED' })
-    await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'sofia_draft.confirmed_and_issued', targetType: 'sofia_draft', targetId: draft.id, metadata: { serviceRequestId: request.id, documentId: documentRecord.id, docType: input.docType } })
+    await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: input.correlationId, rawPayload: { action: 'issue_service_draft', draftId: draft.id, docType: docType, documentId: documentRecord.id }, intentDetected: draft.intent, status: 'PROCESSED' })
+    await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'sofia_draft.confirmed_and_issued', targetType: 'sofia_draft', targetId: draft.id, metadata: { serviceRequestId: request.id, documentId: documentRecord.id, docType: docType } })
     return { documentRecord }
   })
 
@@ -154,7 +155,7 @@ export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueD
       draftId: draft.id,
       documentId: result.documentRecord.id,
       docNumber: result.documentRecord.docNumber,
-      docType: input.docType,
+      docType: docType,
       customerName,
       totalValue: numericAmount.toFixed(2),
       htmlSnapshot,

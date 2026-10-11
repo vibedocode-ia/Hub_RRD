@@ -29,6 +29,8 @@ export const SofiaCreateDraftRequest = central.extend({
   templateId: z.string().uuid().optional(),
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
   documentFields: SofiaDocumentFields.optional(),
+  amount: z.string().trim().min(1).max(32).optional(),
+  paymentMethod: z.string().trim().max(60).optional(),
   intentDetected: z.enum(['CRIAR_ORCAMENTO', 'CRIAR_OS', 'CRIAR_RECIBO']).default('CRIAR_ORCAMENTO'),
   customerName: z.string().trim().min(1).max(160).optional(),
   customerPhone: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/).optional(),
@@ -53,6 +55,8 @@ export const SofiaUpdateDraftRequest = central.extend({
   templateId: z.string().uuid().optional(),
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
   documentFields: SofiaDocumentFields.optional(),
+  amount: z.string().trim().min(1).max(32).optional(),
+  paymentMethod: z.string().trim().max(60).optional(),
   customerName: z.string().trim().min(1).max(160).optional(),
   customerPhone: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/).optional(),
   customerDocument: z.string().trim().min(1).max(32).optional(),
@@ -70,8 +74,8 @@ export const SofiaGetDocumentTemplateRequest = central.extend({
 export const SofiaIssueDraftRequest = central.extend({
   action: z.literal('issue_service_draft'),
   draftId: z.string().uuid(),
-  // Document type to issue from the confirmed draft. Defaults to a plain quote.
-  docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).default('ORCAMENTO'),
+  // Omitted references resolve from the owned draft, never from a new default.
+  docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
   amount: z.string().trim().min(1).max(32).optional(),
   paymentMethod: z.string().trim().max(60).optional(),
   templateId: z.string().uuid().optional(),

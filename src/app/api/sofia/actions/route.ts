@@ -109,7 +109,9 @@ export async function POST(req: NextRequest) {
           const selected = await selectSofiaDocumentTemplate(input.docType || (typeof previous.docType === 'string' ? previous.docType : 'ORCAMENTO'), input.templateId || (typeof previous.templateId === 'string' ? previous.templateId : undefined))
           if (!selected || unknownDocumentFields(selected.fieldSchema, input.documentFields).length) return reply({ success: false, error: 'Campos não pertencem ao modelo ativo.' }, 422, correlationId)
           next.documentFields = { ...(previous.documentFields && typeof previous.documentFields === 'object' ? previous.documentFields as Record<string,string> : {}), ...input.documentFields }
+          if (unknownDocumentFields(selected.fieldSchema, next.documentFields as Record<string, string>).length) return reply({ success: false, error: 'O rascunho contém campos de outro modelo.' }, 422, correlationId)
           next.templateId = selected.id
+          next.docType = selected.docType
         }
         const pendingFields = pendingDraftFields(next as any); const status = pendingFields.length ? SOFIA_DRAFT_STATUS.COLLECTING : SOFIA_DRAFT_STATUS.PENDING_REVIEW
         const [updated] = await db.transaction(async tx => {
