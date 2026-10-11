@@ -1,3 +1,6 @@
+### V0.14.03 (2026-10-11) - Preservar dados e modelo na coleta entre mensagens da SofIA
+- **Release:** Site + Hub RRD.
+
 ### V0.14.02 (2026-10-10) - Corrigir renderer PDF no runtime compilado
 - **Release:** Site + Hub RRD.
 
