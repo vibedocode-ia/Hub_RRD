@@ -1,0 +1,22 @@
+{
+  "scripts/test-lead-conversion-probe.ts": "ced6799c7cc268dced11329d45496bb4c66d72d2f3b7ee5411b74513721bd0ff",
+  "scripts/test-lead-postgres.mjs": "a3761a54bfe33809555a38111a35ce644a62fff45a018bead6b16ade0a2bbaeb",
+  "src/app/api/internal/test-leads/[id]/route.ts": "6d9814009429b3e5c0fa2bc0dfb21de9907538686e52a8eafed47e961f492468",
+  "src/app/api/internal/test-leads/route.ts": "56dc1cb22cc4d59a1412d1f705ddfff30d4036f2dbb8f44375c144e2b6f5fded",
+  "src/app/api/lead-proposals/[id]/route.ts": "a8ffe1fc0683ab7153cf62f0311411eb50f04d81e595b376de0f506ec61f669d",
+  "src/app/api/leads/[id]/proposals/route.ts": "51d059062d2a9f754b5be067aa2d98822bcbbb60aced361fe92d85a99f24b14e",
+  "src/db/migrations/0021_test_lead_lifecycle.sql": "8bdc80f31443c86aca7cf28f50d3f131d2ac03428c3d894f5514977ff8124639",
+  "src/db/migrations/meta/_journal.json": "4c654c1f49a1a2d0b0b6b92a8065d3a9993b90067591187875d8ddc7361ae9c1",
+  "src/db/schema.ts": "de13a3a8cc0c80d2049695475a596010b216cced7a1c1fa04de6cf5c1c15bd73",
+  "src/lib/__tests__/lead-conversion-concurrency.test.ts": "e04f7069722de71b30ff6e7d92788e4fad2209fe03c339cccf58d9d48238133d",
+  "src/lib/__tests__/lead-conversion-proposal-lock.test.ts": "1dd758f06ac4de658b7ce810e25d820a619c14ea9dfb0cc48be713638a33362c",
+  "src/lib/__tests__/lead-proposal-lock.test.ts": "76c233093d9da22dae139dafb5c8f31a3408dc84ce2bb395ea3131de731ba7aa",
+  "src/lib/__tests__/lead-race-contract.test.ts": "b3b06cd4ab800205cbcabbfe8d966b2b5a147d0e5a9258b608f39d559be5e608",
+  "src/lib/__tests__/test-lead-fk-catalog-contract.test.ts": "1757c03d430da70de2e65a74599f115e85eec8ea2de219723356ee68a2894404",
+  "src/lib/__tests__/test-lead-identity.test.ts": "5b2f3adcbdc8baf87dead38e6585298fb5b3aaa8798741db90fc8fc6c3e55a34",
+  "src/lib/__tests__/test-lead-lifecycle-api-contract.test.ts": "f35a90ca098750fea27d92f36a5543be8a54de9718b131e4376fac5569236656",
+  "src/lib/__tests__/test-lead-lifecycle.test.ts": "29289b13cff7cccd2f4560c03f882afe8d0188f7f97a8e4d1c5a533a7156fe50",
+  "src/lib/lead-conversion.ts": "154716422a9688020b1eb82a30eb5e9f43ce6206ae197edf44ca5664fbc82656",
+  "src/lib/test-lead-identity.ts": "bbc2e404b951fea2817fb237220ef3616638b338c70a56fe2a6b7c3ce637cb03",
+  "src/lib/test-lead-lifecycle.ts": "759718c265a8551e331d8813e08c6c66f93474648e5016345d8bb259451d7e5a"
+}

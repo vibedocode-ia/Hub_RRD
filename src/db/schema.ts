@@ -256,6 +256,7 @@ export const leads = pgTable('leads', {
   convertedClientId: uuid('converted_client_id'),
   convertedAt: timestamp('converted_at'),
   convertedById: uuid('converted_by_id').references(() => users.id),
+  testRunId: uuid('test_run_id'),
   createdById: uuid('created_by_id').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -263,6 +264,7 @@ export const leads = pgTable('leads', {
   uniqueIndex('leads_normalized_phone_unique').on(table.normalizedPhone),
   uniqueIndex('leads_normalized_document_unique').on(table.normalizedDocument).where(sql`${table.normalizedDocument} is not null`),
   index('leads_status_created_idx').on(table.status, table.createdAt),
+  index('leads_test_run_id_idx').on(table.testRunId),
 ]);
 
 export const leadAddresses = pgTable('lead_addresses', {

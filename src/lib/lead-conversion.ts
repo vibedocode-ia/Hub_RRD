@@ -1,17 +1,19 @@
 import { and, eq, or, sql } from 'drizzle-orm'
 import { clients, leadAuditEvents, leadProposals, leads } from '@/db'
 import { LEAD_STATUSES, leadConversionPayload } from './leads'
+import { assertLeadNotTestData } from './test-lead-lifecycle'
 
 export async function convertApprovedLead(tx: any, input: { leadId: string; proposalId: string; actorUserId: string }) {
   // Lock Lead and its canonical phone identity: one conversion per lead and one client creation per phone.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${input.leadId}))`)
-  const lockedRows = await tx.execute(sql`select * from leads where id = ${input.leadId} for update`)
+  const lockedRows = await tx.select().from(leads).where(eq(leads.id, input.leadId)).for('update')
   const lead = lockedRows[0] as typeof leads.$inferSelect | undefined
   if (!lead) throw new Error('LEAD_NOT_FOUND')
+  assertLeadNotTestData({ operation: 'conversion', testRunId: lead.testRunId })
   if (lead.convertedClientId) return { clientId: lead.convertedClientId, alreadyConverted: true }
   if (lead.status !== LEAD_STATUSES.APPROVED) throw new Error('LEAD_NOT_APPROVED')
   // Re-lock and re-read the commercial approval at the exact conversion boundary.
-  const proposalRows = await tx.execute(sql`select * from lead_proposals where id = ${input.proposalId} and lead_id = ${lead.id} for update`)
+  const proposalRows = await tx.select().from(leadProposals).where(and(eq(leadProposals.id, input.proposalId), eq(leadProposals.leadId, lead.id))).for('update')
   const proposal = proposalRows[0] as typeof leadProposals.$inferSelect | undefined
   if (!proposal || proposal.status !== 'APPROVED') throw new Error('LEAD_NOT_APPROVED')
 

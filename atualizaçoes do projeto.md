@@ -1,3 +1,6 @@
+### V0.14.04 (2026-10-13) - API interna Leads TESTE: criar, consultar e purgar com auditoria preservada
+- **Release:** Site + Hub RRD.
+
 ### V0.14.03 (2026-10-11) - Preservar dados e modelo na coleta entre mensagens da SofIA
 - **Release:** Site + Hub RRD.
 

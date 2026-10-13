@@ -150,3 +150,6 @@ V0.10.00 · 2026-09-04
 - Provas finais salvas em `Docs/Docs Modelos/Validação Hub RRD/`.
 - TypeScript, build Next.js e inspeção visual das provas aprovados.
 
+
+## 2026-10-13 — V0.14.04
+Release autorizada da API Leads TESTE. Migration 0021 aditiva validada em clone PG17, backup privado verificado e aplicada. Gate source-hash preservado. Sem alteração de Sofia, HVD, bridge ou UI. Ver evidence/release-preflight.md; deploy/E2E pendentes neste registro.

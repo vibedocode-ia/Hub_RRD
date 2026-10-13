@@ -148,6 +148,13 @@
       "when": 1790726400000,
       "tag": "0020_leads_isolated",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791907200000,
+      "tag": "0021_test_lead_lifecycle",
+      "breakpoints": true
     }
   ]
 }

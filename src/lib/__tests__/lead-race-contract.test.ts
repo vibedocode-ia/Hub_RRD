@@ -11,7 +11,7 @@ test('lead conversion serializes both lead and canonical phone before client cre
 
 test('lead proposal creation validates terminal state only after transaction lock', () => {
   const source = readFileSync('src/app/api/leads/[id]/proposals/route.ts', 'utf8')
-  const lock = source.indexOf('for update')
+  const lock = source.indexOf(".for('update')")
   const terminal = source.indexOf("['NEW', 'QUOTING'].includes(lead.status)")
   const insert = source.indexOf('tx.insert(leadProposals)')
   assert.ok(lock >= 0 && terminal > lock && insert > terminal)
