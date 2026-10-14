@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import { clients, clientAddresses, contacts, db } from '@/db'
 import { normalizeCrmInput } from '@/lib/crm-profile'
 import { requireLocalPermission } from '@/lib/require-local-permission'
+
+class ContactUnavailableError extends Error {}
 export async function GET(request: Request) {
   const auth = await requireLocalPermission('crm.read')
   if (!auth) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
@@ -32,12 +34,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
     }
 
-    if (contactId && (typeof contactId !== 'string' || !/^[0-9a-f-]{36}$/i.test(contactId))) return NextResponse.json({ error: 'Contato inválido.' }, { status: 422 });
+    if (contactId && (typeof contactId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contactId))) return NextResponse.json({ error: 'Contato inválido.' }, { status: 422 });
     const linkedContact = contactId ? await db.select().from(contacts).where(eq(contacts.id, contactId)).limit(1) : [];
     if (contactId && (!linkedContact[0] || !linkedContact[0].isActive || linkedContact[0].clientId)) return NextResponse.json({ error: 'Contato não disponível.' }, { status: 422 });
     const normalizedPhone = phone.replace(/\D/g, '');
 
-    const [newClient] = await db
+    const newClient = await db.transaction(async tx => {
+    const [newClient] = await tx
       .insert(clients)
       .values({
         type: type || 'PF',
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    await db.insert(clientAddresses).values({
+    await tx.insert(clientAddresses).values({
       clientId: newClient.id,
       street: street || 'Endereço a confirmar',
       number: number || 'S/N',
@@ -65,9 +68,15 @@ export async function POST(req: NextRequest) {
       isMain: true,
     });
 
-    if (contactId) await db.update(contacts).set({ clientId: newClient.id, updatedAt: new Date() }).where(eq(contacts.id, contactId));
+    if (contactId) {
+      const claimed = await tx.update(contacts).set({ clientId: newClient.id, updatedAt: new Date() }).where(and(eq(contacts.id, contactId), eq(contacts.isActive, true), isNull(contacts.clientId))).returning({ id: contacts.id });
+      if (claimed.length === 0) throw new ContactUnavailableError();
+    }
+    return newClient;
+    });
     return NextResponse.json({ success: true, clientId: newClient.id }, { status: 201 });
   } catch (error: any) {
+    if (error instanceof ContactUnavailableError) return NextResponse.json({ error: 'Contato já vinculado a outro cliente.' }, { status: 409 });
     console.error('Erro ao cadastrar cliente:', error);
     return NextResponse.json({ error: 'Falha interna ao salvar cliente.' }, { status: 500 });
   }

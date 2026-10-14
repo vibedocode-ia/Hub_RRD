@@ -12,6 +12,8 @@ export default function NovoClientePage() {
   const [contacts, setContacts] = useState<{id:string;name:string;phone:string|null}[]>([]);
   useEffect(() => { let active=true; fetch('/api/contatos').then(async response => { if(!response.ok) throw new Error('Não foi possível carregar os contatos.'); const data=await response.json(); if(active) setContacts(data.contacts ?? []); }).catch(err => { if(active) setError(err.message); }); return () => {active=false}; }, []);
 
+  const [contactQuery, setContactQuery] = useState('');
+
   const [form, setForm] = useState({
     name: '',
     type: 'PF',
@@ -19,6 +21,7 @@ export default function NovoClientePage() {
     document: '',
     email: '',
     contactPerson: '',
+    contactId: '',
     source: 'WHATSAPP',
     recurrence: 'SERVICO_AVULSO',
     customerSince: new Date().toISOString().slice(0, 10),
@@ -38,6 +41,13 @@ export default function NovoClientePage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const contactOptions = contactQuery.trim()
+    ? contacts.filter(contact => contact.name.toLowerCase().includes(contactQuery.trim().toLowerCase()))
+    : contacts;
+  const contactSelectValue = contactOptions.some(contact => contact.id === form.contactId)
+    ? form.contactId
+    : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,7 +166,15 @@ export default function NovoClientePage() {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Pessoa de contato</label>
-              <input type="text" name="contactPerson" value={form.contactPerson} onChange={handleChange} placeholder="Nome do responsável" className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" />
+              <input type="text" name="contactQuery" value={contactQuery} onChange={e => setContactQuery(e.target.value)} placeholder="Filtrar contatos cadastrados" className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" />
+              <select name="contactId" value={contactSelectValue} onChange={handleChange} className="mt-2 w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none">
+                <option value="">Sem contato vinculado</option>
+                {contactOptions.map(contact => <option key={contact.id} value={contact.id}>{contact.name}{contact.phone ? ` · ${contact.phone}` : ''}</option>)}
+              </select>
+              <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
+                <span>{contactQuery.trim() && contactOptions.length === 0 ? 'Nenhum contato encontrado.' : `${contactOptions.length} contato(s) disponível(is)`}</span>
+                <Link href="/portal/contatos" className="text-cyan-400">Gerenciar contatos</Link>
+              </div>
             </div>
           </div>
         </div>

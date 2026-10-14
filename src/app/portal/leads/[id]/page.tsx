@@ -3,12 +3,12 @@ import { db, leads, leadAddresses, leadAuditEvents, leadProposals, leadServiceRe
 import { requireLocalPermission } from '@/lib/require-local-permission'
 import { redirect, notFound } from 'next/navigation'
 import LeadDetailClient from './LeadDetailClient'
-import EditLeadForm from './EditLeadForm'
 type Params = { params: Promise<{ id: string }> }
 export const dynamic = 'force-dynamic'
 export default async function LeadPage({ params }: Params) {
   if (!await requireLocalPermission('crm.read')) redirect('/portal')
   const { id } = await params
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) notFound()
   if (!db) return <p>Banco indisponível.</p>
   const [lead] = await db.select().from(leads).where(eq(leads.id, id)).limit(1)
   if (!lead) notFound()
@@ -20,6 +20,6 @@ export default async function LeadPage({ params }: Params) {
     db.select().from(leadDocuments).where(eq(leadDocuments.leadId, id)).orderBy(desc(leadDocuments.createdAt)),
   ])
   const serializedLead = JSON.parse(JSON.stringify(lead))
-  if (!await requireLocalPermission('crm.write') || lead.convertedAt || lead.convertedClientId) return <LeadDetailClient lead={serializedLead} address={JSON.parse(JSON.stringify(addresses[0] || null))} requests={JSON.parse(JSON.stringify(requests))} proposals={JSON.parse(JSON.stringify(proposals))} documents={JSON.parse(JSON.stringify(documents))} audit={JSON.parse(JSON.stringify(audit))} readOnly />
-  return <EditLeadForm lead={serializedLead} address={JSON.parse(JSON.stringify(addresses[0] || null))} request={JSON.parse(JSON.stringify(requests[0] || null))} />
+  const readOnly = !await requireLocalPermission('crm.write') || Boolean(lead.convertedAt || lead.convertedClientId)
+  return <LeadDetailClient lead={serializedLead} address={JSON.parse(JSON.stringify(addresses[0] || null))} requests={JSON.parse(JSON.stringify(requests))} proposals={JSON.parse(JSON.stringify(proposals))} documents={JSON.parse(JSON.stringify(documents))} audit={JSON.parse(JSON.stringify(audit))} readOnly={readOnly} />
 }

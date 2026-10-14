@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { asc, eq } from 'drizzle-orm'
-import { clients, contacts, db } from '@/db'
+import { contacts, db } from '@/db'
 import { requireLocalPermission } from '@/lib/require-local-permission'
 import { CreateContactSchema } from '@/lib/validation/contacts-agenda'
 
-export async function GET(request: Request) {
+export async function GET() {
   const auth = await requireLocalPermission('crm.read')
   if (!auth) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
   if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503 })
-  if (new URL(request.url).searchParams.has('archived')) {
-    const archived = new URL(request.url).searchParams.get('archived') === 'true'
-    const rows = await db.select().from(clients).where(eq(clients.isActive, !archived)).orderBy(asc(clients.name))
-    return NextResponse.json({ success: true, clients: rows })
-  }
   const rows = await db.select().from(contacts).where(eq(contacts.isActive, true)).orderBy(asc(contacts.name))
   return NextResponse.json({ success: true, contacts: rows })
 }

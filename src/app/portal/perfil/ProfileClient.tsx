@@ -1,11 +1,13 @@
 'use client'
 
 import { FormEvent, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Camera, CheckCircle2, Globe, Link2, Loader2, MapPin, Phone, Save, UserCircle2, X } from 'lucide-react'
 
 type Profile = { id: string; name: string; phone: string; email: string | null; role: string; jobTitle: string | null; photoUrl: string | null; company: string | null; city: string | null; state: string | null; instagramUrl: string | null; websiteUrl: string | null; personalNotes: string | null }
 
 export default function ProfileClient({ profile: initial }: { profile: Profile }) {
+  const router = useRouter()
   const [profile, setProfile] = useState(initial)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
@@ -32,7 +34,7 @@ export default function ProfileClient({ profile: initial }: { profile: Profile }
     const response = await fetch('/api/profile', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
     const data = await response.json().catch(() => ({})); setSaving(false)
     if (!response.ok) { setMessage({ ok: false, text: data.error || 'Não foi possível salvar o perfil.' }); return }
-    setProfile(data.profile); setMessage({ ok: true, text: 'Perfil salvo com sucesso.' })
+    setProfile(data.profile); router.refresh(); setMessage({ ok: true, text: 'Perfil salvo com sucesso.' })
   }
 
   async function changePassword(event: FormEvent<HTMLFormElement>) {

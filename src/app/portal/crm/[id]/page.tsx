@@ -2,7 +2,7 @@ import Link from 'next/link';
 import DeleteResourceButton from '@/components/DeleteResourceButton';
 import { notFound, redirect } from 'next/navigation';
 import { requireLocalPermission } from '@/lib/require-local-permission';
-import { db, clients, clientAddresses, serviceRequests, officialDocuments, financeiroLancamentos } from '@/db';
+import { db, clients, clientAddresses, contacts, serviceRequests, officialDocuments, financeiroLancamentos } from '@/db';
 import { buildCrmProfile } from '@/lib/crm-profile';
 import { eq, desc } from 'drizzle-orm';
 import {
@@ -48,6 +48,7 @@ function formatCurrency(value: unknown) {
 export default async function ClientDetailPage({ params }: PageProps) {
   if (!await requireLocalPermission('crm.read')) redirect('/portal');
   const { id } = await params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) notFound();
 
   if (!db) {
     return (
@@ -70,6 +71,12 @@ export default async function ClientDetailPage({ params }: PageProps) {
     .from(clientAddresses)
     .where(eq(clientAddresses.clientId, id))
     .orderBy(desc(clientAddresses.isMain), desc(clientAddresses.createdAt));
+
+  const contactOptions = await db
+    .select({ id: contacts.id, name: contacts.name, phone: contacts.phone })
+    .from(contacts)
+    .where(eq(contacts.clientId, id));
+  const contactNames = contactOptions.map(contact => contact.name).join(', ');
 
   const requests = await db
     .select()
@@ -132,7 +139,8 @@ export default async function ClientDetailPage({ params }: PageProps) {
             <Info label="Telefone" value={client.phone} icon={<Phone className="w-4 h-4" />} />
             <Info label="CPF/CNPJ" value={client.document || '—'} icon={<FileText className="w-4 h-4" />} />
             <Info label="E-mail" value={client.email || '—'} icon={<Mail className="w-4 h-4" />} />
-            <Info label="Contato" value={client.contactPerson || '—'} icon={<User className="w-4 h-4" />} />
+            <Info label="Contato" value={contactNames || client.contactPerson || '—'} icon={<User className="w-4 h-4" />} />
+            {contactNames && client.contactPerson && <Info label="Contato (registro anterior)" value={client.contactPerson} icon={<User className="w-4 h-4" />} />}
             <Info label="Origem" value={client.source || 'Manual/CRM'} icon={<ClipboardList className="w-4 h-4" />} />
             <Info label="Recorrência" value={client.recurrence.replaceAll('_', ' ')} icon={<CalendarClock className="w-4 h-4" />} />
             <Info label="Cliente desde" value={formatDate(client.customerSince || client.createdAt)} icon={<CalendarClock className="w-4 h-4" />} />

@@ -3,7 +3,7 @@ import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function EditLeadForm({lead,address,request}:any){
+export default function EditLeadForm({lead,onSaved}:any){
   const router = useRouter()
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -15,7 +15,7 @@ export default function EditLeadForm({lead,address,request}:any){
       const response = await fetch(`/api/leads/${lead.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) { setMessage(data.error || 'Não foi possível salvar o lead.'); return }
-      router.push(`/portal/leads/${lead.id}`); router.refresh()
+      router.refresh(); onSaved?.()
     } catch { setMessage('Falha de conexão ao salvar o lead.') } finally { setSaving(false) }
   }
   const statuses = [['NEW','Novo'],['QUOTING','Em orçamento'],['APPROVED','Aprovado'],['LOST','Perdido']]
