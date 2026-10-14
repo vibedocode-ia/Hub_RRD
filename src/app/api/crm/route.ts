@@ -1,7 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db, clients, clientAddresses } from '../../../db';
-import { requireLocalPermission } from '../../../lib/require-local-permission';
-import { normalizeCrmInput } from '../../../lib/crm-profile';
+import { NextRequest, NextResponse } from 'next/server'
+import { asc, eq } from 'drizzle-orm'
+import { clients, clientAddresses, contacts, db } from '@/db'
+import { normalizeCrmInput } from '@/lib/crm-profile'
+import { requireLocalPermission } from '@/lib/require-local-permission'
+export async function GET(request: Request) {
+  const auth = await requireLocalPermission('crm.read')
+  if (!auth) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
+  if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503 })
+  const archived = new URL(request.url).searchParams.get('archived') === 'true'
+  const rows = await db.select().from(clients).where(eq(clients.isActive, !archived)).orderBy(asc(clients.name))
+  return NextResponse.json({ success: true, clients: rows })
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +19,7 @@ export async function POST(req: NextRequest) {
     const user = authorized.access;
 
     const body = await req.json();
-    const { name, type, phone, document, email, contactPerson, notes, source, recurrence, customerSince, lastContactAt, nextVisitAt, street, number, complement, neighborhood, city, state, referencePoint, serviceAccessNotes } = body;
+    const { name, type, phone, document, email, contactPerson, contactId, notes, source, recurrence, customerSince, lastContactAt, nextVisitAt, street, number, complement, neighborhood, city, state, referencePoint, serviceAccessNotes } = body;
     let crm;
     try { crm = normalizeCrmInput({ type, source, recurrence, customerSince, lastContactAt, nextVisitAt, notes }); }
     catch { return NextResponse.json({ error: 'Dados de relacionamento CRM inválidos.' }, { status: 400 }); }
@@ -23,6 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
     }
 
+    if (contactId && (typeof contactId !== 'string' || !/^[0-9a-f-]{36}$/i.test(contactId))) return NextResponse.json({ error: 'Contato inválido.' }, { status: 422 });
+    const linkedContact = contactId ? await db.select().from(contacts).where(eq(contacts.id, contactId)).limit(1) : [];
+    if (contactId && (!linkedContact[0] || !linkedContact[0].isActive || linkedContact[0].clientId)) return NextResponse.json({ error: 'Contato não disponível.' }, { status: 422 });
     const normalizedPhone = phone.replace(/\D/g, '');
 
     const [newClient] = await db
@@ -34,7 +46,7 @@ export async function POST(req: NextRequest) {
         normalizedPhone,
         document: document || null,
         email: email || null,
-        contactPerson: contactPerson || null,
+        contactPerson: contactId ? null : (contactPerson || null),
         ...crm,
         createdById: user.id,
       })
@@ -53,6 +65,7 @@ export async function POST(req: NextRequest) {
       isMain: true,
     });
 
+    if (contactId) await db.update(contacts).set({ clientId: newClient.id, updatedAt: new Date() }).where(eq(contacts.id, contactId));
     return NextResponse.json({ success: true, clientId: newClient.id }, { status: 201 });
   } catch (error: any) {
     console.error('Erro ao cadastrar cliente:', error);

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2 } from 'lucide-react';
 
-export default function EditClientForm({ initial }: { initial: any }) {
+export default function EditClientForm({ initial, contacts = [] }: { initial: any; contacts?: { id: string; name: string; phone: string | null }[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export default function EditClientForm({ initial }: { initial: any }) {
       <Field name="phone" label="Telefone" value={form.phone} onChange={handleChange} required />
       <Field name="document" label="CPF/CNPJ" value={form.document || ''} onChange={handleChange} />
       <Field name="email" label="E-mail" value={form.email || ''} onChange={handleChange} />
-      <Field name="contactPerson" label="Pessoa de contato" value={form.contactPerson || ''} onChange={handleChange} />
+      <label className="block"><span className="text-xs font-bold uppercase text-slate-300">Pessoa de contato</span><select name="contactId" value={form.contactId || ''} onChange={handleChange} className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100"><option value="">Sem contato vinculado</option>{contacts.map(contact => <option key={contact.id} value={contact.id}>{contact.name}{contact.phone ? ` · ${contact.phone}` : ''}</option>)}</select><a href="/portal/contatos" className="mt-2 inline-block text-xs text-cyan-400">Gerenciar contatos</a></label>
       <Field name="street" label="Rua" value={form.street || ''} onChange={handleChange} />
       <Field name="number" label="Número" value={form.number || ''} onChange={handleChange} />
       <Field name="neighborhood" label="Bairro" value={form.neighborhood || ''} onChange={handleChange} required />

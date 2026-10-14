@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Users, ArrowLeft, Save, Loader2, Building2, MapPin } from 'lucide-react';
@@ -9,6 +9,8 @@ export default function NovoClientePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<{id:string;name:string;phone:string|null}[]>([]);
+  useEffect(() => { let active=true; fetch('/api/contatos').then(async response => { if(!response.ok) throw new Error('Não foi possível carregar os contatos.'); const data=await response.json(); if(active) setContacts(data.contacts ?? []); }).catch(err => { if(active) setError(err.message); }); return () => {active=false}; }, []);
 
   const [form, setForm] = useState({
     name: '',

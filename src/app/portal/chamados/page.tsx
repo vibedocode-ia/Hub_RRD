@@ -121,6 +121,7 @@ export default async function ChamadosPage() {
                     <div className="text-sm font-black text-emerald-400">R$ {req.totalAmount || '0,00'}</div>
                     <div className="text-[10px] text-slate-500">{new Date(req.createdAt).toLocaleDateString('pt-BR')}</div>
                   </div>
+                  <Link href={`/portal/chamados/${req.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-800/70 text-cyan-300 font-bold text-xs transition">Ver chamado</Link>
                   <Link href={`/portal/chamados/${req.id}/editar`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs transition">Editar</Link>
                   <DeleteResourceButton endpoint={`/api/chamados/${req.id}`} redirectTo="/portal/chamados" label="Arquivar chamado" confirmText="Arquivar este chamado? O histórico, os documentos e os anexos serão preservados." />
                   <Link
