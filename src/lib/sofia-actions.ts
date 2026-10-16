@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { requiredDocumentDraftFields } from './sofia-document-draft'
 import { isFinancialCalendarDate } from '@/lib/validation/financeiro'
+import { financialQuerySchema, financialCreateSchema, financialUpdateSchema, stockQuerySchema, stockAdjustmentSchema, agendaQuerySchema } from './sofia-query-contracts'
 
 const central = z.object({
   centralContactId: z.string().uuid(),
@@ -168,7 +169,7 @@ export type SofiaDomainAction =
   | 'list_vehicles' | 'create_vehicle' | 'update_vehicle' | 'archive_vehicle'
   | 'list_teams' | 'create_team' | 'update_team'
   | 'list_equipment' | 'create_equipment' | 'update_equipment'
-  | 'list_service_requests' | 'update_service_request'
+  | 'list_agenda' | 'list_service_requests' | 'update_service_request'
   | 'list_documents' | 'update_document' | 'archive_document'
   | 'create_catalog_service' | 'update_catalog_service' | 'archive_catalog_service'
 
@@ -176,7 +177,7 @@ const DOMAIN_ACTIONS = new Set<SofiaDomainAction>([
   'list_stock', 'adjust_stock', 'create_financial_entry', 'list_financial_entries', 'get_financial_summary', 'update_financial_entry',
   'list_vehicles', 'create_vehicle', 'update_vehicle', 'archive_vehicle',
   'list_teams', 'create_team', 'update_team', 'list_equipment', 'create_equipment', 'update_equipment',
-  'list_service_requests', 'update_service_request', 'list_documents', 'update_document', 'archive_document',
+  'list_agenda', 'list_service_requests', 'update_service_request', 'list_documents', 'update_document', 'archive_document',
   'create_catalog_service', 'update_catalog_service', 'archive_catalog_service',
 ])
 const isUuid = (value: unknown) => /^[0-9a-f-]{36}$/i.test(clean(value, 40))
@@ -196,7 +197,14 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
   if (!DOMAIN_ACTIONS.has(body.action as SofiaDomainAction)) return { ok: false, error: 'Operação Sofia não suportada.' }
   if (!trustedDomainEnvelope(body)) return { ok: false, error: 'Contexto central não autorizado.' }
   const action = body.action as SofiaDomainAction
-  const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data as Record<string, unknown> : {}
+  let data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data as Record<string, unknown> : {}
+  const strictSchema = ({ list_agenda: agendaQuerySchema, list_stock: stockQuerySchema, adjust_stock: stockAdjustmentSchema, create_financial_entry: financialCreateSchema, update_financial_entry: financialUpdateSchema, list_financial_entries: financialQuerySchema, get_financial_summary: financialQuerySchema } as Record<string, z.ZodType>)[action]
+  if (strictSchema) {
+    if (Object.keys(body).some(key => !['action', 'data', 'centralContactId', 'centralClientId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key))) return { ok: false, error: 'Campo de envelope não permitido.' }
+    const parsed = strictSchema.safeParse(body.data === undefined ? {} : body.data)
+    if (!parsed.success) return { ok: false, error: 'Campos ou filtros inválidos para esta ação.' }
+    data = parsed.data as Record<string, unknown>
+  }
   if (action === 'list_stock' && clean(data.query, 160).length > 160) return { ok: false, error: 'Consulta de estoque inválida.' }
   if (action === 'adjust_stock') {
     if (!isUuid(data.itemId) || !decimal(data.quantity) || !['ENTRADA', 'SAIDA'].includes(clean(data.direction, 16))) return { ok: false, error: 'Ajuste de estoque inválido.' }
@@ -241,8 +249,10 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
 }
 
 export function safeStockSummary(item: { id: string; nome: string; categoria: string; quantidade: string; unidade: string; nivelCritico: string }) {
-  const quantity = Number(item.quantidade)
-  return { id: item.id, name: item.nome, category: item.categoria, quantity: item.quantidade, unit: item.unidade, lowStock: Number.isFinite(quantity) && quantity <= Number(item.nivelCritico) }
+  const valid = (value: string) => /^\d+(?:\.\d+)?$/.test(value) && Number.isFinite(Number(value)) && Number(value) >= 0
+  const known = valid(item.quantidade) && valid(item.nivelCritico)
+  const lowStock = known ? Number(item.quantidade) <= Number(item.nivelCritico) : null
+  return { id: item.id, name: item.nome, category: item.categoria, quantity: item.quantidade, unit: item.unidade, minimumQuantity: valid(item.nivelCritico) ? item.nivelCritico : null, stockState: !known ? 'UNKNOWN' : lowStock ? 'AT_OR_BELOW_MINIMUM' : 'ABOVE_MINIMUM', lowStock }
 }
 
 export function safeVehicleSummary(vehicle: { id: string; name: string; plate: string | null; type: string | null; isActive: boolean }) {

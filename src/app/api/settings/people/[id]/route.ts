@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
-import { auditEvents, db, sessions, userPermissions, users } from '@/db'
+import { auditEvents, db, sessions, passwordRecoveryTokens, userPermissions, users } from '@/db'
+import { personColumns, assertPersonRemovalSafe, assertNoProtectedPersonLinks, PeopleConflict, PeopleRequestError, lockPeopleAuthority } from '@/lib/people-safety'
 import { hashPassword } from '@/lib/auth-crypto'
 import { getCurrentLocalAccess } from '@/lib/local-access'
 import { canChangePasswordFor, isRoleManageableBy, permissionsAreAllowedForRole } from '@/lib/permissions'
@@ -8,6 +9,36 @@ import { UpdateLocalPersonSchema } from '@/lib/validation/people'
 
 function personIdFromParams(context: { params: Promise<{ id: string }> }) {
   return context.params.then(({ id }) => id)
+}
+
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const actor = await getCurrentLocalAccess()
+  if (!actor) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
+  if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503 })
+  const targetId = await personIdFromParams(context)
+  if (targetId === actor.id) return NextResponse.json({ error: 'Você não pode excluir a própria conta.' }, { status: 409 })
+
+  try {
+    await db.transaction(async tx => {
+      const current = await lockPeopleAuthority(tx, actor.id, targetId)
+      if (!isRoleManageableBy(current.actor.role, current.target.role as typeof actor.role)) throw new PeopleRequestError(403, 'Não é permitido excluir pessoa com papel superior ao seu.')
+      await assertPersonRemovalSafe(tx, targetId)
+      await assertNoProtectedPersonLinks(tx, targetId)
+      await tx.delete(sessions).where(eq(sessions.userId, targetId))
+      await tx.delete(passwordRecoveryTokens).where(eq(passwordRecoveryTokens.userId, targetId))
+      await tx.delete(userPermissions).where(eq(userPermissions.userId, targetId))
+      await tx.delete(users).where(eq(users.id, targetId))
+      await tx.insert(auditEvents).values({ actorUserId: actor.id, action: 'person.deleted', targetType: 'user', targetId, metadata: {} })
+    })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    if (error instanceof PeopleRequestError) return NextResponse.json({ error: error.message }, { status: error.status })
+    if (error instanceof PeopleConflict) return NextResponse.json({ error: error.message, canDeactivate: true }, { status: 409 })
+    const code = (error as { code?: string; cause?: { code?: string } }).code ?? (error as { cause?: { code?: string } }).cause?.code
+    if (code === '23503') return NextResponse.json({ error: 'Esta pessoa possui vínculos protegidos. Desative o acesso em vez de excluir.', canDeactivate: true }, { status: 409 })
+    throw error
+  }
 }
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -21,20 +52,22 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   if (!parsed.success) return NextResponse.json({ error: 'Dados de atualização inválidos.', details: parsed.error.flatten() }, { status: 422 })
   const input = parsed.data
 
-  const [target] = await db.select().from(users).where(eq(users.id, targetId)).limit(1)
-  if (!target) return NextResponse.json({ error: 'Pessoa não encontrada.' }, { status: 404 })
-  if (target.id === actor.id) {
-    if (input.isActive === false) return NextResponse.json({ error: 'Você não pode desativar a própria conta.' }, { status: 409 })
-    if (input.role || input.permissions) return NextResponse.json({ error: 'Sua própria conta não pode alterar papel ou permissões.' }, { status: 403 })
-  } else if (!isRoleManageableBy(actor.role, target.role as typeof actor.role)) return NextResponse.json({ error: 'Não é permitido alterar pessoa com papel superior ao seu.' }, { status: 403 })
-  if (input.password && !canChangePasswordFor(actor.role, target.role as typeof actor.role, target.id === actor.id)) return NextResponse.json({ error: 'Só é permitido alterar a senha de uma pessoa com papel estritamente inferior ao seu.' }, { status: 403 })
+  let updated
+  try {
+  updated = await db.transaction(async (tx) => {
+    const { actor: currentActor, target } = await lockPeopleAuthority(tx, actor.id, targetId)
+    if (target.id === actor.id) {
+      if (input.isActive === false) throw new PeopleRequestError(409, 'Você não pode desativar a própria conta.')
+      if (input.role || input.permissions) throw new PeopleRequestError(403, 'Sua própria conta não pode alterar papel ou permissões.')
+    } else if (!isRoleManageableBy(currentActor.role, target.role as typeof currentActor.role)) throw new PeopleRequestError(403, 'Não é permitido alterar pessoa com papel superior ao seu.')
+    if (input.password && !canChangePasswordFor(currentActor.role, target.role as typeof currentActor.role, target.id === actor.id)) throw new PeopleRequestError(403, 'Só é permitido alterar a senha de uma pessoa com papel estritamente inferior ao seu.')
 
-  const nextRole = input.role ?? target.role as typeof actor.role
-  if (nextRole !== target.role && !isRoleManageableBy(actor.role, nextRole)) return NextResponse.json({ error: 'Não é permitido atribuir papel superior ao seu.' }, { status: 403 })
-  if (input.permissions && !permissionsAreAllowedForRole(nextRole, input.permissions)) return NextResponse.json({ error: 'As permissões precisam ser compatíveis com o papel local resultante.' }, { status: 422 })
-  if (input.permissions?.some((permission) => !actor.permissions.includes(permission))) return NextResponse.json({ error: 'Não é permitido delegar uma permissão que você não possui.' }, { status: 403 })
+    const nextRole = input.role ?? target.role as typeof currentActor.role
+    if (nextRole !== target.role && !isRoleManageableBy(currentActor.role, nextRole)) throw new PeopleRequestError(403, 'Não é permitido atribuir papel superior ao seu.')
+    if (input.permissions && !permissionsAreAllowedForRole(nextRole, input.permissions)) throw new PeopleRequestError(422, 'As permissões precisam ser compatíveis com o papel local resultante.')
+    if (input.permissions?.some((permission) => !currentActor.permissions.includes(permission))) throw new PeopleRequestError(403, 'Não é permitido delegar uma permissão que você não possui.')
 
-  const updated = await db.transaction(async (tx) => {
+    await assertPersonRemovalSafe(tx, target.id, input)
     const [person] = await tx.update(users).set({
       ...(input.name ? { name: input.name } : {}),
       ...(input.email !== undefined ? { email: input.email } : {}),
@@ -42,13 +75,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       ...(input.role ? { role: input.role } : {}),
       ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
       updatedAt: new Date(),
-    }).where(eq(users.id, target.id)).returning()
+    }).where(eq(users.id, target.id)).returning(personColumns)
 
     if (input.permissions) {
       await tx.delete(userPermissions).where(eq(userPermissions.userId, target.id))
-      await tx.insert(userPermissions).values(input.permissions.map((permission) => ({ userId: target.id, permissionKey: permission, grantedById: actor.id })))
+      if (input.permissions.length) await tx.insert(userPermissions).values(input.permissions.map((permission) => ({ userId: target.id, permissionKey: permission, grantedById: actor.id })))
     }
-    if (input.isActive === false || input.password) await tx.delete(sessions).where(eq(sessions.userId, target.id))
+    if (input.isActive === false || input.password || input.role || input.permissions !== undefined) await tx.delete(sessions).where(eq(sessions.userId, target.id))
     await tx.insert(auditEvents).values({
       actorUserId: actor.id,
       action: 'person.updated',
@@ -59,6 +92,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     return person
   })
 
-  const permissions = input.permissions ?? (await db.select({ permissionKey: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, target.id))).map((item) => item.permissionKey)
+  } catch (error) {
+    if (error instanceof PeopleRequestError) return NextResponse.json({ error: error.message }, { status: error.status })
+    if (error instanceof PeopleConflict) return NextResponse.json({ error: error.message }, { status: 409 })
+    throw error
+  }
+  const permissions = input.permissions ?? (await db.select({ permissionKey: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, targetId))).map((item) => item.permissionKey)
   return NextResponse.json({ success: true, person: { id: updated.id, name: updated.name, phone: updated.phone, email: updated.email, role: updated.role, isActive: updated.isActive, lastLoginAt: updated.lastLoginAt, permissions } })
 }

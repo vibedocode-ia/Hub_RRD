@@ -22,5 +22,6 @@ test('self-password route verifies the current password then revokes every sessi
 
 test('administrative people route uses strict password authority for another account', () => {
   const route = read('src/app/api/settings/people/[id]/route.ts')
-  assert.match(route, /canChangePasswordFor\(actor\.role, target\.role[^,]*, target\.id === actor\.id\)/)
+  assert.match(route, /canChangePasswordFor\(currentActor\.role, target\.role[^,]*, target\.id === actor\.id\)/)
+  assert.ok(route.indexOf('await lockPeopleAuthority(tx, actor.id, targetId)', route.indexOf('export async function PATCH')) < route.indexOf('!canChangePasswordFor('))
 })

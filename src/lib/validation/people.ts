@@ -29,7 +29,7 @@ export const CreateLocalPersonSchema = z.object({
   email: z.string().trim().email().max(254).optional(),
   password: z.string().min(12).max(256),
   role,
-  permissions: z.array(permission).min(1).max(RRD_PERMISSIONS.length),
+  permissions: z.array(permission).max(RRD_PERMISSIONS.length),
   isActive: z.boolean(),
 }).strict().superRefine(permissionsAllowedForRole)
 
@@ -38,7 +38,7 @@ export const UpdateLocalPersonSchema = z.object({
   email: z.string().trim().email().max(254).nullable().optional(),
   password: z.string().min(12).max(256).optional(),
   role: role.optional(),
-  permissions: z.array(permission).min(1).max(RRD_PERMISSIONS.length).optional(),
+  permissions: z.array(permission).max(RRD_PERMISSIONS.length).optional(),
   isActive: z.boolean().optional(),
 }).strict().superRefine(permissionsAllowedForRole)
 

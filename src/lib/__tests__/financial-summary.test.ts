@@ -18,7 +18,8 @@ test('financial summary separates received cash from pending forecast', () => {
     cashBalance: 600,
     receivable: 300,
     payable: 100,
-    overdueReceivable: 300,
+    // Launch date cannot prove delinquency: only the explicit ATRASADO entry is overdue.
+    overdueReceivable: 50,
     forecast: 800,
   })
 })

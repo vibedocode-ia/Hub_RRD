@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { auditEvents, db, sessions, userPermissions, users } from '@/db'
+import { personColumns } from '@/lib/people-safety'
 import { hashPassword } from '@/lib/auth-crypto'
 import { getCurrentLocalAccess } from '@/lib/local-access'
 import { isRoleManageableBy, type RrdPermission } from '@/lib/permissions'
 import { CreateLocalPersonSchema } from '@/lib/validation/people'
 
-function safePerson(row: typeof users.$inferSelect, permissions: string[]) {
+function safePerson(row: Omit<typeof users.$inferSelect, 'passwordHash' | 'jobTitle' | 'photoUrl' | 'company' | 'city' | 'state' | 'instagramUrl' | 'websiteUrl' | 'personalNotes'>, permissions: string[]) {
   return {
     id: row.id,
     name: row.name,
@@ -27,7 +28,7 @@ export async function GET() {
   if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
   if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503 })
 
-  const rows = await db.select().from(users).orderBy(asc(users.name))
+  const rows = await db.select(personColumns).from(users).orderBy(asc(users.name))
   const ids = rows.map((row) => row.id)
   const permissions = ids.length
     ? await db.select({ userId: userPermissions.userId, permissionKey: userPermissions.permissionKey }).from(userPermissions).where(inArray(userPermissions.userId, ids))
@@ -62,8 +63,8 @@ export async function POST(req: NextRequest) {
       passwordHash: hashPassword(input.password),
       role: input.role,
       isActive: input.isActive,
-    }).returning()
-    await tx.insert(userPermissions).values(input.permissions.map((permission) => ({ userId: person.id, permissionKey: permission, grantedById: actor.id })))
+    }).returning(personColumns)
+    if (input.permissions.length) await tx.insert(userPermissions).values(input.permissions.map((permission) => ({ userId: person.id, permissionKey: permission, grantedById: actor.id })))
     await tx.insert(auditEvents).values({ actorUserId: actor.id, action: 'person.created', targetType: 'user', targetId: person.id, metadata: { role: person.role, permissionCount: input.permissions.length } })
     return person
   })

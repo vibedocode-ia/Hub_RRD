@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
-import { and, asc, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm'
-import { db, clientAddresses, clients, equipment, financeiroLancamentos, insumos, leads, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, stockMovements, teams, userPermissions, users, vehicles } from '@/db'
+import { and, asc, desc, eq, gte, lt, gt, ilike, isNull, ne, or, sql } from 'drizzle-orm'
+import { db, agendaEvents, clientAddresses, clients, equipment, financeiroLancamentos, insumos, leads, officialDocuments, serviceCatalog, serviceRequests, sofiaEvents, sofiaDrafts, SOFIA_DRAFT_STATUS, stockMovements, teams, userPermissions, users, vehicles } from '@/db'
 import { validateStockAdjustment } from '@/lib/inventory'
 import { FinancialEntrySchema } from '@/lib/validation/financeiro'
 import { normalizeDocumentDraft, documentDraftContract, OPTIONAL_FIELD_CONSENT } from '@/lib/sofia-document-draft'
@@ -13,6 +13,9 @@ import { archiveOfficialDocument, supersedeOfficialDocument } from '@/lib/offici
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
+import { executeSofiaPersonProfile, SofiaPersonProfileRequest, SofiaManagedPersonProfileRequest } from '@/lib/sofia-person-profile'
+import { executeSofiaManagedPersonProfile } from '@/lib/sofia-person-profile-service'
+import { agendaReadResult, financialReadResult, resolveQueryRange } from '@/lib/sofia-operational-queries'
 
 const header = (correlationId?: string) => ({ 'X-Hub-Version': VERSION, ...(correlationId ? { 'X-Correlation-Id': correlationId } : {}) })
 const reply = (body: unknown, status = 200, correlationId?: string) => NextResponse.json(body, { status, headers: header(correlationId) })
@@ -73,6 +76,19 @@ export async function POST(req: NextRequest) {
     }
   }
   try {
+    if (envelope.action === 'get_person_profile' || envelope.action === 'update_person_profile') {
+      const parsed = SofiaManagedPersonProfileRequest.safeParse(rawBody)
+      if (!parsed.success) return reply({ success: false, error: 'Envelope ou dados de perfil inválidos.' }, 422, correlationId)
+      const result = await executeSofiaManagedPersonProfile(parsed.data.action, parsed.data.data, parsed.data.senderPhone, { phoneIdentityMode: 'central_phone_identity' })
+      return reply({ ...result.body, action: parsed.data.action }, result.status, correlationId)
+    }
+    if (envelope.action === 'get_my_profile' || envelope.action === 'update_my_profile') {
+      const parsed = SofiaPersonProfileRequest.safeParse(rawBody)
+      if (!parsed.success) return reply({ success: false, error: 'Envelope ou dados de perfil inválidos.' }, 422, correlationId)
+      const input = parsed.data
+      const result = await executeSofiaPersonProfile(input.action, input.data, input.senderPhone)
+      return reply({ ...result.body, action: input.action }, result.status, correlationId)
+    }
     const operational = SofiaActionRequest.safeParse(rawBody)
     if (operational.success) {
       const input = operational.data
@@ -208,21 +224,20 @@ export async function POST(req: NextRequest) {
       }
       if (action === 'list_stock') {
         const query = clean(data.query, 160)
-        const rows = await db.select().from(insumos).where(query ? or(ilike(insumos.nome, `%${query}%`), ilike(insumos.categoria, `%${query}%`)) : undefined).orderBy(asc(insumos.nome)).limit(50)
-        return reply({ success: true, action, items: rows.map(safeStockSummary) }, 200, correlationId)
+        const rows = await db.select().from(insumos).where(query ? or(ilike(insumos.nome, `%${query}%`), ilike(insumos.categoria, `%${query}%`)) : undefined).orderBy(asc(insumos.nome), asc(insumos.id))
+        return reply({ success: true, action, items: rows.slice(0, 50).map(safeStockSummary), coverage: { totalMatching: rows.length, returned: Math.min(rows.length, 50), limit: 50, hasMore: rows.length > 50 } }, 200, correlationId)
       }
       if (action === 'list_vehicles') {
         const rows = await db.select().from(vehicles).where(eq(vehicles.isActive, true)).orderBy(asc(vehicles.name)).limit(50)
         return reply({ success: true, action, vehicles: rows.map(safeVehicleSummary) }, 200, correlationId)
       }
-      if (action === 'list_financial_entries') {
-        const rows = await db.select().from(financeiroLancamentos).orderBy(desc(financeiroLancamentos.data)).limit(100)
-        return reply({ success: true, action, entries: rows.map(row => ({ id: row.id, type: row.tipo, amount: row.valor, description: row.descricao, category: row.categoria, date: row.data, status: row.status, clientId: row.clientId })) }, 200, correlationId)
-      }
-      if (action === 'get_financial_summary') {
-        const rows = await db.select().from(financeiroLancamentos).limit(500)
-        const summary = rows.reduce((acc, row) => { const value = Number(row.valor) || 0; if (row.status === 'EFETIVADO' && row.tipo === 'RECEITA') acc.revenue += value; if (row.status === 'EFETIVADO' && row.tipo === 'DESPESA') acc.expenses += value; if ((row.status === 'PENDENTE' || row.status === 'ATRASADO') && row.tipo === 'RECEITA') acc.receivable += value; if (row.status === 'PENDENTE' && row.tipo === 'DESPESA') acc.payable += value; return acc }, { revenue: 0, expenses: 0, receivable: 0, payable: 0 })
-        return reply({ success: true, action, summary: { ...summary, cash: summary.revenue - summary.expenses } }, 200, correlationId)
+      if (action === 'list_financial_entries' || action === 'get_financial_summary') {
+        // No pre-limit: totals and list share one complete source snapshot.
+        const rows = await db.select().from(financeiroLancamentos)
+        const result = financialReadResult(rows, data)
+        const { entries, ...metadata } = result
+        if (action === 'get_financial_summary') return reply({ success: true, action, ...metadata, coverage: { ...metadata.coverage, returned: 0, limit: null, hasMore: false, entryListIncluded: false } }, 200, correlationId)
+        return reply({ success: true, action, ...metadata, entries: entries.map(row => ({ id: row.id, type: row.tipo, amount: row.valor, description: row.descricao, category: row.categoria, date: row.data, launchDate: row.data, dueDate: null, status: row.status, clientId: row.clientId })) }, 200, correlationId)
       }
       if (action === 'list_teams') {
         const rows = await db.select().from(teams).orderBy(asc(teams.name)).limit(50)
@@ -232,8 +247,23 @@ export async function POST(req: NextRequest) {
         const rows = await db.select().from(equipment).where(eq(equipment.isActive, true)).orderBy(asc(equipment.name)).limit(50)
         return reply({ success: true, action, equipment: rows.map(row => ({ id: row.id, name: row.name, code: row.code, active: row.isActive })) }, 200, correlationId)
       }
+      if (action === 'list_agenda') {
+        const now = new Date()
+        const dates = { date: data.date as string | undefined, startDate: data.startDate as string | undefined, endDate: data.endDate as string | undefined, timeZone: data.timeZone as string }
+        const range = resolveQueryRange(dates.date || dates.startDate ? dates : { ...dates, period: 'HOJE' }, now)
+        const start = new Date(range.start!), end = new Date(range.endExclusive!)
+        const [requests, events] = await Promise.all([
+          db.select({ id: serviceRequests.id, code: serviceRequests.code, clientId: serviceRequests.clientId, clientName: clients.name, scheduledAt: serviceRequests.scheduledAt, status: serviceRequests.status, serviceType: serviceRequests.serviceType, assignedTeamId: serviceRequests.assignedTeamId, assignedTeamName: teams.name, archivedAt: serviceRequests.archivedAt })
+            .from(serviceRequests).leftJoin(clients, eq(clients.id, serviceRequests.clientId)).leftJoin(teams, eq(teams.id, serviceRequests.assignedTeamId))
+            .where(and(isNull(serviceRequests.archivedAt), gte(serviceRequests.scheduledAt, start), lt(serviceRequests.scheduledAt, end))),
+          db.select({ id: agendaEvents.id, title: agendaEvents.title, description: agendaEvents.description, location: agendaEvents.location, startsAt: agendaEvents.startsAt, endsAt: agendaEvents.endsAt, status: agendaEvents.status, serviceRequestId: agendaEvents.serviceRequestId, clientId: agendaEvents.clientId, teamId: agendaEvents.teamId, vehicleId: agendaEvents.vehicleId, serviceRequestArchivedAt: serviceRequests.archivedAt })
+            .from(agendaEvents).leftJoin(serviceRequests, eq(serviceRequests.id, agendaEvents.serviceRequestId))
+            .where(and(ne(agendaEvents.status, 'ARCHIVED'), isNull(serviceRequests.archivedAt), lt(agendaEvents.startsAt, end), gt(agendaEvents.endsAt, start))),
+        ])
+        return reply({ success: true, action, ...agendaReadResult(requests, events, data, now) }, 200, correlationId)
+      }
       if (action === 'list_service_requests') {
-        const rows = await db.select({ id: serviceRequests.id, code: serviceRequests.code, clientId: serviceRequests.clientId, clientName: clients.name, status: serviceRequests.status, priority: serviceRequests.priority, serviceType: serviceRequests.serviceType, scheduledAt: serviceRequests.scheduledAt, totalAmount: serviceRequests.totalAmount, addressStreet: clientAddresses.street, addressNumber: clientAddresses.number, addressComplement: clientAddresses.complement, addressNeighborhood: clientAddresses.neighborhood, addressCity: clientAddresses.city, addressState: clientAddresses.state, assignedTeamId: serviceRequests.assignedTeamId, assignedTeamName: teams.name }).from(serviceRequests).leftJoin(clients, eq(clients.id, serviceRequests.clientId)).leftJoin(clientAddresses, and(eq(clientAddresses.id, serviceRequests.addressId), eq(clientAddresses.clientId, serviceRequests.clientId))).leftJoin(teams, eq(teams.id, serviceRequests.assignedTeamId)).orderBy(desc(serviceRequests.updatedAt)).limit(100)
+        const rows = await db.select({ id: serviceRequests.id, code: serviceRequests.code, clientId: serviceRequests.clientId, clientName: clients.name, status: serviceRequests.status, priority: serviceRequests.priority, serviceType: serviceRequests.serviceType, scheduledAt: serviceRequests.scheduledAt, totalAmount: serviceRequests.totalAmount, addressStreet: clientAddresses.street, addressNumber: clientAddresses.number, addressComplement: clientAddresses.complement, addressNeighborhood: clientAddresses.neighborhood, addressCity: clientAddresses.city, addressState: clientAddresses.state, assignedTeamId: serviceRequests.assignedTeamId, assignedTeamName: teams.name }).from(serviceRequests).leftJoin(clients, eq(clients.id, serviceRequests.clientId)).leftJoin(clientAddresses, and(eq(clientAddresses.id, serviceRequests.addressId), eq(clientAddresses.clientId, serviceRequests.clientId))).leftJoin(teams, eq(teams.id, serviceRequests.assignedTeamId)).where(isNull(serviceRequests.archivedAt)).orderBy(desc(serviceRequests.updatedAt), asc(serviceRequests.id)).limit(100)
         return reply({ success: true, action, requests: rows }, 200, correlationId)
       }
       if (action === 'list_documents') {
@@ -276,7 +306,7 @@ export async function POST(req: NextRequest) {
         if (data.description !== undefined) values.descricao = clean(data.description, 300)
         if (data.category !== undefined) values.categoria = clean(data.category, 100) || null
         if (data.status !== undefined) values.status = clean(data.status, 16)
-        if (data.date !== undefined) values.data = new Date(String(data.date))
+        if (data.date !== undefined) values.data = new Date(`${String(data.date)}T12:00:00.000Z`)
         const [entry] = await db.update(financeiroLancamentos).set(values as any).where(eq(financeiroLancamentos.id, String(data.entryId))).returning()
         if (!entry) return reply({ success: false, error: 'Lançamento financeiro não encontrado.' }, 404, correlationId)
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, entryId: entry.id, fields: Object.keys(data).filter(key => key !== 'entryId') }, intentDetected: 'financial_update_entry', status: 'PROCESSED' })
