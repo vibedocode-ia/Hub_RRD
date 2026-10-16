@@ -8,6 +8,24 @@ permissions:
 jobs:
   security:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_DB: rrd_issuer_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rrd_issuer_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:55432/rrd_issuer_test
+      POSTGRES_RRD_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:55432/rrd_issuer_test
+      RRD_ISSUER_DISPOSABLE_DB: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,6 +34,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=low
+      - name: Migrate disposable PostgreSQL (never production)
+        run: npm run db:migrate
       - run: npm run test:security
       - run: npx tsc --noEmit
       - run: npm run build
