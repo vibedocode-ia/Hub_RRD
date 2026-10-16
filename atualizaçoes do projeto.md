@@ -1,3 +1,6 @@
+### V0.14.07 (2026-10-16) - Persistir rede do banco no Compose e evitar reinicios na inicializacao
+- **Release:** Site + Hub RRD.
+
 ### V0.14.06 (2026-10-16) - SofIA: emissão revisada para Lead ou Cliente e PDF oficial; entrega sem falsa confirmação
 - **Release:** Site + Hub RRD.
 

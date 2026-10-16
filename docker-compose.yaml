@@ -17,3 +17,9 @@ services:
       - no-new-privileges:true
       - seccomp=./runtime/pdf-seccomp.json
     shm_size: 256m
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
