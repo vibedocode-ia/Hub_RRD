@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, rm, cp, readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -37,9 +38,14 @@ function pdf() {
 }
 try {
   await mkdir(path.join(fixture, 'app/api/probe'), { recursive: true })
+  // Same runtime asset contract as Docker: source assets live under the app cwd.
+  await cp(path.join(root, 'src/lib/assets'), path.join(fixture, 'src/lib/assets'), { recursive: true })
   await writeFile(path.join(fixture, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
   await writeFile(path.join(fixture, 'next.config.mjs'), `export default { serverExternalPackages: ['@napi-rs/canvas', 'pdfjs-dist'], turbopack: { root: ${JSON.stringify(root)} } }`)
-  await writeFile(path.join(fixture, 'app/api/probe/route.ts'), `import {renderStoredDocumentTemplate} from '../../../../src/lib/stored-document-template'\nexport async function POST(request: Request) { const result = await renderStoredDocumentTemplate(await request.json()); return Response.json(result.ok ? {ok:true,pages:result.pages,bytes:result.bytes,images:(result.html.match(/data:image\\/png;base64,/g)||[]).length} : result) }`)
+  await writeFile(path.join(fixture, 'app/api/probe/route.ts'), `import {renderStoredDocumentTemplate} from '../../../../src/lib/stored-document-template'\nexport async function POST(request: Request) { const result = await renderStoredDocumentTemplate(await request.json()); return Response.json(result.ok ? {ok:true,pages:result.pages,bytes:result.bytes,font:result.html.match(/data:font[^,]*;base64,([^)'\"]+)/)?.[1],images:(result.html.match(/data:image\\/png;base64,/g)||[]).length} : result) }`)
+  // Portal imports the renderer during page-data collection, not only in a lazy API handler.
+  await writeFile(path.join(fixture, 'app/page.tsx'), `import {renderStoredDocumentTemplate} from '../../src/lib/stored-document-template'\nexport default function Page() { return <main>{typeof renderStoredDocumentTemplate}</main> }`)
+  await writeFile(path.join(fixture, 'app/layout.tsx'), `export default function Layout({children}: {children: React.ReactNode}) { return <html><body>{children}</body></html> }`)
   // A rota está em fixture/app/api/probe, relativamente à raiz do repositório.
   const build = await command(['build'])
   await build.done
@@ -60,6 +66,11 @@ try {
   const response = await fetch(url, { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({sourcePdfBase64:pdf(),fieldSchema:[],values:{}}) })
   const result = await response.json()
   assert.equal(result.ok, true, `Compiled renderer failed: ${JSON.stringify(result)}`)
+  assert.equal(response.status, 200)
+  const canonicalFont = await readFile(path.join(root, 'src/lib/assets/LiberationSans-Regular.ttf'))
+  assert.deepEqual(Buffer.from(result.font, 'base64'), canonicalFont, 'Compiled HTTP embeds canonical font bytes unchanged')
+  delete result.font
+  result.fontSha256 = createHash('sha256').update(canonicalFont).digest('hex')
   assert.equal(result.pages, 2)
   assert.equal(result.images, 2)
   assert.ok(result.bytes > 0)

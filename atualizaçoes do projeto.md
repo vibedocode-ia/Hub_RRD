@@ -1,3 +1,6 @@
+### V0.14.06 (2026-10-16) - SofIA: emissão revisada para Lead ou Cliente e PDF oficial; entrega sem falsa confirmação
+- **Release:** Site + Hub RRD.
+
 ### V0.14.05 (2026-10-14) - Correções guiadas de CRM, Contatos, Leads, Agenda e navegação operacional
 - **Release:** Site + Hub RRD.
 

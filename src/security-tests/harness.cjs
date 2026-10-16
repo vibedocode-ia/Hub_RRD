@@ -16,7 +16,8 @@ function memoryDB(rows=[]) {
  return {writes,selections,
  select(){let table;const q={from(t){table=t;selections.push(t);return q},where(){return q},orderBy(){return q},limit:async()=>get(table),then:(a,b)=>Promise.resolve(get(table)).then(a,b)};return q},
  update(t){return {set(p){writes.push({t,p});return {where:()=>result(t,p)}}}},
- insert(t){return {values(p){writes.push({t,p});return result(t,p)}}}
+ insert(t){return {values(p){writes.push({t,p});return result(t,p)}}},
+ delete(t){return {where(){writes.push({t,delete:true});return Promise.resolve([])}}}
  };
 }
 module.exports={harness,nr,memoryDB};

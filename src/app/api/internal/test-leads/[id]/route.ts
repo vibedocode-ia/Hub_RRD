@@ -240,7 +240,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
           counted.set(key, (counted.get(key) ?? 0) + Number(rows[0]?.count ?? 0))
         }
         const proposalCount = counted.get('leads:lead_proposals') ?? 0
-        const documentCount = counted.get('leads:lead_documents') ?? 0
+        const documentCount = (counted.get('leads:lead_documents') ?? 0) + (counted.get('leads:official_documents') ?? 0)
         const serviceRequestCount = counted.get('leads:lead_service_requests') ?? 0
         const auditEventCount = counted.get('leads:lead_audit_events') ?? 0
         const addressCount = counted.get('leads:lead_addresses') ?? 0

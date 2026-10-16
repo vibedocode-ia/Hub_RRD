@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, or, sql } from 'drizzle-orm'
 import { attachments, auditEvents, db, DOC_STATUS, officialDocuments, serviceRequests } from '@/db'
 import { requireLocalPermission } from '@/lib/require-local-permission'
 
 type Params = { params: Promise<{ id: string }> }
 const MAX_BYTES = 10 * 1024 * 1024
 const OFFICIAL_PDF = 'OFFICIAL_DOCUMENT_PDF'
+const eligibleRequest = or(isNull(officialDocuments.serviceRequestId), sql`exists (select 1 from ${serviceRequests} where ${serviceRequests.id} = ${officialDocuments.serviceRequestId} and ${serviceRequests.archivedAt} is null)`)
 
 type PdfMetadata = { base64?: string; filename?: string; sha256?: string }
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   try {
     const result = await db.transaction(async tx => {
-      const [document] = await tx.select({ id: officialDocuments.id, serviceRequestId: officialDocuments.serviceRequestId, status: officialDocuments.status, pdfStoragePath: officialDocuments.pdfStoragePath }).from(officialDocuments).innerJoin(serviceRequests, eq(officialDocuments.serviceRequestId, serviceRequests.id)).where(and(eq(officialDocuments.id, id), isNull(serviceRequests.archivedAt))).limit(1)
+      const [document] = await tx.select({ id: officialDocuments.id, serviceRequestId: officialDocuments.serviceRequestId, status: officialDocuments.status, pdfStoragePath: officialDocuments.pdfStoragePath }).from(officialDocuments).where(and(eq(officialDocuments.id, id), eligibleRequest)).limit(1)
       if (!document) return { error: 'Documento não encontrado ou chamado arquivado.', status: 404 }
       if (document.status !== DOC_STATUS.EMITIDO) return { error: 'Somente um documento emitido e ainda não entregue pode receber seu PDF oficial.', status: 409 }
       const [existing] = await tx.select({ id: attachments.id, metadata: attachments.metadata }).from(attachments).where(and(eq(attachments.documentId, id), eq(attachments.fileType, OFFICIAL_PDF))).limit(1)
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       }
       const storagePath = `/api/documents/${id}/attachment`
       const [created] = await tx.insert(attachments).values({ documentId: id, serviceRequestId: document.serviceRequestId, fileType: OFFICIAL_PDF, storagePath, fileSize: bytes.length, mimeType: 'application/pdf', metadata: { filename, sha256, base64: bytes.toString('base64') } }).returning()
-      const [linked] = await tx.update(officialDocuments).set({ pdfStoragePath: storagePath, updatedAt: new Date() }).where(and(eq(officialDocuments.id, id), eq(officialDocuments.status, DOC_STATUS.EMITIDO), isNull(officialDocuments.pdfStoragePath))).returning({ id: officialDocuments.id })
+      const [linked] = await tx.update(officialDocuments).set({ pdfStoragePath: storagePath, updatedAt: new Date() }).where(and(eq(officialDocuments.id, id), eq(officialDocuments.status, DOC_STATUS.EMITIDO), isNull(officialDocuments.pdfStoragePath), eligibleRequest)).returning({ id: officialDocuments.id })
       if (!linked) throw new Error('PDF_ALREADY_LINKED')
       await tx.insert(auditEvents).values({ actorUserId: authorized.access.id, action: 'document.pdf_attached', targetType: 'official_document', targetId: id, metadata: { attachmentId: created.id, sha256, bytes: bytes.length } })
       return { attachmentId: created.id, storagePath, sha256, alreadyAttached: false }

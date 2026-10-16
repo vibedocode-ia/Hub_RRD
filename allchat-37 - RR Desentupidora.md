@@ -153,3 +153,12 @@ V0.10.00 · 2026-09-04
 
 ## 2026-10-13 — V0.14.04
 Release autorizada da API Leads TESTE. Migration 0021 aditiva validada em clone PG17, backup privado verificado e aplicada. Gate source-hash preservado. Sem alteração de Sofia, HVD, bridge ou UI. Ver evidence/release-preflight.md; deploy/E2E pendentes neste registro.
+
+## 2026-10-16 — V0.14.06 · candidato de publicação
+- Lote isolado: emissão transacional da SofIA para destinatário Lead XOR Cliente, revisão vinculada ao payload/modelo, PDF oficial com Chromium sandboxado e descoberta no portal.
+- Coleta entre turnos validada pelo handler real; rascunho não cria cadastro/chamado automaticamente. Documentos emitidos preservam snapshots e revisões imutáveis.
+- Migração 0022 executada duas vezes em clone PG17: histórico 22→23, entradas antigas preservadas e dados das 32 tabelas byte-equivalentes nos campos legados.
+- Purga de Leads teste conta documentos oficiais como bloqueio, sem permitir excluí-los. Regressão validada em PostgreSQL descartável.
+- Transporte WhatsApp não ativado neste lote: endpoint autorizado retorna 503 DOCUMENT_TRANSPORT_NOT_CONFIGURED, sem falsa confirmação de envio. Migração 0023 fica fora do release.
+- Runtime: Docker Compose não raw, perfil seccomp relativo ao repositório, usuário não-root. Não usar custom_docker_run_options como substituto do Compose.
+- Publicação, deploy e E2E de produção ainda pendentes neste registro; ver docs/releases/V0.14.06.md. HVD e bridge instalados intocados.

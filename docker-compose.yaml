@@ -1,0 +1,19 @@
+services:
+  rr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "1000:1000"
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_CHROOT
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=./runtime/pdf-seccomp.json
+    shm_size: 256m

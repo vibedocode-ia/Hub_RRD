@@ -1,6 +1,7 @@
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { join } from 'node:path'
 
 export type TemplateResult = { ok: true; html: string; pages: number; bytes: number } | { ok: false; error: { code: string; message: string; field?: string; placement?: number; details?: Record<string, number> } }
 export type TemplatePlacement = { page: number; x: number; y: number; width: number; height: number; fontSize?: number; color?: string; background?: string }
@@ -44,9 +45,11 @@ function parseValues(raw: unknown, fields: Field[]): Record<string, string> {
   for (const field of fields) if (field.required && !values[field.key]?.trim()) throw new TemplateError('REQUIRED_VALUE', 'Campo obrigatório sem valor.', field.key)
   return values
 }
-const fontPath = new URL('./assets/LiberationSans-Regular.ttf', import.meta.url)
+// Native filesystem asset, not a bundler URL. Runtime/startup cwd is the app root;
+// Docker copies src and Next traces this asset explicitly (next.config.mjs).
+const fontPath = join(process.cwd(), 'src/lib/assets/LiberationSans-Regular.ttf')
 const font = readFileSync(fontPath).toString('base64')
-GlobalFonts.registerFromPath(fontPath.pathname, 'RRDArial')
+GlobalFonts.registerFromPath(fontPath, 'RRDArial')
 function layoutText(value: string, p: TemplatePlacement, field: string, index: number): string {
   if (!value) return ''
   const ctx = createCanvas(1, 1).getContext('2d')

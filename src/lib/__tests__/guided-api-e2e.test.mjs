@@ -9,6 +9,15 @@ import { resolve as resolvePath } from 'node:path'
 process.env.NODE_ENV = 'production'
 
 const OUT_DIR = '.guided-ui-build-api'
+const TEST_DATABASE_URL = process.env.RRD_GUIDED_TEST_DATABASE_URL
+const allowDbLess = process.env.RRD_ALLOW_DBLESS_SECURITY === '1' && !TEST_DATABASE_URL
+if (!allowDbLess && (!TEST_DATABASE_URL || !/^postgres(?:ql)?:\/\/[^@/]+(?::[^@/]*)?@(?:127\.0\.0\.1|localhost):\d+\/rrd_[a-z0-9_]*test(?:_[a-z0-9_]+)?$/i.test(TEST_DATABASE_URL))) {
+  throw new Error('RRD_GUIDED_TEST_DATABASE_URL deve apontar para um banco PostgreSQL local descartável cujo nome identifique test.')
+}
+if (TEST_DATABASE_URL) {
+  process.env.POSTGRES_RRD_URL = TEST_DATABASE_URL
+  process.env.DATABASE_URL = TEST_DATABASE_URL
+}
 const require = createRequire(process.cwd() + '/')
 let failures = 0
 const check = (label, condition, extra = '') => {
@@ -16,6 +25,11 @@ const check = (label, condition, extra = '') => {
   if (!condition) failures += 1
 }
 const fail = (label, error) => check(label, false, String(error).slice(0, 300))
+
+if (allowDbLess) {
+  console.log('SKIP — E2E guiado integrado requer banco; etapa registrada, não validada nesta execução.')
+  process.exit(0)
+}
 
 await mkdir(OUT_DIR, { recursive: true })
 

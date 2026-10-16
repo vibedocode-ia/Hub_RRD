@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { SofiaGetDocumentTemplateRequest, SofiaIssueDraftRequest } from '../sofia-actions'
+import { SofiaGetDocumentTemplateRequest, SofiaIssueDraftRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest } from '../sofia-actions'
 import { publicSofiaDocumentTemplate, unknownDocumentFields } from '../sofia-document-template'
 const id = '11111111-1111-4111-8111-111111111111'
 const envelope = { centralContactId: id, centralClientId: id, centralHubId: id, centralRole: 'hub_operator', senderPhone: '+5521999999999' }
@@ -21,6 +21,14 @@ test('projeção pública exclui PDF, base64 e placements; servidor recusa campo
  assert.deepEqual(projected.fields, [{ key: 'warranty', label: 'Garantia', type: 'text', required: true, defaultValue: '' }])
  assert.doesNotMatch(JSON.stringify(projected), /SECRET|placements|base64|PDF/)
  assert.deepEqual(unknownDocumentFields(schema, { warranty: '', rogue: 'x' }), ['rogue'])
+})
+test('document draft accepts only exclusive recipient IDs and explicit missing-optional consent', () => {
+ const base = { ...envelope, action: 'create_service_draft', conversationSummary: 'Documento sintético' }
+ assert.equal(SofiaCreateDraftRequest.safeParse({ ...base, leadId: id, documentDate: '2026-10-15', optionalFieldConsent: { 'address.street': 'Não informado' } }).success, true)
+ assert.equal(SofiaCreateDraftRequest.safeParse({ ...base, leadId: id, clientId: id }).success, false)
+ assert.equal(SofiaCreateDraftRequest.safeParse({ ...base, optionalFieldConsent: { 'customer.document': 'Não informado' } }).success, false)
+ assert.equal(SofiaCreateDraftRequest.safeParse({ ...base, optionalFieldConsent: { 'address.street': 'Sim' } }).success, false)
+ assert.equal(SofiaUpdateDraftRequest.safeParse({ ...base, action: 'update_service_draft', draftId: id, clientId: id, optionalFieldConsent: { 'service.paymentMethod': 'Não informado' } }).success, true)
 })
 test('rota mantém gate Sofia e documents.issue; selector determinístico e docType fechado', () => {
  const route = readFileSync('src/app/api/sofia/actions/route.ts', 'utf8')

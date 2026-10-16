@@ -163,7 +163,7 @@ test('catalogo: a rota descobre FKs para TODAS as tabelas pai a partir da lista 
 test('catalogo: a allowlist de classificacao contem apenas lead_addresses e as filhas conhecidas', () => {
   assert.deepEqual(
     [...TEST_LEAD_KNOWN_CHILD_TABLES].sort(),
-    ['lead_addresses', 'lead_audit_events', 'lead_documents', 'lead_proposals', 'lead_service_requests'].sort(),
+    ['lead_addresses', 'lead_audit_events', 'lead_documents', 'lead_proposals', 'lead_service_requests', 'official_documents'].sort(),
     'modulo: TEST_LEAD_KNOWN_CHILD_TABLES deve ser exatamente a allowlist fechada conhecida',
   )
   assert.equal(

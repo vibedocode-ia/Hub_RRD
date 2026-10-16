@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm'
+import { archiveOfficialDocument } from '@/lib/official-document-lifecycle'
+
 import { db, officialDocuments, serviceRequests } from '@/db';
 import { requireLocalPermission } from '@/lib/require-local-permission';
 
 type Params = { params: Promise<{ id: string }> };
 const hasActiveRequest = sql`exists (select 1 from ${serviceRequests} where ${serviceRequests.id} = ${officialDocuments.serviceRequestId} and ${serviceRequests.archivedAt} is null)`;
+const eligibleRequest = sql`(${isNull(officialDocuments.serviceRequestId)} or ${hasActiveRequest})`;
 
 /** Official snapshots are immutable. Delivery is exclusively POST /delivery. */
 export async function PATCH(_req: NextRequest, { params }: Params) {
@@ -17,11 +20,8 @@ export async function PATCH(_req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const authorized = await requireLocalPermission('documents.issue');
   if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para arquivar documentos' }, { status: 403 });
-  if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const { id } = await params;
-  const active = await db.select({ id: officialDocuments.id }).from(officialDocuments).innerJoin(serviceRequests, eq(officialDocuments.serviceRequestId, serviceRequests.id)).where(and(eq(officialDocuments.id, id), isNull(serviceRequests.archivedAt))).limit(1);
-  if (!active.length) return NextResponse.json({ error: 'Documento não encontrado ou chamado arquivado' }, { status: 404 });
-  const [archived] = await db.update(officialDocuments).set({ status: 'ARQUIVADO', updatedAt: new Date() }).where(and(eq(officialDocuments.id, id), hasActiveRequest)).returning({ id: officialDocuments.id });
-  if (!archived) return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 });
-  return NextResponse.json({ success: true, archived: true, documentId: id });
+  const archived = await archiveOfficialDocument(id, authorized.access.id, `portal-document-archive:${id}:${Date.now()}`)
+  if (!archived.ok) return NextResponse.json({ error: archived.error }, { status: archived.status })
+  return NextResponse.json({ success: true, archived: true, documentId: id, document: archived.document });
 }

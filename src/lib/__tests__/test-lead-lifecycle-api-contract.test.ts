@@ -330,13 +330,12 @@ test('contrato: o bloqueio e da auditoria — lead de teste sem evento de audito
  * 2. Journal do drizzle + SQL da migracao
  * -------------------------------------------------------------------------- */
 
-test('journal: a ultima entrada de migracao e 0021_test_lead_lifecycle', () => {
+test('journal: 0021_test_lead_lifecycle permanece exatamente uma vez antes de migracoes posteriores', () => {
   const journal = JSON.parse(readSource('src/db/migrations/meta/_journal.json')) as {
     entries: Array<{ idx: number; tag: string }>
   }
   assert.ok(Array.isArray(journal.entries) && journal.entries.length > 0, 'journal: entries vazio')
-  const tail = journal.entries[journal.entries.length - 1]
-  assert.equal(tail.tag, '0021_test_lead_lifecycle', 'journal: a cauda deve ser 0021_test_lead_lifecycle')
+  assert.equal(journal.entries[21]?.tag, '0021_test_lead_lifecycle', 'journal: 0021 deve permanecer na posicao historica')
   assert.equal(
     journal.entries.filter((entry) => entry.tag === '0021_test_lead_lifecycle').length,
     1,

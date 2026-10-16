@@ -3,9 +3,9 @@ import { db, documentTemplates } from '@/db'
 import { normalizeTemplateFields } from '@/lib/document-template-contract'
 
 /** Same selector for schema discovery and issuance. Explicit IDs cannot cross docType. */
-export async function selectSofiaDocumentTemplate(docType: string, templateId?: string) {
-  if (!db) return null
-  const [template] = await db.select().from(documentTemplates).where(and(
+export async function selectSofiaDocumentTemplate(docType: string, templateId?: string, executor: Pick<NonNullable<typeof db>, 'select'> | null = db) {
+  if (!executor) return null
+  const [template] = await executor.select().from(documentTemplates).where(and(
     eq(documentTemplates.docType, docType), eq(documentTemplates.isActive, true),
     isNull(documentTemplates.archivedAt), ...(templateId ? [eq(documentTemplates.id, templateId)] : []),
   )).orderBy(desc(documentTemplates.updatedAt), desc(documentTemplates.id)).limit(1)

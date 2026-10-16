@@ -1,0 +1,8 @@
+{
+  "build_pack": "dockerfile",
+  "base_directory": "/",
+  "dockerfile_location": "/Dockerfile",
+  "ports_exposes": "3000",
+  "instant_deploy": false,
+  "custom_docker_run_options": "--cap-drop ALL --cap-add SYS_CHROOT --security-opt no-new-privileges:true --security-opt seccomp=/data/coolify/security/rrd/pdf-seccomp.json --shm-size 256m"
+}

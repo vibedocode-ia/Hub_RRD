@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, index, uniqueIndex, check, type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 // ==========================================
 // CONSTANTES E ENUMS DA OPERAÇÃO RR DESENTUPIDORA
@@ -314,6 +314,8 @@ export const leadProposals = pgTable('lead_proposals', {
   id: uuid('id').primaryKey().defaultRandom(),
   leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'restrict' }).notNull(),
   leadServiceRequestId: uuid('lead_service_request_id').references(() => leadServiceRequests.id, { onDelete: 'set null' }),
+  // Link espelhado para o documento oficial emitido a partir desta proposta.
+  officialDocumentId: uuid('official_document_id').references(() => officialDocuments.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   description: text('description'),
   totalValue: numeric('total_value', { precision: 10, scale: 2 }).notNull(),
@@ -329,6 +331,7 @@ export const leadProposals = pgTable('lead_proposals', {
 }, (table) => [
   index('lead_proposals_lead_status_created_idx').on(table.leadId, table.status, table.createdAt),
   index('lead_proposals_status_created_idx').on(table.status, table.createdAt),
+  index('lead_proposals_official_document_idx').on(table.officialDocumentId),
 ]);
 
 export const leadDocuments = pgTable('lead_documents', {
@@ -443,8 +446,13 @@ export const officialDocuments = pgTable('official_documents', {
   id: uuid('id').primaryKey().defaultRandom(),
   docType: text('doc_type').notNull(), // 'ORCAMENTO' | 'RECIBO_GARANTIA' | 'LAUDO_TECNICO'
   docNumber: text('doc_number').notNull().unique(), // Ex: 'REC-2026-0089'
-  serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id).notNull(),
-  clientId: uuid('client_id').references(() => clients.id).notNull(),
+  // Destinatário: EXATAMENTE UM entre lead (fluxo comercial) e cliente (fluxo legado).
+  // O CHECK official_documents_lead_or_client_recipient_check garante o XOR no banco.
+  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'restrict' }),
+  serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id),
+  clientId: uuid('client_id').references(() => clients.id),
+  // Revisão aponta para o documento substituído; o original permanece congelado.
+  supersedesDocumentId: uuid('supersedes_document_id').references((): AnyPgColumn => officialDocuments.id, { onDelete: 'restrict' }),
   templateVersion: text('template_version').notNull().default('V1.0'),
   totalValue: numeric('total_value', { precision: 10, scale: 2 }).notNull(),
   amountInWords: text('amount_in_words'), // Ex: 'trezentos reais'
@@ -468,6 +476,9 @@ export const officialDocuments = pgTable('official_documents', {
   index('official_docs_status_idx').on(table.status),
   index('official_docs_doc_number_idx').on(table.docNumber),
   index('official_docs_service_request_idx').on(table.serviceRequestId),
+  index('official_docs_lead_idx').on(table.leadId),
+  // XOR de destinatário: exatamente um entre lead_id e client_id (ver migration 0022).
+  check('official_documents_lead_or_client_recipient_check', sql`(${table.leadId} is null) <> (${table.clientId} is null)`),
 ]);
 
 // 7a. Pipeline comercial de propostas; documento oficial é um snapshot separado.

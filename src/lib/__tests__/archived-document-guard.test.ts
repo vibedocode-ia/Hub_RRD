@@ -8,7 +8,8 @@ const read = (file: string) => readFileSync(path.join(process.cwd(), file), 'utf
 test('document mutations and Sofia summary respect archived requests and overdue receivables', () => {
   const documentRoute = read('src/app/api/documents/[id]/route.ts')
   const sofiaRoute = read('src/app/api/sofia/actions/route.ts')
-  assert.match(documentRoute, /isNull\(serviceRequests\.archivedAt\)/)
+  assert.doesNotMatch(documentRoute, /update\(officialDocuments\)/)
+  assert.match(read('src/lib/official-document-lifecycle.ts'), /serviceRequests\.archivedAt/)
   assert.match(sofiaRoute, /row\.status === 'PENDENTE' \|\| row\.status === 'ATRASADO'/)
   assert.match(sofiaRoute, /isNull\(serviceRequests\.archivedAt\)/)
 })

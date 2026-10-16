@@ -204,6 +204,7 @@ export const TEST_LEAD_REFERENCED_PARENT_TABLES = [
 export const TEST_LEAD_COUNTED_CHILD_TABLES = [
   'lead_proposals',
   'lead_documents',
+  'official_documents',
   'lead_service_requests',
 ] as const
 

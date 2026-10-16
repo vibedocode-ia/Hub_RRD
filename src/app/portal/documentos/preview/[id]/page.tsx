@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { db, officialDocuments } from '@/db';
 import { eq } from 'drizzle-orm';
 import { PrinterButton } from './PrinterButton';
+import { requireLocalPermission } from '@/lib/require-local-permission';
 
 export const metadata = {
   title: 'Visualizador de Documento Oficial · RR Desentupidora',
@@ -12,6 +13,8 @@ export default async function DocumentPreviewPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const authorized = await requireLocalPermission('documents.read');
+  if (!authorized) return notFound();
   const { id } = await params;
 
   if (!db) {
@@ -28,18 +31,19 @@ export default async function DocumentPreviewPage({
     return notFound();
   }
 
+  const canIssue = Boolean(await requireLocalPermission('documents.issue'));
   const doc = docs[0];
   const htmlContent = doc.htmlSnapshot || '<h1>Documento sem preview disponível.</h1>';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center">
       {/* Top Floating Control Bar (Hidden when printing) */}
-      <div className="w-full bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 flex items-center justify-between max-w-4xl mx-auto rounded-b-2xl shadow-2xl print:hidden">
+      <div className="w-full bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 flex flex-col sm:flex-row gap-3 sm:items-center justify-between max-w-4xl mx-auto rounded-b-2xl shadow-2xl print:hidden">
         <div>
           <div className="text-xs font-mono font-bold text-cyan-400">{doc.docNumber}</div>
           <div className="text-sm font-bold text-slate-100">{doc.docType} — RR Desentupidora</div>
         </div>
-        <PrinterButton />
+        <PrinterButton documentId={doc.id} canIssue={canIssue} />
       </div>
 
       {/* Embedded Document HTML */}

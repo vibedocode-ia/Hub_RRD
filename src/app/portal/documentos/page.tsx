@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import DeleteResourceButton from '@/components/DeleteResourceButton';
-import { db, officialDocuments, clients, documentTemplates } from '@/db';
+import { db, officialDocuments, clients, leads, documentTemplates } from '@/db';
 import DocumentTemplateLibrary from '@/components/DocumentTemplateLibrary';
 import { eq, desc } from 'drizzle-orm';
 import { FileText, Printer, Download, Eye, CheckCircle2 } from 'lucide-react';
@@ -20,8 +20,8 @@ export default async function DocumentosPage() {
     paymentMethod: string;
     status: string;
     issuedAt: Date | null;
-    clientName: string;
-    clientPhone: string;
+    recipientType: 'lead' | 'client';
+    recipientName: string | null;
   }> = [];
 
   let templateList: Array<{ id: string; name: string; docType: string; version: string; description: string | null; fields: any; sourceFilename: string; sourceSha256: string; isActive: boolean; archivedAt: Date | null; createdAt: Date }> = [];
@@ -37,14 +37,20 @@ export default async function DocumentosPage() {
           paymentMethod: officialDocuments.paymentMethod,
           status: officialDocuments.status,
           issuedAt: officialDocuments.issuedAt,
+          leadId: officialDocuments.leadId,
           clientName: clients.name,
-          clientPhone: clients.phone,
+          leadName: leads.name,
         })
         .from(officialDocuments)
-        .innerJoin(clients, eq(officialDocuments.clientId, clients.id))
+        .leftJoin(clients, eq(officialDocuments.clientId, clients.id))
+        .leftJoin(leads, eq(officialDocuments.leadId, leads.id))
         .orderBy(desc(officialDocuments.createdAt));
 
-      docsList = records;
+      docsList = records.map(({ leadId, clientName, leadName, ...record }) => ({
+        ...record,
+        recipientType: leadId ? 'lead' as const : 'client' as const,
+        recipientName: leadId ? leadName : clientName,
+      }));
     } catch (e) {
       console.error('Erro ao buscar documentos emitidos:', e);
     }
@@ -97,7 +103,8 @@ export default async function DocumentosPage() {
                     <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
                       {doc.docNumber}
                     </span>
-                    <span className="text-sm font-bold text-slate-100">{doc.clientName}</span>
+                    <span className="text-sm font-bold text-slate-100">{doc.recipientName ?? 'Destinatário indisponível'}</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-300">{doc.recipientType === 'lead' ? 'Lead' : 'Cliente'}</span>
                     <span className="text-[10px] font-bold uppercase bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded-full">
                       {doc.docType === 'RECIBO_GARANTIA' ? 'Recibo + Garantia' : doc.docType === 'ORCAMENTO_TECNICO' ? 'Orçamento Técnico' : doc.docType === 'ORCAMENTO' ? 'Orçamento' : 'Laudo / OS'}
                     </span>

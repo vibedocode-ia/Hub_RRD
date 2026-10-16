@@ -16,22 +16,20 @@ function build(registered){
  const route=harness({'@/db':dbModule,'../../../../db':dbModule,'next/server':nr,'@/lib/require-local-permission':auth,'../../../../lib/require-local-permission':auth,'@/lib/sofia-document-template':template,'../../../../lib/sofia-document-template':template,'@/lib/documents/registered-template':renderer,'../../../../lib/documents/registered-template':renderer,'../../../../lib/documents/money-to-words':{moneyToWords:()=>'Quatrocentos reais'}})('src/app/api/documents/emit/route.ts');
  return {route,inserts};
 }
-test('RRD issuance of ORCAMENTO_TECNICO renders the registered model exactly once',async()=>{
+test('legacy request-bound route refuses direct issuance without the transactional, server-bound draft and lead recipient context',async()=>{
  const registered={count:0};
  const {route,inserts}=build(registered);
  const res=await route.POST({json:async()=>({serviceRequestId:'req-1',docType:'ORCAMENTO_TECNICO',amount:'400,00',paymentMethod:'Pix'})});
- assert.equal(res.status,200);assert.equal(res.body.success,true);
- assert.equal(registered.count,1,'registered template renderer must be the issuance path');
- const snapshot=inserts.find(v=>v.documentPayloadSnapshot)?.documentPayloadSnapshot;
- assert.equal(snapshot.type,'ORCAMENTO_TECNICO');
- assert.equal(snapshot.data.contractorName,'CLIENTE SINTÉTICO');
- assert.equal(snapshot.templateSourceSha256,'sha');
+ assert.equal(res.status,422);
+ assert.equal(registered.count,0,'legacy route cannot emit outside the transactional issuer');
+ assert.equal(inserts.length,0,'legacy route cannot persist a partial document');
+ assert.equal(res.body.error,'Informe os cinco dados mínimos do documento.');
 });
-test('RRD issuance keeps the stored PDF model as the rendered artifact',async()=>{
- const registered={count:0};
- const {route}=build(registered);
- const res=await route.POST({json:async()=>({serviceRequestId:'req-1',docType:'ORCAMENTO_TECNICO',amount:'400,00',paymentMethod:'Pix'})});
- assert.equal(registered.count,1);
- const html=require('node:fs').readFileSync(require('node:path').join(__dirname,'../../src/app/api/documents/emit/route.ts'),'utf8');
- assert.ok(!/renderDocumentHTML/.test(html),'emit route must not fall back to the hardcoded HTML renderer');
+test('the transactional Sofia issuer, not the legacy request-bound route, renders the registered model',async()=>{
+ const legacy=require('node:fs').readFileSync(require('node:path').join(__dirname,'../../src/app/api/documents/emit/route.ts'),'utf8');
+ const issuer=require('node:fs').readFileSync(require('node:path').join(__dirname,'../../src/lib/sofia-issue-draft.ts'),'utf8');
+ assert.match(legacy,/Use o fluxo autorizado de rascunhos da Sofia/);
+ assert.match(issuer,/renderRegisteredTemplate\(selected/);
+ assert.match(issuer,/tx\.insert\(officialDocuments\)/);
+ assert.match(issuer,/tx\.insert\(sofiaEvents\)/);
 });

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { resolveDocumentIdentity } from './document-identity'
+import { requiredDocumentDraftFields } from './sofia-document-draft'
 import { isFinancialCalendarDate } from '@/lib/validation/financeiro'
 
 const central = z.object({
@@ -22,10 +22,19 @@ export const SofiaDocumentFields = z.record(
   z.string().regex(/^[a-z][a-zA-Z0-9_]{1,63}$/).refine(key => !['constructor', 'prototype', '__proto__'].includes(key)),
   z.string().max(2000),
 ).refine(values => Object.keys(values).length <= 80, 'Campos demais.')
+const OptionalOmissionConsent = z.partialRecord(
+  z.enum(['customer.phone', 'address.street', 'address.number', 'address.neighborhood', 'address.city', 'address.complement', 'address.referencePoint', 'service.paymentMethod', 'service.priority']),
+  z.union([z.literal('Não informado'), z.null()]),
+).refine(values => Object.keys(values).length <= 9, 'Campos demais.')
+const recipientFields = { leadId: z.string().uuid().optional(), clientId: z.string().uuid().optional() }
+const exclusiveRecipient = (value: {leadId?: string; clientId?: string}) => !(value.leadId && value.clientId)
 export const SofiaListServicesRequest = central.extend({ action: z.literal('list_services') }).strict()
 export const SofiaListActiveTeamsRequest = central.extend({ action: z.literal('list_active_teams') }).strict()
 export const SofiaCreateDraftRequest = central.extend({
   action: z.literal('create_service_draft'),
+  ...recipientFields,
+  optionalFieldConsent: OptionalOmissionConsent.optional(),
+  documentDate: z.string().trim().max(32).optional(),
   templateId: z.string().uuid().optional(),
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
   documentFields: SofiaDocumentFields.optional(),
@@ -47,10 +56,13 @@ export const SofiaCreateDraftRequest = central.extend({
   problemReported: z.string().trim().min(1).max(2000).optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
-}).strict()
+}).strict().refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
 
 export const SofiaUpdateDraftRequest = central.extend({
   action: z.literal('update_service_draft'),
+  ...recipientFields,
+  optionalFieldConsent: OptionalOmissionConsent.optional(),
+  documentDate: z.string().trim().max(32).optional(),
   draftId: z.string().uuid(),
   templateId: z.string().uuid().optional(),
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
@@ -65,7 +77,7 @@ export const SofiaUpdateDraftRequest = central.extend({
   problemReported: z.string().trim().min(1).max(2000).optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
-}).strict()
+}).strict().refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
 export const SofiaGetDocumentTemplateRequest = central.extend({
   action: z.literal('get_document_template'),
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']),
@@ -80,20 +92,15 @@ export const SofiaIssueDraftRequest = central.extend({
   paymentMethod: z.string().trim().max(60).optional(),
   templateId: z.string().uuid().optional(),
   documentFields: SofiaDocumentFields.optional(),
+  supersedesDocumentId: z.string().uuid().optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
 }).strict()
 export const SofiaActionRequest = z.union([SofiaGetDocumentTemplateRequest, SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest, SofiaIssueDraftRequest])
 export type SofiaActionRequest = z.infer<typeof SofiaActionRequest>
 
 export function pendingDraftFields(input: z.infer<typeof SofiaCreateDraftRequest>) {
-  const missing: Array<{ field: string; label: string; requiredFor: string }> = []
-  if (!input.customerName) missing.push({ field: 'customer.name', label: 'Nome do cliente', requiredFor: 'service_request' })
-  if (!input.customerDocument || !resolveDocumentIdentity(input.customerDocument)) missing.push({ field: 'customer.document', label: 'CPF ou CNPJ válido', requiredFor: 'document_issue' })
-  if (!input.address?.street) missing.push({ field: 'address.street', label: 'Logradouro', requiredFor: 'service_request' })
-  if (!input.address?.number) missing.push({ field: 'address.number', label: 'Número', requiredFor: 'service_request' })
-  if (!input.address?.neighborhood) missing.push({ field: 'address.neighborhood', label: 'Bairro', requiredFor: 'service_request' })
-  if (!input.problemReported) missing.push({ field: 'service.problemReported', label: 'Problema relatado', requiredFor: 'service_request' })
-  return missing
+  // CPF ou CNPJ and the other document minimums are owned by the Hub contract.
+  return requiredDocumentDraftFields(input)
 }
 
 
