@@ -1,3 +1,6 @@
+### V0.15.01 (2026-10-18) - Corrige dependências de produção do módulo de acesso integrado
+- **Release:** Site + Hub RRD.
+
 ### V0.15.00 (2026-10-18) - Painel de acesso integrado e autoria documental Central
 - **Release:** Site + Hub RRD.
 
