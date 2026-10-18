@@ -15,6 +15,7 @@ import { archiveOfficialDocument, supersedeOfficialDocument } from '@/lib/offici
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { VERSION } from '@/lib/version'
+import { isNativePeopleAccessRead, listNativePeopleAccesses } from '@/lib/native-people-accesses'
 import { executeSofiaPersonProfile, SofiaPersonProfileRequest, SofiaManagedPersonProfileRequest } from '@/lib/sofia-person-profile'
 import { executeSofiaManagedPersonProfile } from '@/lib/sofia-person-profile-service'
 import { agendaReadResult, financialReadResult, resolveQueryRange } from '@/lib/sofia-operational-queries'
@@ -78,6 +79,10 @@ export async function POST(req: NextRequest) {
     }
   }
   try {
+    if (envelope.action === 'list_people_accesses') {
+      if (!isNativePeopleAccessRead(envelope, godAdmin)) return reply({ success: false, error: 'Leitura de acessos exige autoridade Central e contrato válido.' }, 403, correlationId)
+      return reply({ success: true, action: 'list_people_accesses', people: await listNativePeopleAccesses() }, 200, correlationId)
+    }
     const externalAuthor: CentralDocumentAuthor | undefined = godAdmin ? { kind: 'central_sovereign', grantId: String(envelope.centralGrantId), hubId: String(envelope.centralHubId), senderPhone: String(envelope.senderPhone) } : undefined
     if (envelope.action === 'get_person_profile' || envelope.action === 'update_person_profile') {
       const parsed = SofiaManagedPersonProfileRequest.safeParse(rawBody)
