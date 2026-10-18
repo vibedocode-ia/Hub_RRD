@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, UserRoundCog } from 'lucide-react'
 import Link from 'next/link'
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Pessoas e Acessos · Hub RR' }
 
 export default async function PeopleAccessPage() {
+  if(process.env.ACCESS_V1_ENABLED==='true'&&(await cookies()).has('access_v1'))redirect('/portal/acessos')
   const access = await getCurrentLocalAccess()
   if (!access) redirect('/portal/login?from=/portal/settings/pessoas')
   if (!access.permissions.includes('people.manage')) redirect('/portal/settings')

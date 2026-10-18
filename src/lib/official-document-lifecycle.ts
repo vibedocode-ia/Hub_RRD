@@ -1,3 +1,4 @@
+import type { CentralDocumentAuthor } from './sofia-document-author'
 import { and, eq, isNull, or, sql } from 'drizzle-orm'
 import { auditEvents, db, DOC_STATUS, officialDocuments, serviceRequests } from '@/db'
 
@@ -34,9 +35,11 @@ export async function supersedeOfficialDocument(documentId: string, actorUserId:
 }
 
 /** Archive is a lifecycle transition only; the frozen payload and PDF are never rewritten or deleted. */
-export async function archiveOfficialDocument(documentId: string, actorUserId: string, idempotencyKey: string): Promise<ArchiveResult> {
+export async function archiveOfficialDocument(documentId: string, author: string | CentralDocumentAuthor, idempotencyKey: string): Promise<ArchiveResult> {
   if (!db) return { ok: false, status: 503, error: 'Banco de dados indisponível.' }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(documentId)) return { ok: false, status: 422, error: 'Documento inválido.' }
+  const actorUserId = typeof author === 'string' ? author : null
+  const externalAuthor = typeof author === 'string' ? undefined : author
   return db.transaction(async tx => {
     const [document] = await tx.select({ id: officialDocuments.id, docNumber: officialDocuments.docNumber, status: officialDocuments.status })
       .from(officialDocuments).where(and(eq(officialDocuments.id, documentId), eligibleDocument)).for('update').limit(1)
@@ -46,7 +49,7 @@ export async function archiveOfficialDocument(documentId: string, actorUserId: s
       .where(and(eq(officialDocuments.id, documentId), eligibleDocument, eq(officialDocuments.status, document.status)))
       .returning({ id: officialDocuments.id, docNumber: officialDocuments.docNumber, status: officialDocuments.status })
     if (!updated) return { ok: false as const, status: 409, error: 'Documento mudou durante o arquivamento; tente novamente.' }
-    await tx.insert(auditEvents).values({ actorUserId, action: 'document.archived', targetType: 'official_document', targetId: documentId, metadata: { actorUserId, idempotencyKey } })
+    await tx.insert(auditEvents).values({ actorUserId, action: 'document.archived', targetType: 'official_document', targetId: documentId, metadata: { actorUserId, idempotencyKey, ...(externalAuthor ? {externalAuthor} : {}) } })
     return { ok: true as const, document: updated }
   })
 }

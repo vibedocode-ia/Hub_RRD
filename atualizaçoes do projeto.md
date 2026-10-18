@@ -1,3 +1,6 @@
+### V0.15.00 (2026-10-18) - Painel de acesso integrado e autoria documental Central
+- **Release:** Site + Hub RRD.
+
 ### V0.14.08 (2026-10-16) - Gestao de pessoas e perfil seguro; consultas de agenda, financeiro e estoque com contratos explicitos
 - **Release:** Site + Hub RRD.
 

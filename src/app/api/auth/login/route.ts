@@ -1,3 +1,4 @@
+import { legacyAccessGuard, pilotLogin } from '../../../../lib/access-v1/runtime.mjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 import { db, users } from '../../../../db';
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const pilot = await pilotLogin(req, 'hub', phone, password);
+    if (pilot) return pilot;
+    if (await legacyAccessGuard(phone, 'hub')) return NextResponse.json({ error: 'Credenciais inválidas.' }, { status: 401 });
 
     // Normaliza telefone para formato apenas com números
     const normalized = phone.replace(/\D/g, '');

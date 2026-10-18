@@ -1,0 +1,17 @@
+{
+  "name": "hvd-access-v1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import tsx --test test/*.test.mjs",
+    "test:integration": "node --import tsx test/integration.mjs"
+  },
+  "dependencies": {
+    "postgres": "3.4.9",
+    "canonicalize": "2.1.0",
+    "ajv": "8.17.1",
+    "jsonc-parser": "3.3.1",
+    "libphonenumber-js": "1.12.24",
+    "bcryptjs": "3.0.3"
+  }
+}

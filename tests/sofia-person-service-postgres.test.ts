@@ -163,11 +163,26 @@ test('profile backend service on disposable PostgreSQL', async t => {
    await sql`DELETE FROM user_permissions WHERE user_id=${admin.id} AND permission_key='sofia.use'`
    assert.equal((await post(envelope)).status, 403)
    await sql`INSERT INTO user_permissions(user_id,permission_key) VALUES (${admin.id},'sofia.use')`
-   // Managed profile is not in the explicit GodAdmin policy allowlist. Fail closed:
-   // never retry as local ADMIN/OWNER merely because the Central sender has a local row.
+   // Dedicated Central authority may manage a real target without acquiring a
+   // local role or creating a sender account; ordinary transport still cannot forge it.
    const god = { centralRole: 'god_admin', centralGrantId: '55555555-5555-4555-8555-555555555555', centralHubId: process.env.RRD_HUB_ID, senderPhone: '+' + admin.phone, action: envelope.action, data: envelope.data }
    assert.equal((await post(god)).status, 403)
-   assert.equal((await post(god, process.env.SOFIA_RRD_CENTRAL_SECRET)).status, 403)
+   assert.equal((await post(god, process.env.SOFIA_RRD_CENTRAL_SECRET)).status, 200)
+   // Authenticated sovereign identity need not have a local account or permission row.
+   // Explicit synthetic transport identity, not mapped to any user's UUID.
+   const sovereign = { ...god, senderPhone: '+5521999999988', data: { targetPhone: owner.phone, patch: { jobTitle: 'Gestão soberana' } } }
+   const countBefore = (await sql`SELECT count(*)::int AS n FROM users`)[0].n
+   assert.equal((await post(sovereign, process.env.SOFIA_RRD_CENTRAL_SECRET)).status, 200)
+   assert.equal((await sql`SELECT job_title FROM users WHERE id=${owner.id}`)[0].job_title, 'Gestão soberana')
+   const readback = await post({ ...sovereign, action: 'get_person_profile', data: { targetPhone: owner.phone } }, process.env.SOFIA_RRD_CENTRAL_SECRET)
+   assert.equal((await readback.json()).profile.jobTitle, 'Gestão soberana')
+   const [audit] = await sql`SELECT actor_user_id,metadata FROM audit_events WHERE target_id=${owner.id} ORDER BY created_at DESC LIMIT 1`
+   assert.equal(audit.actor_user_id, null)
+   assert.equal(audit.metadata.centralGrantId, god.centralGrantId)
+   assert.equal(audit.metadata.authenticatedSenderPhone, sovereign.senderPhone)
+   assert.equal((await sql`SELECT count(*)::int AS n FROM users`)[0].n, countBefore)
+   assert.equal((await post(sovereign)).status, 403)
+   assert.equal((await post({ ...sovereign, data: { targetPhone: owner.phone, patch: { phone: '5521999999930' } } }, process.env.SOFIA_RRD_CENTRAL_SECRET)).status, 409)
    assert.equal((await post(envelope, process.env.SOFIA_RRD_CENTRAL_SECRET)).status, 403)
    await sql`DELETE FROM users WHERE id=${owner.id}`
   })

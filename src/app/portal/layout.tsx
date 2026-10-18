@@ -50,6 +50,7 @@ export default async function PortalLayout({
     { section: 'Gestão', label: 'Financeiro', href: '/portal/financeiro', icon: CircleDollarSign },
     { section: 'Gestão', label: 'Documentos', href: '/portal/documentos', icon: FileText },
     { section: 'Sofia', label: 'Rascunhos Sofia', href: '/portal/sofia-drafts', icon: MessageSquareCode },
+    ...(process.env.ACCESS_V1_ENABLED==='true'?[{section:'Sistema',label:'Pessoas e acessos',href:'/acessos',icon:ShieldCheck}]:[]),
     { section: 'Sistema', label: 'Meu perfil', href: '/portal/perfil', icon: Users },
     { section: 'Sistema', label: 'Configurações', href: '/portal/settings', icon: Settings },
   ];
@@ -113,7 +114,7 @@ export default async function PortalLayout({
           {children}
         </main>
       </div>
-      <MobileBottomNav />
+      <MobileBottomNav accessEnabled={process.env.ACCESS_V1_ENABLED==='true'} />
     </div>
   );
 }

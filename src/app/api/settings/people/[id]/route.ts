@@ -1,3 +1,4 @@
+import { legacyPeopleGuard } from '@/lib/access-v1/legacy-management-guard'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { auditEvents, db, sessions, passwordRecoveryTokens, userPermissions, users } from '@/db'
@@ -12,11 +13,13 @@ function personIdFromParams(context: { params: Promise<{ id: string }> }) {
 }
 
 export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const pilotGuard=await legacyPeopleGuard();if(pilotGuard)return pilotGuard
   const actor = await getCurrentLocalAccess()
   if (!actor) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
   if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503 })
   const targetId = await personIdFromParams(context)
+  const pilotTarget=await legacyPeopleGuard(targetId);if(pilotTarget)return pilotTarget
   if (targetId === actor.id) return NextResponse.json({ error: 'Você não pode excluir a própria conta.' }, { status: 409 })
 
   try {
@@ -42,12 +45,14 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const pilotGuard=await legacyPeopleGuard();if(pilotGuard)return pilotGuard
   const actor = await getCurrentLocalAccess()
   if (!actor) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
   if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503 })
 
   const targetId = await personIdFromParams(context)
+  const pilotTarget=await legacyPeopleGuard(targetId);if(pilotTarget)return pilotTarget
   const parsed = UpdateLocalPersonSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Dados de atualização inválidos.', details: parsed.error.flatten() }, { status: 422 })
   const input = parsed.data

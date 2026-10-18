@@ -1,3 +1,4 @@
+export * from '../lib/access-v1/schema';
 import { sql } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, index, uniqueIndex, check, type AnyPgColumn } from 'drizzle-orm/pg-core';
 
@@ -325,6 +326,7 @@ export const leadProposals = pgTable('lead_proposals', {
   approvedAt: timestamp('approved_at'),
   rejectedAt: timestamp('rejected_at'),
   notes: text('notes'),
+  externalAuthor: jsonb('external_author'),
   createdById: uuid('created_by_id').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -469,6 +471,7 @@ export const officialDocuments = pgTable('official_documents', {
   sentAt: timestamp('sent_at'),
   approvedById: uuid('approved_by_id').references(() => users.id),
   approvedAt: timestamp('approved_at'),
+  externalAuthor: jsonb('external_author'),
   createdById: uuid('created_by_id').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -497,6 +500,7 @@ export const proposals = pgTable('proposals', {
   rejectedAt: timestamp('rejected_at'),
   convertedAt: timestamp('converted_at'),
   notes: text('notes'),
+  externalAuthor: jsonb('external_author'),
   createdById: uuid('created_by_id').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -562,8 +566,10 @@ export const sofiaEvents = pgTable('sofia_events', {
 export const sofiaDrafts = pgTable('sofia_drafts', {
   id: uuid('id').primaryKey().defaultRandom(),
   correlationId: text('correlation_id').notNull().unique(),
-  centralContactId: uuid('central_contact_id').notNull(),
-  centralClientId: uuid('central_client_id').notNull(),
+  authorKind: text('author_kind').notNull().default('legacy'),
+  centralGrantId: uuid('central_grant_id'),
+  centralContactId: uuid('central_contact_id'),
+  centralClientId: uuid('central_client_id'),
   centralHubId: uuid('central_hub_id').notNull(),
   centralRole: text('central_role').notNull(),
   senderPhone: text('sender_phone').notNull(),
@@ -581,6 +587,7 @@ export const sofiaDrafts = pgTable('sofia_drafts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [
+  check('sofia_drafts_author_check', sql`(${table.authorKind} = 'legacy' and ${table.centralGrantId} is null and ${table.centralContactId} is not null and ${table.centralClientId} is not null) or (${table.authorKind} = 'central_sovereign' and ${table.centralGrantId} is not null and ${table.centralRole} = 'god_admin' and ${table.centralContactId} is null and ${table.centralClientId} is null)`),
   index('sofia_drafts_correlation_idx').on(table.correlationId),
   index('sofia_drafts_status_updated_idx').on(table.status, table.updatedAt),
   index('sofia_drafts_hub_status_idx').on(table.centralHubId, table.status),

@@ -12,7 +12,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const from = searchParams.get('from') || '/portal/dashboard';
 
-  const [phone, setPhone] = useState('5521996699191');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ function LoginForm() {
         return;
       }
 
-      router.push(from);
+      router.push(data.redirectUrl || from);
       router.refresh();
     } catch (err) {
       setError('Erro de conexão com o servidor do Hub RR.');
@@ -73,7 +73,7 @@ function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-            Telefone do Operador / Rafael
+            E-mail, telefone ou nome de usuário
           </label>
           <div className="relative">
             <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -82,7 +82,7 @@ function LoginForm() {
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="(21) 99669-9191"
+              placeholder="E-mail, telefone ou nome de usuário"
               className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
             />
           </div>

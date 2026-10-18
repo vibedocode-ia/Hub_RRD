@@ -1,6 +1,6 @@
 {
   "name": "rrdesentupidora-site-hub",
-  "version": "0.14.08",
+  "version": "0.15.00",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,7 +15,11 @@
     "db:seed:operational": "tsx scripts/seed-operational-defaults.ts",
     "test:unit": "tsx --test src/lib/__tests__/*.test.ts",
     "test:stored-template:build": "node scripts/test-stored-template-build.mjs",
-    "test:security": "node scripts/run-security-tests.mjs"
+    "test:security": "node scripts/run-security-tests.mjs",
+    "test:access-v1": "node --import tsx src/lib/access-v1/test/integration.mjs",
+    "test:access-v1:autonomy": "node --import tsx src/lib/access-v1/test/autonomy.mjs",
+    "test:access-v1:unit": "node --import tsx --test src/lib/access-v1/test/*.test.mjs",
+    "test:access-v1:stage6": "node --import tsx src/lib/access-v1/test/stage6.mjs"
   },
   "dependencies": {
     "@napi-rs/canvas": "0.1.100",

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "migrations": [
+    {
+      "id": "0001_access_v1",
+      "sha256": "a052bde2b5ae19700fd9e10375ff65b8942b4f7c06804b5ede08cc6652c399d2"
+    },
+    {
+      "id": "0002_sync",
+      "sha256": "1a9bf0d72d0ae58b574708e98c9c69afad1e1dc5ab4d1668db6919e06f368857"
+    },
+    {
+      "id": "0003_roles",
+      "sha256": "408ffaaf56b6ef74c0e648ed0e6b82593aadd5490ff2499c03b15a54b8ca7877"
+    },
+    {
+      "id": "0004_channel",
+      "sha256": "6567088337ff1f24b063f90ac63ac2167fbb0fb59a905c500dd534828637eea5"
+    },
+    {
+      "id": "0005_knowledge_shares",
+      "sha256": "766dd8e0b54e5107c9633e24ac183c5f87f5188089e20338dedf03ecdecfb414"
+    },
+    {
+      "id": "0006_identity",
+      "sha256": "19f063af6fd5fe8ad564788c05d26b22670d8ca983a1730f55e464166955c34c"
+    },
+    {
+      "id": "0007_identity_delivery",
+      "sha256": "338e17daa17516b75fe577226f663f65165f3127e26b35d0b08f5aa3ef3806b0"
+    }
+  ]
+}

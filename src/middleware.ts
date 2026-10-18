@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
 
   // Verifica proteção para todas as sub-rotas de /portal/
   if (pathname.startsWith('/portal')) {
-    const sessionToken = request.cookies.get('rrd_session_token')?.value;
+    const sessionToken = request.cookies.get('rrd_session_token')?.value || (process.env.ACCESS_V1_ENABLED==='true'?request.cookies.get('access_v1')?.value:null);
 
     if (!sessionToken) {
       const loginUrl = new URL('/portal/login', request.url);

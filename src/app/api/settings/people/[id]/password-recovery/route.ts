@@ -1,3 +1,4 @@
+import { legacyPeopleGuard } from '@/lib/access-v1/legacy-management-guard'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { auditEvents, db, passwordRecoveryTokens, users } from '@/db'
@@ -33,12 +34,14 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * atomically invalidates the previous one for the same person.
  */
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const pilotGuard=await legacyPeopleGuard();if(pilotGuard)return pilotGuard
   const actor = await getCurrentLocalAccess()
   if (!actor) return NextResponse.json({ error: RECOVERY_ISSUE_ERRORS.unauthenticated }, { status: 401, headers: NO_STORE_HEADERS })
   if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: RECOVERY_ISSUE_ERRORS.permission }, { status: 403, headers: NO_STORE_HEADERS })
   if (!db) return NextResponse.json({ error: 'Banco indisponível' }, { status: 503, headers: NO_STORE_HEADERS })
 
   const targetId = (await context.params).id
+  const pilotTarget=await legacyPeopleGuard(targetId);if(pilotTarget)return pilotTarget
   // A malformed id shares the same non-identifying 404 as a missing or inactive person.
   if (!UUID_PATTERN.test(targetId)) {
     return NextResponse.json({ error: RECOVERY_ISSUE_ERRORS.target }, { status: 404, headers: NO_STORE_HEADERS })

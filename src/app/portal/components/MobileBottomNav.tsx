@@ -41,11 +41,12 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function MobileBottomNav() {
+export default function MobileBottomNav({accessEnabled=false}:{accessEnabled?:boolean}) {
+  const navigationMoreItems=accessEnabled?[...moreItems,{label:'Pessoas e acessos',href:'/acessos',icon:Users,description:'Vínculos e funções deste Hub'}]:moreItems;
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const moreActive = moreItems.some((item) => isActive(pathname, item.href));
+  const moreActive = navigationMoreItems.some((item) => isActive(pathname, item.href));
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
@@ -85,7 +86,7 @@ export default function MobileBottomNav() {
         </div>
 
         <div className="grid gap-2">
-          {moreItems.map((item) => {
+          {navigationMoreItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
             return (

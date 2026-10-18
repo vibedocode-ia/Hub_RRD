@@ -1,4 +1,5 @@
 import { and, eq, or, sql } from 'drizzle-orm'
+import { draftOwnership, type CentralDocumentAuthor } from '@/lib/sofia-document-author'
 import { draftReviewVersion } from '@/lib/sofia-draft-review-version'
 import {
   db, clients, leads, sofiaDrafts, sofiaEvents, officialDocuments, auditEvents,
@@ -24,8 +25,11 @@ export type IssueDraftInput = {
   draftId: string
   senderPhone: string
   centralHubId: string
-  centralContactId: string
-  centralClientId: string
+  centralContactId?: string
+  centralClientId?: string
+  centralGrantId?: string
+  reviewVersion?: string
+  confirmed?: true
   centralRole: string
   docType?: DocType
   amount?: string
@@ -142,8 +146,8 @@ export async function reviewPortalDraft(draftId: string, payload: Record<string,
 }
 
 /** No CRM creation: an issued document references exactly one existing recipient. */
-export async function issueDraftDocument(input: IssueDraftInput): Promise<IssueDraftResult> {
-  return issueBoundDraftDocument(input)
+export async function issueDraftDocument(input: IssueDraftInput, externalAuthor?: CentralDocumentAuthor): Promise<IssueDraftResult> {
+  return issueBoundDraftDocument(input, undefined, externalAuthor)
 }
 
 type PortalActor = { id: string; reviewVersion: string }
@@ -157,24 +161,26 @@ export async function issuePortalDraftDocument(input: { draftId: string; actorUs
   if (!uuid(input.draftId) || !uuid(input.actorUserId)) return { ok: false, status: 422, error: 'Identificador inválido.' }
   const [draft] = await db.select().from(sofiaDrafts).where(and(eq(sofiaDrafts.id, input.draftId), eq(sofiaDrafts.centralHubId, hubId!))).limit(1)
   if (!draft) return { ok: false, status: 409, error: 'Rascunho não disponível neste Hub.' }
+  // Central authorship must use its authenticated issuer lane, never a local reviewer alias.
+  if (draft.authorKind !== 'legacy' || !draft.centralContactId || !draft.centralClientId) return { ok: false, status: 409, error: 'Autoria Central requer emissor autenticado próprio.' }
   return issueBoundDraftDocument({ draftId: draft.id, senderPhone: draft.senderPhone, centralHubId: hubId!, centralContactId: draft.centralContactId, centralClientId: draft.centralClientId, centralRole: draft.centralRole, correlationId: `portal-issue:${draft.id}:${input.actorUserId}:${input.reviewVersion}` }, { id: input.actorUserId, reviewVersion: input.reviewVersion })
 }
 
-async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: PortalActor): Promise<IssueDraftResult> {
+async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: PortalActor, externalAuthor?: CentralDocumentAuthor): Promise<IssueDraftResult> {
   if (!db) return { ok: false, status: 503, error: 'Banco de dados indisponível.' }
   const phone = digits(input.senderPhone)
   if (!portalActor && !/^\d{10,15}$/.test(phone)) return { ok: false, status: 403, error: 'Operador inválido para emissão.' }
-  const [operator] = await db.select({ id: users.id }).from(users).where(and(portalActor ? eq(users.id, portalActor.id) : eq(users.phone, phone), eq(users.isActive, true))).limit(1)
-  if (!operator) return { ok: false, status: 403, error: 'Operador sem vínculo ativo para emitir.' }
-  const perms = await db.select({ key: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, operator.id))
-  const held = new Set(perms.map(p => p.key))
-  if (!held.has('sofia.drafts.review') || !held.has('documents.issue')) return { ok: false, status: 403, error: 'Permissão insuficiente para emitir documentos.' }
-
-  const ownership = and(
-    eq(sofiaDrafts.id, input.draftId), eq(sofiaDrafts.senderPhone, input.senderPhone),
-    eq(sofiaDrafts.centralHubId, input.centralHubId), eq(sofiaDrafts.centralContactId, input.centralContactId),
-    eq(sofiaDrafts.centralClientId, input.centralClientId), eq(sofiaDrafts.centralRole, input.centralRole),
-  )
+  if (input.centralRole === 'god_admin' && (!externalAuthor || externalAuthor.kind !== 'central_sovereign' || externalAuthor.grantId !== input.centralGrantId || externalAuthor.hubId !== input.centralHubId || externalAuthor.senderPhone !== input.senderPhone || input.confirmed !== true || !input.reviewVersion)) return { ok: false, status: 403, error: 'Autoria e confirmação Central autenticadas obrigatórias.' }
+  if (externalAuthor && input.centralRole !== 'god_admin') return { ok: false, status: 403, error: 'Autoria incompatível.' }
+  const [localOperator] = externalAuthor ? [] : await db.select({ id: users.id }).from(users).where(and(portalActor ? eq(users.id, portalActor.id) : eq(users.phone, phone), eq(users.isActive, true))).limit(1)
+  if (!externalAuthor && !localOperator) return { ok: false, status: 403, error: 'Operador sem vínculo ativo para emitir.' }
+  const operator = { id: localOperator?.id ?? null }
+  if (!externalAuthor) {
+    const perms = await db.select({ key: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, localOperator!.id))
+    const held = new Set(perms.map(p => p.key))
+    if (!held.has('sofia.drafts.review') || !held.has('documents.issue')) return { ok: false, status: 403, error: 'Permissão insuficiente para emitir documentos.' }
+  }
+  const ownership = and(eq(sofiaDrafts.id, input.draftId), draftOwnership(input))
   const [draft] = await db.select().from(sofiaDrafts).where(and(ownership, eq(sofiaDrafts.status, SOFIA_DRAFT_STATUS.PENDING_REVIEW))).limit(1)
   if (!draft) {
     if (portalActor) {
@@ -182,7 +188,7 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
       if (replayDraft?.status === SOFIA_DRAFT_STATUS.CONVERTED) {
         const [event] = await db.select().from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, input.correlationId)).limit(1)
         const recorded = record(event?.rawPayload)
-        const [document] = event?.status === 'PROCESSED' && recorded.action === 'issue_service_draft' && recorded.draftId === replayDraft.id && uuid(recorded.documentId) && replayDraft.reviewedById === operator.id ? await db.select().from(officialDocuments).where(and(eq(officialDocuments.id, recorded.documentId as string), eq(officialDocuments.createdById, operator.id))).limit(1) : []
+        const [document] = event?.status === 'PROCESSED' && recorded.action === 'issue_service_draft' && recorded.draftId === replayDraft.id && uuid(recorded.documentId) && replayDraft.reviewedById === operator.id ? await db.select().from(officialDocuments).where(and(eq(officialDocuments.id, recorded.documentId as string), eq(officialDocuments.createdById, operator.id!))).limit(1) : []
         if (document?.status === DOC_STATUS.EMITIDO) {
           const replayPayload = record(replayDraft.draftPayload)
           return { ok: true, alreadyProcessed: true, result: { draftId: replayDraft.id, documentId: document.id, docNumber: document.docNumber, docType: document.docType, customerName: text(replayPayload.customerName), totalValue: document.totalValue, htmlSnapshot: document.htmlSnapshot ?? '' } }
@@ -195,7 +201,7 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
   if (portalActor && draft.status === SOFIA_DRAFT_STATUS.CONVERTED) {
     const [event] = await db.select().from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, input.correlationId)).limit(1)
     const recorded = record(event?.rawPayload)
-    const [document] = event?.status === 'PROCESSED' && recorded.action === 'issue_service_draft' && recorded.draftId === draft.id && uuid(recorded.documentId) && draft.reviewedById === operator.id ? await db.select().from(officialDocuments).where(and(eq(officialDocuments.id, recorded.documentId as string), eq(officialDocuments.createdById, operator.id))).limit(1) : []
+    const [document] = event?.status === 'PROCESSED' && recorded.action === 'issue_service_draft' && recorded.draftId === draft.id && uuid(recorded.documentId) && draft.reviewedById === operator.id ? await db.select().from(officialDocuments).where(and(eq(officialDocuments.id, recorded.documentId as string), eq(officialDocuments.createdById, operator.id!))).limit(1) : []
     if (!document || document.status !== DOC_STATUS.EMITIDO) return { ok: false, status: 409, error: 'Emissão anterior não corresponde ao ator e rascunho ou documento indisponível.' }
     return { ok: true, alreadyProcessed: true, result: { draftId: draft.id, documentId: document.id, docNumber: document.docNumber, docType: document.docType, customerName: text(payload.customerName), totalValue: document.totalValue, htmlSnapshot: document.htmlSnapshot ?? '' } }
   }
@@ -206,6 +212,7 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
   const boundTemplateId = text(payload.templateId, 40)
   if (input.templateId) return { ok: false, status: 422, error: 'Modelo deve ser confirmado no rascunho antes da emissão.' }
   if (input.supersedesDocumentId && !uuid(input.supersedesDocumentId)) return { ok: false, status: 422, error: 'Documento original inválido.' }
+  if (externalAuthor && (input.amount !== undefined || input.paymentMethod !== undefined)) return { ok: false, status: 422, error: 'Valores devem ser alterados no rascunho e confirmados novamente.' }
   const prepared = prepareIssueDraft(payload, input)
   if (!prepared.ok) return { ok: false, status: 422, error: 'O rascunho ainda precisa de dados antes da emissão.', pendingFields: prepared.missing.map(item => ({ key: item.field, label: item.label })) }
 
@@ -226,6 +233,7 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
   const selected = await selectSofiaDocumentTemplate(docType as DocType, boundTemplateId || undefined)
   if (portalActor && (!selected || draftReviewVersion(payload, selected) !== portalActor.reviewVersion)) return { ok: false, status: 409, error: 'Rascunho ou modelo alterado. Revise novamente.' }
   if (!selected) return { ok: false, status: 422, error: 'Não há modelo ativo para este tipo de documento.' }
+  if (externalAuthor && draftReviewVersion(payload, selected) !== input.reviewVersion) return { ok: false, status: 409, error: 'Rascunho ou modelo alterado. Confirme novamente.' }
   const stored = record(payload.documentFields)
   if (conflictingDocumentAliases(payload).length > 0) return { ok: false, status: 422, error: 'Campos do modelo conflitam com os dados revisados. Corrija o rascunho antes de emitir.' }
   if (input.documentFields !== undefined) return { ok: false, status: 422, error: 'Campos do modelo devem ser confirmados no rascunho antes da emissão.' }
@@ -249,6 +257,7 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
     const current = await selectSofiaDocumentTemplate(docType as DocType, boundTemplateId || undefined, tx)
     if (!current || draftReviewVersion(payload, current) !== draftReviewVersion(payload, selected)) return false
     if (portalActor && draftReviewVersion(payload, current) !== portalActor.reviewVersion) return false
+    if (externalAuthor && draftReviewVersion(payload, current) !== input.reviewVersion) return false
     const lockedLeads = recipient.kind === 'lead' ? await tx.select().from(leads).where(eq(leads.id, recipient.id)).for('update').limit(1) : []
     const lockedClients = recipient.kind === 'client' ? await tx.select().from(clients).where(eq(clients.id, recipient.id)).for('update').limit(1) : []
     const currentRecipient = resolveIssueRecipient(payload, lockedLeads, lockedClients)
@@ -267,15 +276,15 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
       const [lockedOriginal] = await tx.select().from(officialDocuments).where(eq(officialDocuments.id, originalId)).for('update').limit(1)
       if (!lockedOriginal || lockedOriginal.status === DOC_STATUS.ARQUIVADO || lockedOriginal.status === DOC_STATUS.ENVIADO) return { ok: false as const, status: 409, error: 'Documento original mudou e não pode ser revisado.' }
       if (lockedOriginal.docType !== docType || (recipient.kind === 'lead' ? lockedOriginal.leadId !== recipient.id : lockedOriginal.clientId !== recipient.id)) return { ok: false as const, status: 422, error: 'A revisão deve manter o destinatário e tipo do documento original.' }
-      const [created] = await tx.insert(officialDocuments).values({ docType: lockedOriginal.docType, docNumber, leadId: lockedOriginal.leadId, clientId: lockedOriginal.clientId, serviceRequestId: lockedOriginal.serviceRequestId, supersedesDocumentId: lockedOriginal.id, templateVersion: selected.version, totalValue: prepared.totalValue, amountInWords: prepared.amountInWords, paymentMethod: prepared.paymentMethod, hasWarranty: prepared.warrantyDays !== null, warrantyDays: prepared.warrantyDays, documentPayloadSnapshot: { ...documentPayload, templateId: selected.id, templateVersion: selected.version, templateSourceSha256: selected.sourceSha256, fieldSchemaSnapshot: rendered.fieldSchemaSnapshot, fieldValuesSnapshot: rendered.fieldValuesSnapshot }, htmlSnapshot: rendered.html, status: DOC_STATUS.EMITIDO, issuedAt: now, createdById: operator.id }).returning()
-      await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'document.superseded', targetType: 'official_document', targetId: created.id, metadata: { supersedesDocumentId: lockedOriginal.id } })
+      const [created] = await tx.insert(officialDocuments).values({ docType: lockedOriginal.docType, docNumber, leadId: lockedOriginal.leadId, clientId: lockedOriginal.clientId, serviceRequestId: lockedOriginal.serviceRequestId, supersedesDocumentId: lockedOriginal.id, templateVersion: selected.version, totalValue: prepared.totalValue, amountInWords: prepared.amountInWords, paymentMethod: prepared.paymentMethod, hasWarranty: prepared.warrantyDays !== null, warrantyDays: prepared.warrantyDays, documentPayloadSnapshot: { ...documentPayload, templateId: selected.id, templateVersion: selected.version, templateSourceSha256: selected.sourceSha256, fieldSchemaSnapshot: rendered.fieldSchemaSnapshot, fieldValuesSnapshot: rendered.fieldValuesSnapshot }, htmlSnapshot: rendered.html, status: DOC_STATUS.EMITIDO, issuedAt: now, createdById: operator.id, externalAuthor: externalAuthor ?? null }).returning()
+      await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'document.superseded', targetType: 'official_document', targetId: created.id, metadata: { externalAuthor: externalAuthor ?? null, supersedesDocumentId: lockedOriginal.id } })
       if (docType === 'ORCAMENTO' || docType === 'ORCAMENTO_TECNICO') {
-        if (recipient.kind === 'lead') await tx.insert(leadProposals).values({ leadId: recipient.id, officialDocumentId: created.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id })
-        else await tx.insert(proposals).values({ clientId: recipient.id, officialDocumentId: created.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id })
+        if (recipient.kind === 'lead') await tx.insert(leadProposals).values({ leadId: recipient.id, officialDocumentId: created.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id, externalAuthor: externalAuthor ?? null })
+        else await tx.insert(proposals).values({ clientId: recipient.id, officialDocumentId: created.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id, externalAuthor: externalAuthor ?? null })
       }
       await tx.update(sofiaDrafts).set({ draftPayload: portalActor ? payload : { ...payload, docType, templateId: selected.id, documentFields: confirmed, amount: prepared.payload.amount, totalAmount: prepared.payload.amount, paymentMethod: prepared.paymentMethod }, status: SOFIA_DRAFT_STATUS.CONVERTED, reviewedById: operator.id, reviewedAt: now, convertedAt: now, updatedAt: now }).where(eq(sofiaDrafts.id, draft.id))
       await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: input.correlationId, rawPayload: { action: 'issue_service_draft', draftId: draft.id, docType, documentId: created.id }, intentDetected: draft.intent, status: 'PROCESSED' })
-      await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'sofia_draft.confirmed_and_issued', targetType: 'sofia_draft', targetId: draft.id, metadata: { recipientKind: recipient.kind, recipientId: recipient.id, documentId: created.id, supersedesDocumentId: lockedOriginal.id, docType } })
+      await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'sofia_draft.confirmed_and_issued', targetType: 'sofia_draft', targetId: draft.id, metadata: { externalAuthor: externalAuthor ?? null, recipientKind: recipient.kind, recipientId: recipient.id, documentId: created.id, supersedesDocumentId: lockedOriginal.id, docType } })
       return { ok: true as const, result: { draftId: draft.id, documentId: created.id, docNumber: created.docNumber, docType: created.docType, customerName: prepared.customerName, totalValue: created.totalValue, htmlSnapshot: created.htmlSnapshot ?? '' } }
     })
   }
@@ -294,20 +303,20 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
       templateVersion: selected.version, totalValue: prepared.totalValue, amountInWords: prepared.amountInWords,
       paymentMethod: prepared.paymentMethod, hasWarranty: prepared.warrantyDays !== null, warrantyDays: prepared.warrantyDays,
       documentPayloadSnapshot: { ...documentPayload, templateId: selected.id, templateVersion: selected.version, templateSourceSha256: selected.sourceSha256, fieldSchemaSnapshot: rendered.fieldSchemaSnapshot, fieldValuesSnapshot: rendered.fieldValuesSnapshot },
-      htmlSnapshot: rendered.html, status: DOC_STATUS.EMITIDO, issuedAt: now, createdById: operator.id,
+      htmlSnapshot: rendered.html, status: DOC_STATUS.EMITIDO, issuedAt: now, createdById: operator.id, externalAuthor: externalAuthor ?? null,
     }).returning()
     if (docType === 'ORCAMENTO' || docType === 'ORCAMENTO_TECNICO') {
       if (recipient.kind === 'lead') {
-        const [proposal] = await tx.insert(leadProposals).values({ leadId: recipient.id, officialDocumentId: documentRecord.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id }).returning()
-        await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'lead_proposal.created_from_document', targetType: 'lead_proposal', targetId: proposal.id, metadata: { documentId: documentRecord.id } })
+        const [proposal] = await tx.insert(leadProposals).values({ leadId: recipient.id, officialDocumentId: documentRecord.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id, externalAuthor: externalAuthor ?? null }).returning()
+        await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'lead_proposal.created_from_document', targetType: 'lead_proposal', targetId: proposal.id, metadata: { externalAuthor: externalAuthor ?? null, documentId: documentRecord.id } })
       } else {
-        const [proposal] = await tx.insert(proposals).values({ clientId: recipient.id, officialDocumentId: documentRecord.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id }).returning()
-        await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'proposal.created_from_document', targetType: 'proposal', targetId: proposal.id, metadata: { documentId: documentRecord.id } })
+        const [proposal] = await tx.insert(proposals).values({ clientId: recipient.id, officialDocumentId: documentRecord.id, title: `Orçamento — ${prepared.customerName}`, description: text(payload.problemReported), totalValue: prepared.totalValue, status: 'DRAFT', createdById: operator.id, externalAuthor: externalAuthor ?? null }).returning()
+        await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'proposal.created_from_document', targetType: 'proposal', targetId: proposal.id, metadata: { externalAuthor: externalAuthor ?? null, documentId: documentRecord.id } })
       }
     }
     await tx.update(sofiaDrafts).set({ draftPayload: portalActor ? payload : { ...payload, docType, templateId: selected.id, documentFields: confirmed, amount: prepared.payload.amount, totalAmount: prepared.payload.amount, paymentMethod: prepared.paymentMethod }, status: SOFIA_DRAFT_STATUS.CONVERTED, reviewedById: operator.id, reviewedAt: now, convertedAt: now, updatedAt: now }).where(eq(sofiaDrafts.id, draft.id))
     await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: input.correlationId, rawPayload: { action: 'issue_service_draft', draftId: draft.id, docType, documentId: documentRecord.id }, intentDetected: draft.intent, status: 'PROCESSED' })
-    await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'sofia_draft.confirmed_and_issued', targetType: 'sofia_draft', targetId: draft.id, metadata: { recipientKind: recipient.kind, recipientId: recipient.id, documentId: documentRecord.id, docType } })
+    await tx.insert(auditEvents).values({ actorUserId: operator.id, action: 'sofia_draft.confirmed_and_issued', targetType: 'sofia_draft', targetId: draft.id, metadata: { externalAuthor: externalAuthor ?? null, recipientKind: recipient.kind, recipientId: recipient.id, documentId: documentRecord.id, docType } })
     return { ok: true as const, result: { draftId: draft.id, documentId: documentRecord.id, docNumber: documentRecord.docNumber, docType: docType as string, customerName: prepared.customerName, totalValue: prepared.totalValue, htmlSnapshot: rendered.html } }
   })
 }

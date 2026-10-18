@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { accessPortalIdentity, accessPortalLogout, activeAccessService } from './access-v1/runtime.mjs';
 import { randomBytes } from 'crypto';
 import { eq, gte, and } from 'drizzle-orm';
 import { db, sessions, users } from '../db';
@@ -14,6 +15,9 @@ export interface SessionUser {
   role: string;
   jobTitle: string | null;
   photoUrl: string | null;
+  accessCapabilities?:string[];
+  authority_mode?:string;
+  accessRole?:{kind:string;key?:string;role_ref?:string};
 }
 
 /**
@@ -50,6 +54,8 @@ export async function createSession(userId: string): Promise<string> {
 export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const cookieStore = await cookies();
+    const pilotToken=process.env.ACCESS_V1_ENABLED==='true'?cookieStore.get('access_v1')?.value:null;
+    if(pilotToken){const user=await accessPortalIdentity(pilotToken,'hub');return user?{authority_mode:user.authority_mode,accessRole:user.accessRole,id:user.id,name:user.name,phone:user.phone,email:user.email,role:user.role,jobTitle:user.job_title,photoUrl:user.photo_url,accessCapabilities:user.capabilities}:null;}
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     if (!token) return null;
 
@@ -82,6 +88,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       return null;
     }
 
+    // Pilot sessions use their live canonical authority, never a legacy cookie.
+    if (process.env.ACCESS_V1_ENABLED==='true' && await activeAccessService('hub')?.isPilotAccount(activeSessions[0].user.id)) return null;
     const { isActive: _isActive, ...sessionUser } = activeSessions[0].user;
     return sessionUser;
   } catch (error) {
@@ -96,6 +104,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 export async function destroySession(): Promise<void> {
   try {
     const cookieStore = await cookies();
+    const pilot=process.env.ACCESS_V1_ENABLED==='true'?cookieStore.get('access_v1')?.value:null;
+    if(pilot){await accessPortalLogout(pilot,'hub');cookieStore.delete('access_v1');}
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
     if (token && db) {

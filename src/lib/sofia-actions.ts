@@ -29,9 +29,9 @@ const OptionalOmissionConsent = z.partialRecord(
 ).refine(values => Object.keys(values).length <= 9, 'Campos demais.')
 const recipientFields = { leadId: z.string().uuid().optional(), clientId: z.string().uuid().optional() }
 const exclusiveRecipient = (value: {leadId?: string; clientId?: string}) => !(value.leadId && value.clientId)
-export const SofiaListServicesRequest = central.extend({ action: z.literal('list_services') }).strict()
-export const SofiaListActiveTeamsRequest = central.extend({ action: z.literal('list_active_teams') }).strict()
-export const SofiaCreateDraftRequest = central.extend({
+export const SofiaListServicesRequest = z.union([central.extend({ action: z.literal('list_services') }).strict(), godAdminCentral.extend({ action: z.literal('list_services') }).strict()])
+export const SofiaListActiveTeamsRequest = z.union([central.extend({ action: z.literal('list_active_teams') }).strict(), godAdminCentral.extend({ action: z.literal('list_active_teams') }).strict()])
+const createDraftFields = z.object({
   action: z.literal('create_service_draft'),
   ...recipientFields,
   optionalFieldConsent: OptionalOmissionConsent.optional(),
@@ -57,9 +57,10 @@ export const SofiaCreateDraftRequest = central.extend({
   problemReported: z.string().trim().min(1).max(2000).optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
-}).strict().refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
+}).strict()
+export const SofiaCreateDraftRequest = z.union([central.extend(createDraftFields.shape), godAdminCentral.extend(createDraftFields.shape).extend({ centralContactId: z.undefined().optional(), centralClientId: z.undefined().optional() })]).refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
 
-export const SofiaUpdateDraftRequest = central.extend({
+const updateDraftFields = z.object({
   action: z.literal('update_service_draft'),
   ...recipientFields,
   optionalFieldConsent: OptionalOmissionConsent.optional(),
@@ -78,15 +79,19 @@ export const SofiaUpdateDraftRequest = central.extend({
   problemReported: z.string().trim().min(1).max(2000).optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
-}).strict().refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
-export const SofiaGetDocumentTemplateRequest = central.extend({
+}).strict()
+export const SofiaUpdateDraftRequest = z.union([central.extend(updateDraftFields.shape), godAdminCentral.extend(updateDraftFields.shape).extend({ centralContactId: z.undefined().optional(), centralClientId: z.undefined().optional() })]).refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
+const documentTemplateFields = {
   action: z.literal('get_document_template'),
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']),
   templateId: z.string().uuid().optional(),
-}).strict()
-export const SofiaIssueDraftRequest = central.extend({
+}
+export const SofiaGetDocumentTemplateRequest = z.union([central.extend(documentTemplateFields).strict(), godAdminCentral.extend(documentTemplateFields).strict()])
+const issueDraftFields = z.object({
   action: z.literal('issue_service_draft'),
   draftId: z.string().uuid(),
+  reviewVersion: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  confirmed: z.literal(true).optional(),
   // Omitted references resolve from the owned draft, never from a new default.
   docType: z.enum(['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO']).optional(),
   amount: z.string().trim().min(1).max(32).optional(),
@@ -96,6 +101,7 @@ export const SofiaIssueDraftRequest = central.extend({
   supersedesDocumentId: z.string().uuid().optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
 }).strict()
+export const SofiaIssueDraftRequest = z.union([central.extend(issueDraftFields.shape), godAdminCentral.extend(issueDraftFields.shape).extend({ centralContactId: z.undefined().optional(), centralClientId: z.undefined().optional() })])
 export const SofiaActionRequest = z.union([SofiaGetDocumentTemplateRequest, SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest, SofiaIssueDraftRequest])
 export type SofiaActionRequest = z.infer<typeof SofiaActionRequest>
 
@@ -131,7 +137,7 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
   const godAdmin = body.centralRole === 'god_admin'
   if (godAdmin) {
     const envelope = Object.fromEntries(Object.entries(body).filter(([key]) => ['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key)))
-    if (!['list_clients', 'get_client_profile', 'update_client'].includes(String(body.action)) || !godAdminCentral.safeParse(envelope).success || Object.keys(body).some(key => !['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone', 'action', 'data'].includes(key))) return { ok: false, error: 'Autoridade Central inválida.' }
+    if (!godAdminCentral.safeParse(envelope).success || Object.keys(body).some(key => !['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone', 'action', 'data'].includes(key))) return { ok: false, error: 'Autoridade Central inválida.' }
   } else if (!['hub_owner', 'hub_admin', 'hub_operator'].includes(clean(body.centralRole, 32))) return { ok: false, error: 'Papel central não autorizado.' }
   if (!/^\+?[1-9]\d{7,14}$/.test(clean(body.senderPhone, 20))) return { ok: false, error: 'Identidade de origem inválida.' }
   const action = body.action as SofiaClientAction
@@ -186,7 +192,12 @@ const decimal = (value: unknown) => {
   const number = Number(normalized)
   return Number.isFinite(number) && number > 0 && number <= 10000000 ? normalized : null
 }
+const trustedGodAdminEnvelope = (body: Record<string, unknown>) => {
+  const identity = Object.fromEntries(Object.entries(body).filter(([key]) => ['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key)))
+  return godAdminCentral.safeParse(identity).success && Object.keys(body).every(key => ['centralGrantId', 'centralHubId', 'centralRole', 'senderPhone', 'action', 'data'].includes(key))
+}
 const trustedDomainEnvelope = (body: Record<string, unknown>) =>
+  body.centralRole === 'god_admin' ? trustedGodAdminEnvelope(body) :
   ['hub_owner', 'hub_admin', 'hub_operator'].includes(clean(body.centralRole, 32)) &&
   /^\+?[1-9]\d{7,14}$/.test(clean(body.senderPhone, 20)) &&
   isUuid(body.centralContactId) && isUuid(body.centralClientId) && isUuid(body.centralHubId)
@@ -200,7 +211,7 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
   let data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data as Record<string, unknown> : {}
   const strictSchema = ({ list_agenda: agendaQuerySchema, list_stock: stockQuerySchema, adjust_stock: stockAdjustmentSchema, create_financial_entry: financialCreateSchema, update_financial_entry: financialUpdateSchema, list_financial_entries: financialQuerySchema, get_financial_summary: financialQuerySchema } as Record<string, z.ZodType>)[action]
   if (strictSchema) {
-    if (Object.keys(body).some(key => !['action', 'data', 'centralContactId', 'centralClientId', 'centralHubId', 'centralRole', 'senderPhone'].includes(key))) return { ok: false, error: 'Campo de envelope não permitido.' }
+    if (Object.keys(body).some(key => !(body.centralRole === 'god_admin' ? ['action', 'data', 'centralGrantId', 'centralHubId', 'centralRole', 'senderPhone'] : ['action', 'data', 'centralContactId', 'centralClientId', 'centralHubId', 'centralRole', 'senderPhone']).includes(key))) return { ok: false, error: 'Campo de envelope não permitido.' }
     const parsed = strictSchema.safeParse(body.data === undefined ? {} : body.data)
     if (!parsed.success) return { ok: false, error: 'Campos ou filtros inválidos para esta ação.' }
     data = parsed.data as Record<string, unknown>

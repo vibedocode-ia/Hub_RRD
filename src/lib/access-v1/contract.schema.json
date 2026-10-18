@@ -1,0 +1,946 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hvd:access:v1",
+  "title": "Contrato PROPOSTO HVD Access v1 — mensagens federadas",
+  "description": "Formato somente; assinatura, audience registrada, autoridade, CAS e tempos exigem runtime. Nenhuma credencial em mensagens.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CatalogMessage"
+    },
+    {
+      "$ref": "#/$defs/CommandMessage"
+    },
+    {
+      "$ref": "#/$defs/EventMessage"
+    },
+    {
+      "$ref": "#/$defs/AckMessage"
+    }
+  ],
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "OpaqueRef": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{22,160}$"
+    },
+    "Counter": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "Capability": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 100
+    },
+    "Version": {
+      "type": "object",
+      "properties": {
+        "federation_epoch": {
+          "$ref": "#/$defs/Counter"
+        },
+        "central_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "local_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "block_generation": {
+          "$ref": "#/$defs/Counter"
+        },
+        "membership_generation": {
+          "$ref": "#/$defs/Counter"
+        }
+      },
+      "required": [
+        "federation_epoch",
+        "central_revision",
+        "local_revision",
+        "block_generation",
+        "membership_generation"
+      ],
+      "additionalProperties": false
+    },
+    "Actor": {
+      "type": "object",
+      "properties": {
+        "identity_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "authority": {
+          "type": "string",
+          "enum": [
+            "godadmin",
+            "hub_local"
+          ]
+        },
+        "authorization_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        }
+      },
+      "required": [
+        "identity_ref",
+        "authority",
+        "authorization_ref"
+      ],
+      "additionalProperties": false
+    },
+    "Role": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "system"
+              ]
+            },
+            "key": {
+              "type": "string",
+              "enum": [
+                "superadmin",
+                "admin",
+                "operator"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "custom"
+              ]
+            },
+            "role_ref": {
+              "$ref": "#/$defs/Uuid"
+            },
+            "role_revision": {
+              "$ref": "#/$defs/Counter"
+            }
+          },
+          "required": [
+            "kind",
+            "role_ref",
+            "role_revision"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AccessState": {
+      "type": "object",
+      "properties": {
+        "local_user_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "identity_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "membership_status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "revoked"
+          ]
+        },
+        "local_disabled": {
+          "type": "boolean"
+        },
+        "central_blocked": {
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          },
+          "uniqueItems": true,
+          "maxItems": 256
+        },
+        "version": {
+          "$ref": "#/$defs/Version"
+        }
+      },
+      "required": [
+        "local_user_ref",
+        "identity_ref",
+        "membership_status",
+        "local_disabled",
+        "central_blocked",
+        "role",
+        "capabilities",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "Proof": {
+      "type": "object",
+      "properties": {
+        "proof_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "issuer": {
+          "type": "string",
+          "enum": [
+            "central"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "hub_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "actor_identity_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "grant_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "grant_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/Counter"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/Counter"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "confirmation_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        }
+      },
+      "required": [
+        "proof_id",
+        "issuer",
+        "audience",
+        "hub_id",
+        "actor_identity_ref",
+        "grant_ref",
+        "grant_revision",
+        "issued_at",
+        "expires_at",
+        "capabilities",
+        "confirmation_ref",
+        "signing_key_id",
+        "signature"
+      ],
+      "additionalProperties": false
+    },
+    "CommandPayload": {
+      "type": "object",
+      "properties": {
+        "command_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "membership.set",
+            "membership.revoke",
+            "membership.block",
+            "membership.clear_block"
+          ]
+        },
+        "actor": {
+          "$ref": "#/$defs/Actor"
+        },
+        "proof_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "expected": {
+          "$ref": "#/$defs/Version"
+        },
+        "central_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "block_generation": {
+          "$ref": "#/$defs/Counter"
+        },
+        "membership_generation": {
+          "$ref": "#/$defs/Counter"
+        },
+        "desired": {
+          "$ref": "#/$defs/AccessState"
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": [
+            "requested",
+            "reconciliation",
+            "security",
+            "explicit_rebase"
+          ]
+        },
+        "rebase_of": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command_id",
+        "operation",
+        "actor",
+        "proof_ref",
+        "target_ref",
+        "expected",
+        "central_revision",
+        "block_generation",
+        "membership_generation",
+        "desired",
+        "reason_code",
+        "rebase_of"
+      ],
+      "additionalProperties": false
+    },
+    "MembershipEvent": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "membership.changed"
+          ]
+        },
+        "aggregate_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "actor": {
+          "$ref": "#/$defs/Actor"
+        },
+        "previous": {
+          "$ref": "#/$defs/Version"
+        },
+        "state": {
+          "$ref": "#/$defs/AccessState"
+        },
+        "causation_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "change": {
+          "type": "string",
+          "enum": [
+            "create",
+            "role_change",
+            "disable",
+            "enable",
+            "revoke",
+            "regrant",
+            "block",
+            "clear_block"
+          ]
+        }
+      },
+      "required": [
+        "event_type",
+        "aggregate_ref",
+        "actor",
+        "previous",
+        "state",
+        "causation_ref",
+        "change"
+      ],
+      "additionalProperties": false
+    },
+    "ProvisionalEvent": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "identity.provisional_created"
+          ]
+        },
+        "provisional_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "local_user_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "version": {
+          "$ref": "#/$defs/Version"
+        },
+        "onboarding_status": {
+          "type": "string",
+          "enum": [
+            "verification_pending",
+            "local_verified"
+          ]
+        },
+        "actor": {
+          "$ref": "#/$defs/Actor"
+        }
+      },
+      "required": [
+        "event_type",
+        "provisional_ref",
+        "local_user_ref",
+        "version",
+        "onboarding_status",
+        "actor"
+      ],
+      "additionalProperties": false
+    },
+    "IdentityEvent": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "identity.linked",
+            "identity.updated"
+          ]
+        },
+        "identity_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "local_user_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "identity_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "verified_claims_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "link_decision_ref": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "version": {
+          "$ref": "#/$defs/Version"
+        }
+      },
+      "required": [
+        "event_type",
+        "identity_ref",
+        "local_user_ref",
+        "identity_revision",
+        "verified_claims_ref",
+        "link_decision_ref",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "AckPayload": {
+      "type": "object",
+      "properties": {
+        "acked_message_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "command_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "applied",
+            "duplicate",
+            "conflict",
+            "rejected",
+            "stale",
+            "fenced"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "already_applied",
+            "version_conflict",
+            "blocked",
+            "revoked",
+            "invalid_authority",
+            "expired_proof",
+            "unknown_target",
+            "epoch_mismatch",
+            "stale_revision",
+            "schema_invalid",
+            "identity_collision"
+          ]
+        },
+        "desired_version": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Version"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applied_version": {
+          "$ref": "#/$defs/Version"
+        },
+        "state_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "conflict_ref": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OpaqueRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "acked_message_id",
+        "command_id",
+        "status",
+        "reason_code",
+        "desired_version",
+        "applied_version",
+        "state_digest",
+        "conflict_ref"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogPayload": {
+      "type": "object",
+      "properties": {
+        "catalog_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "entries": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_ref": {
+                "$ref": "#/$defs/OpaqueRef"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "knowledge",
+                  "memory",
+                  "skill"
+                ]
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "hub_private",
+                  "central_private",
+                  "shared_opt_in"
+                ]
+              },
+              "owner_ref": {
+                "$ref": "#/$defs/OpaqueRef"
+              },
+              "version": {
+                "$ref": "#/$defs/Counter"
+              },
+              "availability": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "unavailable",
+                  "not_shared"
+                ]
+              },
+              "provenance_ref": {
+                "$ref": "#/$defs/OpaqueRef"
+              },
+              "authorized": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source_ref",
+              "kind",
+              "scope",
+              "owner_ref",
+              "version",
+              "availability",
+              "provenance_ref",
+              "authorized"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "catalog_revision",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogMessage": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "hvd.access.v1"
+        },
+        "message_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "hub_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "issuer": {
+          "type": "string",
+          "enum": [
+            "central",
+            "hub"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "issued_at": {
+          "$ref": "#/$defs/Counter"
+        },
+        "nonce": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        },
+        "kind": {
+          "const": "catalog"
+        },
+        "payload": {
+          "$ref": "#/$defs/CatalogPayload"
+        }
+      },
+      "required": [
+        "protocol",
+        "message_id",
+        "hub_id",
+        "issuer",
+        "audience",
+        "issued_at",
+        "nonce",
+        "signing_key_id",
+        "signature",
+        "kind",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "CommandMessage": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "hvd.access.v1"
+        },
+        "message_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "hub_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "issuer": {
+          "type": "string",
+          "enum": [
+            "central",
+            "hub"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "issued_at": {
+          "$ref": "#/$defs/Counter"
+        },
+        "nonce": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        },
+        "kind": {
+          "const": "command"
+        },
+        "payload": {
+          "$ref": "#/$defs/CommandPayload"
+        }
+      },
+      "required": [
+        "protocol",
+        "message_id",
+        "hub_id",
+        "issuer",
+        "audience",
+        "issued_at",
+        "nonce",
+        "signing_key_id",
+        "signature",
+        "kind",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "EventMessage": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "hvd.access.v1"
+        },
+        "message_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "hub_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "issuer": {
+          "type": "string",
+          "enum": [
+            "central",
+            "hub"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "issued_at": {
+          "$ref": "#/$defs/Counter"
+        },
+        "nonce": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        },
+        "kind": {
+          "const": "event"
+        },
+        "payload": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/MembershipEvent"
+            },
+            {
+              "$ref": "#/$defs/ProvisionalEvent"
+            },
+            {
+              "$ref": "#/$defs/IdentityEvent"
+            },
+            {
+              "$ref": "#/$defs/GodAdminEvent"
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocol",
+        "message_id",
+        "hub_id",
+        "issuer",
+        "audience",
+        "issued_at",
+        "nonce",
+        "signing_key_id",
+        "signature",
+        "kind",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "AckMessage": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": "hvd.access.v1"
+        },
+        "message_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "hub_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "issuer": {
+          "type": "string",
+          "enum": [
+            "central",
+            "hub"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "issued_at": {
+          "$ref": "#/$defs/Counter"
+        },
+        "nonce": {
+          "$ref": "#/$defs/OpaqueRef"
+        },
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        },
+        "kind": {
+          "const": "ack"
+        },
+        "payload": {
+          "$ref": "#/$defs/AckPayload"
+        }
+      },
+      "required": [
+        "protocol",
+        "message_id",
+        "hub_id",
+        "issuer",
+        "audience",
+        "issued_at",
+        "nonce",
+        "signing_key_id",
+        "signature",
+        "kind",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "GodAdminEvent": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "godadmin.grant_changed"
+          ]
+        },
+        "grant_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "identity_ref": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "grant_revision": {
+          "$ref": "#/$defs/Counter"
+        },
+        "grant_status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "suspended",
+            "revoked"
+          ]
+        },
+        "protected_principal": {
+          "type": "boolean"
+        },
+        "federation_epoch": {
+          "$ref": "#/$defs/Counter"
+        }
+      },
+      "required": [
+        "event_type",
+        "grant_ref",
+        "identity_ref",
+        "grant_revision",
+        "grant_status",
+        "protected_principal",
+        "federation_epoch"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -25,12 +25,14 @@ test('RRD rejects forged GodAdmin on ordinary service token, other Hub, or untru
   ]) assert.equal(authorizeRrdCentralEnvelope({ ...central, action: 'list_clients' }, policy), false)
   assert.equal(authorizeRrdCentralEnvelope({ ...central, centralRole: 'hub_owner', action: 'list_clients' }, { expectedHubId: hubId, trustedGodAdmin: true }), false)
   assert.equal(authorizeRrdCentralEnvelope({ ...central, senderPhone: 'bad', action: 'list_clients' }, { expectedHubId: hubId, trustedGodAdmin: true }), false)
-  assert.equal(authorizeRrdCentralEnvelope({ ...central, action: 'archive_client' }, { expectedHubId: hubId, trustedGodAdmin: true }), false)
+  assert.equal(authorizeRrdCentralEnvelope({ ...central, action: 'archive_client' }, { expectedHubId: hubId, trustedGodAdmin: true }), true)
 })
 
-test('RRD owner and operator parsers are unchanged; GodAdmin cannot expand unrelated operations', () => {
+test('RRD owner and operator parsers are unchanged; GodAdmin uses domain validations without membership', () => {
   const old = { centralHubId: hubId, centralContactId: grantId, centralClientId: grantId, senderPhone: actor, centralRole: 'hub_owner', action: 'list_clients' }
   assert.equal(parseSofiaClientAction(old).ok, true)
   assert.equal(parseSofiaDomainAction({ ...central, action: 'archive_vehicle', data: {} }).ok, false)
+  assert.equal(parseSofiaDomainAction({ ...central, action: 'create_team', data: { name: 'Fixture', leaderName: 'Leader' } }).ok, true)
+  assert.equal(SofiaActionRequest.safeParse({ ...central, action: 'list_services' }).success, true)
   assert.equal(SofiaActionRequest.safeParse({ ...central, action: 'create_service_draft', conversationSummary: 'fixture' }).success, false)
 })

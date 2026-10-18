@@ -1,3 +1,4 @@
+import { legacyPeopleGuard } from '@/lib/access-v1/legacy-management-guard'
 import { NextRequest, NextResponse } from 'next/server'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { auditEvents, db, sessions, userPermissions, users } from '@/db'
@@ -23,6 +24,7 @@ function safePerson(row: Omit<typeof users.$inferSelect, 'passwordHash' | 'jobTi
 }
 
 export async function GET() {
+  const pilotGuard=await legacyPeopleGuard();if(pilotGuard)return pilotGuard
   const actor = await getCurrentLocalAccess()
   if (!actor) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
@@ -40,6 +42,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const pilotGuard=await legacyPeopleGuard();if(pilotGuard)return pilotGuard
   const actor = await getCurrentLocalAccess()
   if (!actor) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   if (!actor.permissions.includes('people.manage')) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })

@@ -8,6 +8,8 @@ import { normalizeDocumentDraft, documentDraftContract, OPTIONAL_FIELD_CONSENT }
 import { SofiaActionRequest, pendingDraftFields, digits, parseSofiaClientAction, parseSofiaDomainAction, safeClientSummary, safeStockSummary, safeVehicleSummary } from '@/lib/sofia-actions'
 import { canExecuteRrdSofiaAction, normalizeRrdPhone, SOFIA_LOCAL_PERMISSION } from '@/lib/sofia-local-access'
 import { selectSofiaDocumentTemplate, publicSofiaDocumentTemplate, unknownDocumentFields } from '@/lib/sofia-document-template'
+import { draftOwnership, type CentralDocumentAuthor } from '@/lib/sofia-document-author'
+import { reviewPortalDraft } from '@/lib/sofia-issue-draft'
 import { issueDraftDocument } from '@/lib/sofia-issue-draft'
 import { archiveOfficialDocument, supersedeOfficialDocument } from '@/lib/official-document-lifecycle'
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
@@ -76,26 +78,31 @@ export async function POST(req: NextRequest) {
     }
   }
   try {
+    const externalAuthor: CentralDocumentAuthor | undefined = godAdmin ? { kind: 'central_sovereign', grantId: String(envelope.centralGrantId), hubId: String(envelope.centralHubId), senderPhone: String(envelope.senderPhone) } : undefined
     if (envelope.action === 'get_person_profile' || envelope.action === 'update_person_profile') {
       const parsed = SofiaManagedPersonProfileRequest.safeParse(rawBody)
       if (!parsed.success) return reply({ success: false, error: 'Envelope ou dados de perfil inválidos.' }, 422, correlationId)
-      const result = await executeSofiaManagedPersonProfile(parsed.data.action, parsed.data.data, parsed.data.senderPhone, { phoneIdentityMode: 'central_phone_identity' })
+      const result = await executeSofiaManagedPersonProfile(parsed.data.action, parsed.data.data, parsed.data.senderPhone, { phoneIdentityMode: 'central_phone_identity', ...(godAdmin ? { sovereign: { grantId: String(envelope.centralGrantId), hubId: String(envelope.centralHubId) } } : {}) })
       return reply({ ...result.body, action: parsed.data.action }, result.status, correlationId)
     }
     if (envelope.action === 'get_my_profile' || envelope.action === 'update_my_profile') {
       const parsed = SofiaPersonProfileRequest.safeParse(rawBody)
       if (!parsed.success) return reply({ success: false, error: 'Envelope ou dados de perfil inválidos.' }, 422, correlationId)
       const input = parsed.data
-      const result = await executeSofiaPersonProfile(input.action, input.data, input.senderPhone)
+      const result = godAdmin
+        ? await executeSofiaManagedPersonProfile(input.action === 'get_my_profile' ? 'get_person_profile' : 'update_person_profile', { targetPhone: input.senderPhone, ...(input.action === 'update_my_profile' ? { patch: input.data } : {}) }, input.senderPhone, { sovereign: { grantId: String(envelope.centralGrantId), hubId: String(envelope.centralHubId) } })
+        : await executeSofiaPersonProfile(input.action, input.data, input.senderPhone)
       return reply({ ...result.body, action: input.action }, result.status, correlationId)
     }
     const operational = SofiaActionRequest.safeParse(rawBody)
     if (operational.success) {
       const input = operational.data
       if (input.action === 'get_document_template') {
-        const [operator] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, normalizeRrdPhone(input.senderPhone)!), eq(users.isActive, true))).limit(1)
-        const permissions = operator ? await db.select({ key: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, operator.id)) : []
-        if (!permissions.some(p => p.key === 'documents.issue') || !permissions.some(p => p.key === SOFIA_LOCAL_PERMISSION)) return reply({ success: false, error: 'Permissão insuficiente para consultar o modelo.' }, 403, correlationId)
+        if (!godAdmin) {
+          const [operator] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, normalizeRrdPhone(input.senderPhone)!), eq(users.isActive, true))).limit(1)
+          const permissions = operator ? await db.select({ key: userPermissions.permissionKey }).from(userPermissions).where(eq(userPermissions.userId, operator.id)) : []
+          if (!permissions.some(p => p.key === 'documents.issue') || !permissions.some(p => p.key === SOFIA_LOCAL_PERMISSION)) return reply({ success: false, error: 'Permissão insuficiente para consultar o modelo.' }, 403, correlationId)
+        }
         const template = await selectSofiaDocumentTemplate(input.docType, input.templateId)
         if (!template) return reply({ success: false, error: 'Modelo ativo não encontrado para este tipo de documento.' }, 404, correlationId)
         return reply({ success: true, action: input.action, template: publicSofiaDocumentTemplate(template) }, 200, correlationId)
@@ -109,15 +116,16 @@ export async function POST(req: NextRequest) {
         return reply({ success: true, action: input.action, teams: activeTeams }, 200, correlationId)
       }
       if (input.action === 'update_service_draft') {
-        const [replay] = await db.select({ id: sofiaEvents.id }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
-        if (replay) return reply({ success: true, alreadyProcessed: true, action: input.action }, 200, correlationId)
+        const [replay] = await db.select().from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
+        if (replay) {
+          const [owned] = await db.select({ id: sofiaDrafts.id }).from(sofiaDrafts).where(and(eq(sofiaDrafts.id, input.draftId), draftOwnership(input))).limit(1)
+          const recorded = replay.rawPayload as Record<string, unknown>
+          if (!owned || recorded?.action !== input.action || recorded?.draftId !== input.draftId) return reply({ success: false, error: 'Chave não corresponde ao rascunho e autoria.' }, 409, correlationId)
+          return reply({ success: true, alreadyProcessed: true, action: input.action }, 200, correlationId)
+        }
         const [draft] = await db.select().from(sofiaDrafts).where(and(
           eq(sofiaDrafts.id, input.draftId),
-          eq(sofiaDrafts.senderPhone, input.senderPhone),
-          eq(sofiaDrafts.centralHubId, input.centralHubId),
-          eq(sofiaDrafts.centralContactId, input.centralContactId),
-          eq(sofiaDrafts.centralClientId, input.centralClientId),
-          eq(sofiaDrafts.centralRole, input.centralRole),
+          draftOwnership(input),
           sql`${sofiaDrafts.status} in (${SOFIA_DRAFT_STATUS.COLLECTING}, ${SOFIA_DRAFT_STATUS.PENDING_REVIEW})`,
         )).limit(1)
         if (!draft) return reply({ success: false, error: 'Rascunho em coleta não encontrado para esta conversa.' }, 409, correlationId)
@@ -138,19 +146,23 @@ export async function POST(req: NextRequest) {
           await tx.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: correlationId, rawPayload: { action: input.action, draftId: draft.id, receivedFields: Object.keys(input).filter(key => !['conversationSummary'].includes(key)) }, intentDetected: draft.intent, status })
           return [row]
         })
-        return reply({ success: true, action: input.action, draftId: updated.id, pendingFields, confirmedValues: contract.confirmedValues, missingRequiredFields: contract.missingRequiredFields, missingOptionalFields: contract.missingOptionalFields, optionalOmissionConsent: contract.optionalOmissionConsent, nextAction: contract.nextAction }, 200, correlationId)
+        return reply({ success: true, action: input.action, draftId: updated.id, review: await reviewPortalDraft(updated.id, next), pendingFields, confirmedValues: contract.confirmedValues, missingRequiredFields: contract.missingRequiredFields, missingOptionalFields: contract.missingOptionalFields, optionalOmissionConsent: contract.optionalOmissionConsent, nextAction: contract.nextAction }, 200, correlationId)
       }
       if (input.action === 'issue_service_draft') {
         const [replay] = await db.select({ rawPayload: sofiaEvents.rawPayload, senderPhone: sofiaEvents.senderPhone, status: sofiaEvents.status }).from(sofiaEvents).where(eq(sofiaEvents.idempotencyKey, correlationId)).limit(1)
         if (replay) {
           const recorded = replay.rawPayload as Record<string, unknown> | null
           if (replay.senderPhone !== input.senderPhone || replay.status !== 'PROCESSED' || recorded?.action !== 'issue_service_draft' || recorded.draftId !== input.draftId || typeof recorded.documentId !== 'string') return reply({ success: false, action: input.action, error: 'Reprocessamento inconclusivo: chave não corresponde à emissão solicitada.' }, 409, correlationId)
-          const [owned] = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status }).from(sofiaDrafts).where(and(eq(sofiaDrafts.id, input.draftId), eq(sofiaDrafts.senderPhone, input.senderPhone), eq(sofiaDrafts.centralHubId, input.centralHubId), eq(sofiaDrafts.centralContactId, input.centralContactId), eq(sofiaDrafts.centralClientId, input.centralClientId), eq(sofiaDrafts.centralRole, input.centralRole))).limit(1)
-          const [document] = owned && owned.status === SOFIA_DRAFT_STATUS.CONVERTED ? await db.select({ id: officialDocuments.id, docNumber: officialDocuments.docNumber, docType: officialDocuments.docType, totalValue: officialDocuments.totalValue, htmlSnapshot: officialDocuments.htmlSnapshot, createdById: officialDocuments.createdById }).from(officialDocuments).where(eq(officialDocuments.id, recorded.documentId)).limit(1) : []
+          const [owned] = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status }).from(sofiaDrafts).where(and(eq(sofiaDrafts.id, input.draftId), draftOwnership(input))).limit(1)
+          const [document] = owned && owned.status === SOFIA_DRAFT_STATUS.CONVERTED ? await db.select({ id: officialDocuments.id, docNumber: officialDocuments.docNumber, docType: officialDocuments.docType, totalValue: officialDocuments.totalValue, htmlSnapshot: officialDocuments.htmlSnapshot, createdById: officialDocuments.createdById, externalAuthor: officialDocuments.externalAuthor }).from(officialDocuments).where(eq(officialDocuments.id, recorded.documentId)).limit(1) : []
           if (!document) return reply({ success: false, action: input.action, error: 'Reprocessamento inconclusivo: documento não encontrado para este rascunho.' }, 409, correlationId)
-          const operatorPhone = input.senderPhone.replace(/\D/g, '')
-          const [actor] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, operatorPhone), eq(users.isActive, true))).limit(1)
-          if (!actor || actor.id !== document.createdById) return reply({ success: false, action: input.action, error: 'Reprocessamento inconclusivo: emissor não corresponde ao documento.' }, 409, correlationId)
+          if (externalAuthor) {
+            const author = document.externalAuthor as CentralDocumentAuthor | null
+            if (!author || author.kind !== externalAuthor.kind || author.grantId !== externalAuthor.grantId || author.hubId !== externalAuthor.hubId || author.senderPhone !== externalAuthor.senderPhone) return reply({ success: false, error: 'Autoria da emissão não corresponde.' }, 409, correlationId)
+          } else {
+            const [actor] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, input.senderPhone.replace(/\D/g, '')), eq(users.isActive, true))).limit(1)
+            if (!actor || actor.id !== document.createdById) return reply({ success: false, error: 'Emissor não corresponde.' }, 409, correlationId)
+          }
           return reply({ success: true, alreadyProcessed: true, action: input.action, draftId: owned!.id, documentId: document.id, docNumber: document.docNumber, docType: document.docType, totalValue: document.totalValue, htmlSnapshot: document.htmlSnapshot }, 200, correlationId)
         }
         const issued = await issueDraftDocument({
@@ -160,6 +172,9 @@ export async function POST(req: NextRequest) {
           centralContactId: input.centralContactId,
           centralClientId: input.centralClientId,
           centralRole: input.centralRole,
+          centralGrantId: 'centralGrantId' in input ? input.centralGrantId : undefined,
+          confirmed: input.confirmed,
+          reviewVersion: input.reviewVersion,
           docType: input.docType,
           amount: input.amount,
           paymentMethod: input.paymentMethod,
@@ -167,7 +182,7 @@ export async function POST(req: NextRequest) {
           documentFields: input.documentFields,
           supersedesDocumentId: input.supersedesDocumentId,
           correlationId,
-        })
+        }, externalAuthor)
         if (!issued.ok) {
           if (issued.pendingFields) return reply({ success: false, operationCompleted: false, action: input.action, draftId: input.draftId, nextAction: 'collect_document_fields', pendingFields: issued.pendingFields, error: issued.error }, issued.status, correlationId)
           return reply({ success: false, action: input.action, error: issued.error }, issued.status, correlationId)
@@ -184,8 +199,10 @@ export async function POST(req: NextRequest) {
           : (process.env.COOLIFY_URL || '').replace(/\/+$/, '')
         return reply({ success: true, action: input.action, ...issued.result, assetBaseUrl }, 201, correlationId)
       }
-      const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields, draftPayload: sofiaDrafts.draftPayload }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
+      const existing = await db.select({ id: sofiaDrafts.id, status: sofiaDrafts.status, pendingFields: sofiaDrafts.pendingFields, draftPayload: sofiaDrafts.draftPayload }).from(sofiaDrafts).where(and(eq(sofiaDrafts.correlationId, correlationId), draftOwnership(input))).limit(1)
       if (existing[0]) { const replay = documentDraftContract(existing[0].draftPayload as Record<string, unknown>); return reply({ success: true, alreadyProcessed: true, draftId: existing[0].id, pendingFields: existing[0].pendingFields, confirmedValues: replay.confirmedValues, missingRequiredFields: replay.missingRequiredFields, missingOptionalFields: replay.missingOptionalFields, optionalOmissionConsent: replay.optionalOmissionConsent, nextAction: replay.nextAction }, existing[0].status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 200, correlationId) }
+      const [collision] = await db.select({ id: sofiaDrafts.id }).from(sofiaDrafts).where(eq(sofiaDrafts.correlationId, correlationId)).limit(1)
+      if (collision) return reply({ success: false, error: 'Chave de idempotência pertence a outra autoria.' }, 409, correlationId)
       if (input.documentFields) {
         const selected = await selectSofiaDocumentTemplate(input.docType || 'ORCAMENTO', input.templateId)
         if (!selected || unknownDocumentFields(selected.fieldSchema, input.documentFields).length) return reply({ success: false, error: 'Campos não pertencem ao modelo ativo.' }, 422, correlationId)
@@ -194,8 +211,8 @@ export async function POST(req: NextRequest) {
       const contract = documentDraftContract(canonical)
       const pendingFields = pendingDraftFields(canonical as any); const status = contract.nextAction === 'review_draft' ? SOFIA_DRAFT_STATUS.PENDING_REVIEW : SOFIA_DRAFT_STATUS.COLLECTING
       const [event] = await db.insert(sofiaEvents).values({ senderPhone: input.senderPhone, idempotencyKey: correlationId, rawPayload: input, intentDetected: input.intentDetected, status }).returning()
-      const [draft] = await db.insert(sofiaDrafts).values({ correlationId, centralContactId: input.centralContactId, centralClientId: input.centralClientId, centralHubId: input.centralHubId, centralRole: input.centralRole, senderPhone: input.senderPhone, intent: input.intentDetected, status, draftPayload: canonical, pendingFields, conversationSummary: input.conversationSummary, sourceEventId: event.id }).returning()
-      return reply({ success: true, action: input.action, draftId: draft.id, pendingFields, confirmedValues: contract.confirmedValues, missingRequiredFields: contract.missingRequiredFields, missingOptionalFields: contract.missingOptionalFields, optionalOmissionConsent: contract.optionalOmissionConsent, nextAction: contract.nextAction }, status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 201, correlationId)
+      const [draft] = await db.insert(sofiaDrafts).values({ correlationId, authorKind: externalAuthor ? 'central_sovereign' : 'legacy', centralGrantId: externalAuthor?.grantId, centralContactId: input.centralContactId, centralClientId: input.centralClientId, centralHubId: input.centralHubId, centralRole: input.centralRole, senderPhone: input.senderPhone, intent: input.intentDetected, status, draftPayload: canonical, pendingFields, conversationSummary: input.conversationSummary, sourceEventId: event.id }).returning()
+      return reply({ success: true, action: input.action, draftId: draft.id, review: await reviewPortalDraft(draft.id, canonical), pendingFields, confirmedValues: contract.confirmedValues, missingRequiredFields: contract.missingRequiredFields, missingOptionalFields: contract.missingOptionalFields, optionalOmissionConsent: contract.optionalOmissionConsent, nextAction: contract.nextAction }, status === SOFIA_DRAFT_STATUS.COLLECTING ? 202 : 201, correlationId)
     }
 
     const domain = parseSofiaDomainAction(rawBody)
@@ -364,7 +381,9 @@ export async function POST(req: NextRequest) {
       if (action === 'update_document') return reply({ success: false, error: 'Documento oficial é imutável. Emita uma nova versão para alterar seus dados.' }, 409, correlationId)
       if (action === 'archive_document') {
         const documentId = String(data.documentId)
-        const archived = await archiveOfficialDocument(documentId, String((rawBody as Record<string, unknown>).senderPhone), correlationId)
+        const [localActor] = externalAuthor ? [] : await db.select({id:users.id}).from(users).where(eq(users.phone, normalizeRrdPhone(envelope.senderPhone)!)).limit(1)
+        if (!externalAuthor && !localActor) return reply({success:false,error:'Autor não identificado.'},403,correlationId)
+        const archived = await archiveOfficialDocument(documentId, externalAuthor ?? localActor!.id, correlationId)
         if (!archived.ok) return reply({ success: false, error: archived.error }, archived.status, correlationId)
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, documentId }, intentDetected: 'document_archive', status: 'PROCESSED' })
         return reply({ success: true, action, document: archived.document }, 200, correlationId)

@@ -1,11 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { db, userPermissions, users } from '@/db'
 import { getSessionUser } from '@/lib/auth'
-import { hasPermission, type LocalUserAccess, type RrdPermission } from '@/lib/permissions'
+import { RRD_PERMISSIONS, hasPermission, type LocalUserAccess, type RrdPermission } from '@/lib/permissions'
 
 export async function getCurrentLocalAccess(): Promise<LocalUserAccess | null> {
   const sessionUser = await getSessionUser()
   if (!sessionUser || !db) return null
+  if(sessionUser.accessCapabilities)return {id:sessionUser.id,role:sessionUser.role as LocalUserAccess['role'],isActive:true,permissions:sessionUser.accessCapabilities.filter(p=>(RRD_PERMISSIONS as readonly string[]).includes(p)) as RrdPermission[]}
 
   const current = await db.select({
     id: users.id,

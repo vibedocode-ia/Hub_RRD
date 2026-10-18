@@ -162,27 +162,40 @@ test('disposable DB: lead + client issuance, retries, ownership, invalid input a
     assert.equal((await issueDraftDocument({ ...baseInput, correlationId: `${marker}-invalid`, draftId: invalidDraft })).ok, false)
     assert.equal((await db.select().from(officialDocuments).where(eq(officialDocuments.leadId, lead.id))).length, 2)
   } finally {
-    // Disposable database still gets its own explicit cleanup; FK order matters.
-    await db.delete(auditEvents).where(eq(auditEvents.actorUserId, operatorId))
-    await db.delete(sofiaEvents).where(eq(sofiaEvents.senderPhone, senderPhone))
-    for (const draftId of createdDrafts) await db.delete(sofiaDrafts).where(eq(sofiaDrafts.id, draftId))
+    // Disposable database cleanup is best-effort per table: tests may run against
+    // a minimal schema that intentionally omits audit_events. Preserve the
+    // original assertion/result while still cleaning every table that exists.
+    for (const cleanup of [
+      () => db.delete(auditEvents).where(eq(auditEvents.actorUserId, operatorId)),
+      () => db.delete(sofiaEvents).where(eq(sofiaEvents.senderPhone, senderPhone)),
+      ...createdDrafts.map(draftId => () => db.delete(sofiaDrafts).where(eq(sofiaDrafts.id, draftId))),
+    ]) {
+      try { await cleanup() } catch { /* table may be absent in the disposable schema */ }
+    }
     if (createdLead) {
-      await db.delete(leadProposals).where(eq(leadProposals.leadId, createdLead))
-      if (originalDocumentId) {
-        const [original] = await db.select({ id: officialDocuments.id }).from(officialDocuments).where(eq(officialDocuments.id, originalDocumentId)).limit(1)
-        if (original) await db.delete(officialDocuments).where(eq(officialDocuments.supersedesDocumentId, original.id))
-      }
-      await db.delete(officialDocuments).where(eq(officialDocuments.leadId, createdLead))
-      await db.delete(leads).where(eq(leads.id, createdLead))
+      for (const cleanup of [
+        () => db.delete(leadProposals).where(eq(leadProposals.leadId, createdLead!)),
+        async () => {
+          if (!originalDocumentId) return
+          const [original] = await db.select({ id: officialDocuments.id }).from(officialDocuments).where(eq(officialDocuments.id, originalDocumentId)).limit(1)
+          if (original) await db.delete(officialDocuments).where(eq(officialDocuments.supersedesDocumentId, original.id))
+        },
+        () => db.delete(officialDocuments).where(eq(officialDocuments.leadId, createdLead!)),
+        () => db.delete(leads).where(eq(leads.id, createdLead!)),
+      ]) { try { await cleanup() } catch { /* continue fixture cleanup */ } }
     }
     if (createdClient) {
-      await db.delete(proposals).where(eq(proposals.clientId, createdClient))
-      await db.delete(officialDocuments).where(eq(officialDocuments.clientId, createdClient))
-      await db.delete(clients).where(eq(clients.id, createdClient))
+      for (const cleanup of [
+        () => db.delete(proposals).where(eq(proposals.clientId, createdClient!)),
+        () => db.delete(officialDocuments).where(eq(officialDocuments.clientId, createdClient!)),
+        () => db.delete(clients).where(eq(clients.id, createdClient!)),
+      ]) { try { await cleanup() } catch { /* continue fixture cleanup */ } }
     }
-    await db.delete(documentTemplates).where(eq(documentTemplates.slug, templateSlug))
-    await db.delete(userPermissions).where(eq(userPermissions.userId, operatorId))
-    await db.delete(users).where(eq(users.id, operatorId))
+    for (const cleanup of [
+      () => db.delete(documentTemplates).where(eq(documentTemplates.slug, templateSlug)),
+      () => db.delete(userPermissions).where(eq(userPermissions.userId, operatorId)),
+      () => db.delete(users).where(eq(users.id, operatorId)),
+    ]) { try { await cleanup() } catch { /* continue fixture cleanup */ } }
     await conn?.end()
   }
 })
