@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    labels:
+      traefik.docker.network: coolify
     user: 1000:1000
     restart: unless-stopped
     expose:
