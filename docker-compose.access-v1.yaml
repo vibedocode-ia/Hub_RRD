@@ -1,0 +1,38 @@
+services:
+  rr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: 1000:1000
+    restart: unless-stopped
+    expose:
+    - '3000'
+    env_file:
+    - .env
+    cap_drop:
+    - ALL
+    cap_add:
+    - SYS_CHROOT
+    security_opt:
+    - no-new-privileges:true
+    - seccomp=./runtime/pdf-seccomp.json
+    shm_size: 256m
+    networks:
+    - coolify
+    - access_private
+    - access_db_hub
+    volumes:
+    - /root/.hermes/security-backups/access-v1-production-20261018T145555Z/app-integration/config-hub:/run/access:ro
+    environment:
+      ACCESS_V1_CONFIG_FILE: /run/access/config.private.json
+      ACCESS_V1_ENABLED: 'false'
+      NODE_EXTRA_CA_CERTS: /run/access/public/ca.crt
+networks:
+  coolify:
+    external: true
+  access_private:
+    external: true
+    name: av1-16074b17a80a-private
+  access_db_hub:
+    external: true
+    name: av1-16074b17a80a-db-hub
