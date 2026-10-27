@@ -9,7 +9,7 @@ RUN test ! -d .next && test ! -e .env && npm run build
 RUN npx tsc --noEmit
 
 FROM node:22.16.0-bookworm-slim@sha256:048ed02c5fd52e86fda6fbd2f6a76cf0d4492fd6c6fee9e2c463ed5108da0e34 AS browser
-ARG CHROMIUM_VERSION=155.0.8059.79-1~deb12u1
+ARG CHROMIUM_VERSION=156.0.8078.47-1~deb12u1
 RUN apt-get update && apt-get install -y --no-install-recommends chromium=${CHROMIUM_VERSION} chromium-sandbox=${CHROMIUM_VERSION} ca-certificates fonts-liberation && rm -rf /var/lib/apt/lists/*
 
 FROM browser AS runtime
