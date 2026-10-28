@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import HeroInterativo from '@/components/HeroInterativo';
+import HeroInterativo from '@/components/HeroInterativo';
 import { motion, useInView, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import {
   Droplets, Clock, ShieldCheck, Truck, Wrench, PhoneCall, MapPin,
