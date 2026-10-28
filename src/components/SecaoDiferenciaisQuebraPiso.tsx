@@ -27,7 +27,7 @@ const DIFERENCIAIS = [
   },
 ];
 
-export default function SecaoDiferenciaisQuebraPiso() {
+export default function SecaoDiferenciaisQuebraPiso({ waLink, phoneTel }: { waLink?: string; phoneTel?: string } = {}) {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
 

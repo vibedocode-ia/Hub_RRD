@@ -23,7 +23,7 @@ const CLIPES = [
   },
 ];
 
-export default function SecaoTrabalho() {
+export default function SecaoTrabalho({ waLink, phoneTel }: { waLink?: string; phoneTel?: string } = {}) {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
 
