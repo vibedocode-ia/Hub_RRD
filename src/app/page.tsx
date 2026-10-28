@@ -11,7 +11,6 @@ import {
   Home as HomeIcon, Factory, AlertTriangle, Gauge, Waves, ShieldAlert, Check, ChevronRight,
 } from 'lucide-react';
 import { VERSION } from '@/lib/version';
-import HeroInterativo from '@/components/HeroInterativo';
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const WHATSAPP_BASE = 'https://api.whatsapp.com/send?phone=5521996699191';
@@ -251,111 +250,8 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════ HERO ═══════════════════════════ */}
-      <section className="relative grid-bg overflow-hidden">
-        {/* Glows */}
-        <div className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full opacity-20 blur-[120px] pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #10acf0 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-40 -right-20 w-[600px] h-[600px] rounded-full opacity-15 blur-[100px] pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #1918eb 0%, transparent 70%)' }} />
-        <div className="hero-overlay absolute inset-0" />
-
-        <div className="relative mx-auto max-w-7xl px-5 pt-36 pb-24 grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left */}
-          <div>
-            {/* Badge */}
-            <motion.div variants={fade} initial="hidden" animate="show"
-              className="inline-flex items-center gap-2.5 rounded-full border border-cyan-300/25 bg-cyan-300/8 px-4 py-1.5 text-sm text-cyan-200 mb-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="pulse-ring absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 pulse-dot" />
-              </span>
-              Atendimento 24h · Niterói e Região
-            </motion.div>
-
-            {/* H1 */}
-            <motion.h1 variants={fade} initial="hidden" animate="show" custom={1}
-              className="mt-4 text-4xl md:text-6xl font-extrabold leading-[1.04] tracking-tight"
-              style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>
-              Entupiu?<br />A gente resolve{' '}
-              <span className="grad-text">sem transtorno</span>.
-            </motion.h1>
-
-            {/* Subline */}
-            <motion.p variants={fade} initial="hidden" animate="show" custom={2}
-              className="mt-6 max-w-xl text-lg text-white/70 leading-relaxed">
-              Desentupimento, limpeza de fossa e hidrojateamento com tecnologia, agilidade e o cuidado de quem trata sua casa como a própria.
-              Atendemos residências, condomínios e empresas em <strong className="text-white/90">Niterói e região</strong>.
-            </motion.p>
-
-            {/* Stars */}
-            <motion.div variants={fade} initial="hidden" animate="show" custom={3}
-              className="mt-5 flex items-center gap-2.5 text-sm text-white/65">
-              <span className="flex text-amber-400 text-base">★★★★★</span>
-              <span>Excelente · <strong className="text-white/85">5,0</strong> com base em 55 avaliações no Google</span>
-            </motion.div>
-
-            {/* CTAs */}
-            <motion.div variants={fade} initial="hidden" animate="show" custom={4}
-              className="mt-8 flex flex-wrap gap-4">
-              <a href={WA_DEFAULT} target="_blank" rel="noreferrer"
-                className="btn-cyan text-white px-7 py-4 rounded-full font-semibold inline-flex items-center gap-2.5 text-base"
-                aria-label="Chamar RR Desentupidora no WhatsApp">
-                <PhoneCall className="h-5 w-5" /> Chamar no WhatsApp
-              </a>
-              <a href="#servicos"
-                className="btn-ghost px-7 py-4 rounded-full font-semibold text-white/80 inline-flex items-center gap-2">
-                Ver serviços <ArrowRight className="h-4 w-4" />
-              </a>
-            </motion.div>
-
-            {/* Counters */}
-            <motion.div variants={fade} initial="hidden" animate="show" custom={5}
-              className="mt-10 flex items-center gap-8">
-              {[
-                { label: '+7', suffix: ' Anos',   sub: 'de experiência' },
-                { label: '5,0', suffix: ' ★',     sub: 'no Google' },
-                { label: '24',  suffix: '/7',      sub: 'atendimento' },
-              ].map(c => (
-                <div key={c.label} className="text-center">
-                  <div className="text-2xl font-extrabold text-[#10acf0]" style={{ fontFamily: 'var(--font-outfit)' }}>
-                    {c.label}<span className="text-white/70 text-base">{c.suffix}</span>
-                  </div>
-                  <div className="text-xs text-white/50 mt-0.5">{c.sub}</div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Right — Hero Visual */}
-          <motion.div
-            initial={{ opacity: 0, scale: .94, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-            className="relative hidden lg:block"
-          >
-            {/* Glow behind card */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/25 to-indigo-600/25 blur-3xl" />
-            <div className="glass-strong relative rounded-[2rem] overflow-hidden border border-cyan-300/20">
-              <Image
-                src="/assets/hero.png" alt="RR Desentupidora em operação"
-                width={1000} height={800} className="w-full h-[400px] object-cover opacity-90" unoptimized priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050d1a] via-transparent to-transparent" />
-              {/* Badge over image */}
-              <div className="absolute bottom-5 left-5 right-5">
-                <div className="glass rounded-2xl px-5 py-3 flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <div>
-                    <div className="text-sm font-semibold">Garantia de 30 dias</div>
-                    <div className="text-xs text-white/60">em todos os serviços</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* ═══════════════════════════════ HERO INTERATIVO (240 FRAMES + MOUSE PILL) ═══════════════════════════ */}
+      <HeroInterativo waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
 
       {/* ═══════════════════════════════ SERVIÇOS ═══════════════════════ */}
       <Section id="servicos" className="py-24">
