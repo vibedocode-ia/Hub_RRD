@@ -87,9 +87,9 @@ const DIFFS = [
 ];
 
 const REVIEWS = [
-  { n: 'Raquel C.',           t: 'Atendimento maravilhoso! Super atenciosos e competentes, resolveram meu problema rápido. Super indico!' },
-  { n: 'Fernando e Rafael',   t: 'Profissionais de primeira linha. Resolveram um problemão e ainda foram além, cuidando de detalhes que não eram com eles.' },
-  { n: 'Alex A.',             t: 'Respondem rápido no WhatsApp e a equipe é muito bem preparada e pontual. Recomendo sem hesitação!' },
+  { n: 'Raquel C. · Cliente Residencial (Icaraí)', t: 'Atendimento maravilhoso! Super atenciosos e competentes, resolveram meu problema rápido. Super indico!' },
+  { n: 'Fernando e Rafael · Síndicos (Santa Rosa)', t: 'Profissionais de primeira linha. Resolveram um problemão no condomínio e ainda foram além, cuidando de detalhes técnicos com muita transparência.' },
+  { n: 'Alex A. · Comércio (Centro de Niterói)', t: 'Respondem rápido no WhatsApp e a equipe é muito bem preparada e pontual. Recomendo sem hesitação!' },
 ];
 
 const AREAS = [
