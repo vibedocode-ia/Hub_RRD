@@ -11,6 +11,7 @@ import SecaoAntesDepois from '@/components/SecaoAntesDepois';
 import SecaoDiferenciaisQuebraPiso from '@/components/SecaoDiferenciaisQuebraPiso';
 import SecaoFaq from '@/components/SecaoFaq';
 import SecaoContato from '@/components/SecaoContato';
+import StickyMobileCta from '@/components/StickyMobileCta';
 import { motion, useInView, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import {
   Droplets, Clock, ShieldCheck, Truck, Wrench, PhoneCall, MapPin,
@@ -756,7 +757,9 @@ export default function LandingPage() {
             <p className="flex items-center gap-2 text-xs md:text-sm"><PhoneCall className="h-4 w-4 text-[#10acf0] shrink-0" /> (21) 99669-9191 · Atendimento 24h</p>
             <p className="text-[11px] text-white/35 pl-6">Licença ambiental INEA · Equipe NR-33 e NR-35</p>
           </div>
-          <div className="flex md:justify-end items-start gap-5 text-white/45 text-xs uppercase tracking-wide">
+          <div className="flex md:justify-end items-start gap-4 text-white/45 text-xs uppercase tracking-wide flex-wrap">
+            <Link href="/privacidade" className="hover:text-[#10acf0] transition-colors" aria-label="Política de Privacidade">Privacidade</Link>
+            <span className="text-white/15">|</span>
             <a href={INSTAGRAM} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="Instagram RR Desentupidora">Instagram</a>
             <span className="text-white/15">|</span>
             <a href={WA_DEFAULT} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="WhatsApp RR Desentupidora">WhatsApp</a>
@@ -823,6 +826,8 @@ export default function LandingPage() {
           </motion.a>
         )}
       </AnimatePresence>
+      {/* ── Sticky CTA Mobile (Barra de Ação Rápida Ligar 24h + WhatsApp) ── */}
+      <StickyMobileCta waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
     </main>
   );
 }

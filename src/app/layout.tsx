@@ -37,6 +37,62 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.jpg', apple: '/favicon.jpg' },
 };
 
+const schemaOrgData = {
+  '@context': 'https://schema.org',
+  '@type': 'PlumbingService',
+  name: 'RR Desentupidora e Dedetizadora LTDA',
+  alternateName: 'RR Desentupidora Niterói',
+  image: 'https://www.rrdesentupidora.com.br/assets/logo-horizontal.png',
+  url: 'https://www.rrdesentupidora.com.br',
+  telephone: '+5521996699191',
+  priceRange: '$$',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Rua Santos Moreira, 40',
+    addressLocality: 'Santa Rosa, Niterói',
+    addressRegion: 'RJ',
+    postalCode: '24240-000',
+    addressCountry: 'BR',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: -22.9056,
+    longitude: -43.1028,
+  },
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ],
+      opens: '00:00',
+      closes: '23:59',
+    },
+  ],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '5.0',
+    reviewCount: '55',
+  },
+  areaServed: [
+    'Niterói',
+    'São Gonçalo',
+    'Maricá',
+    'Itaboraí',
+    'Icaraí',
+    'Santa Rosa',
+    'Centro',
+    'São Francisco',
+    'Região Oceânica',
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -44,6 +100,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${outfit.variable} ${jakarta.variable}`}
       style={{ fontFamily: 'var(--font-jakarta), system-ui, sans-serif' }}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrgData) }}
+        />
+      </head>
       <body style={{ backgroundColor: '#050d1a' }}>{children}</body>
     </html>
   );
