@@ -104,7 +104,7 @@ export default function SecaoContato({
               Peça seu Orçamento na Hora
             </h3>
             <p className="text-sm text-white/60 mb-6">
-              Preencha os campos abaixo. Retornamos imediatamente pelo WhatsApp.
+              Preencha os dados abaixo para abrir o chamado diretamente no WhatsApp do nosso plantão técnico.
             </p>
 
             <form onSubmit={handleEnviar} className="space-y-4">
@@ -157,7 +157,7 @@ export default function SecaoContato({
                 type="submit"
                 className="w-full py-4 rounded-xl btn-cyan text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.99] transition-all"
               >
-                <Send className="h-4 w-4" /> Solicitar Orçamento Grátis
+                <Send className="h-4 w-4" /> Continuar no WhatsApp com Dados Preenchidos
               </button>
               
               <p className="text-center text-[11px] text-white/40 mt-3">

@@ -7,8 +7,8 @@ import { Phone, MessageCircle } from 'lucide-react';
 const TOTAL_FRAMES = 240;
 const FASES = [
   { from: 0, ate: 0.3, linha1: 'Seu encanamento entupiu?', linha2: 'A gente resolve sem transtorno.' },
-  { from: 0.3, ate: 0.65, linha1: 'Chegamos em até 40 min', linha2: 'em Niterói, São Gonçalo e Região.' },
-  { from: 0.65, ate: 1.001, linha1: '+15 anos de excelência', linha2: '380+ avaliações 5 estrelas.' },
+  { from: 0.3, ate: 0.65, linha1: 'Chegamos em 30 a 40 min', linha2: 'Plantão 24h em Niterói e Região.' },
+  { from: 0.65, ate: 1.001, linha1: '+7 anos de experiência técnica', linha2: '5,0 ⭐ avaliações máximas no Google.' },
 ];
 
 interface HeroInterativoProps {

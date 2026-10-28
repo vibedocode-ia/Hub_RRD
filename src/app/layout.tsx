@@ -27,13 +27,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'RR Desentupidora | Desentupimento 24h em Niterói',
     description: 'Desentupimento, limpa fossa e hidrojateamento. Atendimento 24h. 5,0 ⭐ no Google.',
-    url: 'https://rrd.vibedocode.pro',
+    url: 'https://www.rrdesentupidora.com.br',
     siteName: 'RR Desentupidora',
     locale: 'pt_BR',
     type: 'website',
   },
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://rrd.vibedocode.pro' },
+  alternates: { canonical: 'https://www.rrdesentupidora.com.br' },
   icons: { icon: '/favicon.jpg', apple: '/favicon.jpg' },
 };
 

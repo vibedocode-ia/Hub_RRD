@@ -155,7 +155,7 @@ export default function LandingPage() {
     { href: '#caixa-de-gordura', label: 'Caixa de Gordura' },
     { href: '#vacol-compacto',   label: 'VACOL Compacto' },
     { href: '#frota',            label: 'Frota Real' },
-    { href: '#porque',           label: 'Diferenciais' },
+    { href: '#diferenciais',     label: 'Diferenciais' },
     { href: '#avaliacoes',       label: 'Avaliações' },
     { href: '#areas',            label: 'Áreas' },
   ];
@@ -741,17 +741,20 @@ export default function LandingPage() {
       <SecaoContato waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
 
       {/* ═══════════════════════════════ FOOTER ═════════════════════════ */}
-      <footer className="border-t border-white/5 py-14">
+      <footer className="border-t border-white/5 py-14 bg-[#040914]">
         <div className="mx-auto max-w-7xl px-5 grid gap-8 md:grid-cols-3 text-sm">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/assets/logo-horizontal.png" width={160} height={36} className="h-8 w-auto object-contain" alt="RR Desentupidora" unoptimized />
             </div>
-            <p className="text-white/45 leading-relaxed">Desentupimento com tecnologia, agilidade e cuidado.</p>
+            <p className="text-white/60 font-semibold text-xs mt-1">RR Desentupidora e Dedetizadora LTDA</p>
+            <p className="text-white/40 text-xs mt-0.5 font-mono">CNPJ: 53.102.506/0001-78</p>
+            <p className="text-white/45 text-xs mt-2 leading-relaxed">Desentupimento técnico, limpa fossa e hidrojateamento com equipamento próprio e equipe qualificada em Niterói e Grande Rio.</p>
           </div>
           <div className="text-white/55 space-y-2">
-            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#10acf0] shrink-0" /> Rua Santos Moreira, 40 · Santa Rosa, Niterói/RJ</p>
-            <p className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#10acf0] shrink-0" /> (21) 99669-9191 · 24h</p>
+            <p className="flex items-center gap-2 text-xs md:text-sm"><MapPin className="h-4 w-4 text-[#10acf0] shrink-0" /> Rua Santos Moreira, 40 · Santa Rosa, Niterói/RJ</p>
+            <p className="flex items-center gap-2 text-xs md:text-sm"><PhoneCall className="h-4 w-4 text-[#10acf0] shrink-0" /> (21) 99669-9191 · Atendimento 24h</p>
+            <p className="text-[11px] text-white/35 pl-6">Licença ambiental INEA · Equipe NR-33 e NR-35</p>
           </div>
           <div className="flex md:justify-end items-start gap-5 text-white/45 text-xs uppercase tracking-wide">
             <a href={INSTAGRAM} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="Instagram RR Desentupidora">Instagram</a>
@@ -759,10 +762,10 @@ export default function LandingPage() {
             <a href={WA_DEFAULT} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="WhatsApp RR Desentupidora">WhatsApp</a>
           </div>
         </div>
-        <p className="mt-10 text-center text-xs text-white/28">
-          © RR Desentupidora · VibeDoCode · {new Date().getFullYear()} ·{' '}
-          <span className="font-mono opacity-70">{VERSION}</span>
-        </p>
+        <div className="mx-auto max-w-7xl px-5 mt-10 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-white/40 gap-3">
+          <p>© {new Date().getFullYear()} RR Desentupidora e Dedetizadora LTDA · Todos os direitos reservados.</p>
+          <p className="text-[11px] text-white/30">Plantão emergencial 24h em Niterói, São Gonçalo, Maricá e Região Metropolitana</p>
+        </div>
       </footer>
 
       {/* ── Floating Voltar ao Topo com Medidor de Scroll ── */}
