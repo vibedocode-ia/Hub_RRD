@@ -31,7 +31,7 @@ const PERGUNTAS = [
   },
 ];
 
-export default function SecaoFaq({ phoneTel }: { phoneTel: string }) {
+export default function SecaoFaq({ phoneTel, waLink }: { phoneTel?: string; waLink?: string }) {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
   const [aberto, setAberto] = useState<number | null>(0);

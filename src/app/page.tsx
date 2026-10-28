@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import HeroInterativo from '@/components/HeroInterativo';
+import MarqueeLocais from '@/components/MarqueeLocais';
+import SecaoTrabalho from '@/components/SecaoTrabalho';
+import SecaoComoFunciona from '@/components/SecaoComoFunciona';
+import SecaoAntesDepois from '@/components/SecaoAntesDepois';
+import SecaoDiferenciaisQuebraPiso from '@/components/SecaoDiferenciaisQuebraPiso';
+import SecaoFaq from '@/components/SecaoFaq';
+import SecaoContato from '@/components/SecaoContato';
 import { motion, useInView, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import {
   Droplets, Clock, ShieldCheck, Truck, Wrench, PhoneCall, MapPin,
@@ -252,6 +259,15 @@ export default function LandingPage() {
 
       {/* ═══════════════════════════════ HERO INTERATIVO (240 FRAMES + MOUSE PILL) ═══════════════════════════ */}
       <HeroInterativo waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
+
+      {/* 1. BARRA ROLANDO LOGO ABAIXO DO HERO (LOCAIS DE ATENDIMENTO) */}
+      <MarqueeLocais />
+
+      {/* 2. NOSSO TRABALHO / COMO A GENTE RESOLVE (COM VÍDEOS) */}
+      <SecaoTrabalho waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
+
+      {/* 3. SIMPLES ASSIM / DO PROBLEMA À SOLUÇÃO */}
+      <SecaoComoFunciona waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
 
       {/* ═══════════════════════════════ SERVIÇOS ═══════════════════════ */}
       <Section id="servicos" className="py-24">
@@ -556,61 +572,11 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      {/* ═══════════════════════════════ POR QUÊ ════════════════════════ */}
-      <Section id="porque" className="py-24 bg-[#060f20] border-y border-white/5">
-        <div className="mx-auto max-w-7xl px-5 grid lg:grid-cols-2 gap-14 items-start">
-          {/* Left */}
-          <div>
-            <motion.div variants={fade}>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#10acf0]">Por que a RR</p>
-              <h2 className="mt-3 text-3xl md:text-5xl font-bold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
-                Uma empresa que vai{' '}
-                <span className="grad-text">pra resolver o seu problema</span>
-              </h2>
-              <p className="mt-5 text-white/68 leading-relaxed max-w-md">
-                Chegamos com urgência, estrutura técnica e cuidado. Executamos como se fosse na nossa própria casa — e você nunca fica sozinho durante o serviço.
-              </p>
-              <a href={WA_DEFAULT} target="_blank" rel="noreferrer"
-                className="mt-8 inline-flex items-center gap-2 text-[#10acf0] font-semibold border-b border-[#10acf0]/30 pb-1 hover:border-[#10acf0]/70 transition-colors">
-                Solicitar orçamento <ArrowRight className="h-4 w-4" />
-              </a>
-            </motion.div>
+      {/* 4. TRABALHO REAL / O ANTES E O DEPOIS */}
+      <SecaoAntesDepois waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
 
-            {/* Cert Badges */}
-            <motion.div variants={fade} custom={2} className="mt-10 flex flex-wrap gap-3">
-              {[
-                { src: '/images/inea.png',  label: 'INEA',  sub: 'Licença Ambiental' },
-                { src: '/images/nr33.png',  label: 'NR-33', sub: 'Espaço Confinado' },
-                { src: '/images/nr35.jpeg', label: 'NR-35', sub: 'Trabalho em Altura' },
-              ].map(b => (
-                <div key={b.label} className="cert-badge glass rounded-2xl p-4 flex items-center gap-3 border border-cyan-300/15 cursor-default">
-                  <Image src={b.src} alt={b.label} width={36} height={36} className="w-9 h-9 object-contain" unoptimized />
-                  <div>
-                    <div className="text-sm font-bold text-[#10acf0]" style={{ fontFamily: 'var(--font-outfit)' }}>{b.label}</div>
-                    <div className="text-xs text-white/50">{b.sub}</div>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Right — Diff cards */}
-          <div className="grid gap-4">
-            {DIFFS.map((d, i) => (
-              <motion.div key={d.t} variants={fade} custom={i}
-                className="glass glass-hover rounded-2xl p-5 flex items-start gap-4">
-                <div className="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-cyan-400/20 to-indigo-500/20 border border-cyan-300/20 flex items-center justify-center">
-                  <d.icon className="h-5 w-5 text-[#10acf0]" />
-                </div>
-                <div>
-                  <h3 className="font-semibold" style={{ fontFamily: 'var(--font-outfit)' }}>{d.t}</h3>
-                  <p className="text-sm text-white/58 mt-1">{d.d}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </Section>
+      {/* 5 e 6. PORQUE A RR (DIFERENCIAIS COMPLETOS) + VAI QUEBRAR MEU PISO? */}
+      <SecaoDiferenciaisQuebraPiso waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
 
       {/* ═══════════════════════════════ AVALIAÇÕES ═════════════════════ */}
       <Section id="avaliacoes" className="py-24 grid-bg">
@@ -768,38 +734,11 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      {/* ═══════════════════════════════ CTA FINAL ══════════════════════ */}
-      <Section id="contato" className="py-24 grid-bg">
-        <div className="mx-auto max-w-4xl px-5 text-center">
-          <motion.div variants={fade} className="glass-strong rounded-[2.5rem] p-10 md:p-16 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/12 to-indigo-600/12" />
-            <div className="relative">
-              <CheckCircle2 className="mx-auto h-14 w-14 text-[#10acf0] float-up" />
-              <h2 className="mt-6 text-3xl md:text-5xl font-bold" style={{ fontFamily: 'var(--font-outfit)' }}>
-                Entupiu aí?<br />A gente resolve <span className="grad-text">hoje</span>.
-              </h2>
-              <p className="mt-4 text-white/65">Atendimento 24h por WhatsApp. Solicite seu orçamento agora.</p>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href={WA_DEFAULT} target="_blank" rel="noreferrer"
-                  className="btn-cyan inline-flex items-center gap-3 text-white px-9 py-4 rounded-full font-semibold text-lg"
-                  aria-label="Chamar RR Desentupidora 24h">
-                  <PhoneCall className="h-6 w-6" /> (21) 99669-9191
-                </a>
-                <a href={PHONE_TEL}
-                  className="btn-ghost px-9 py-4 rounded-full font-semibold text-white/75 inline-flex items-center gap-2"
-                  aria-label="Ligar agora para RR Desentupidora">
-                  Ligar agora
-                </a>
-              </div>
-              {/* Guarantee badge */}
-              <div className="mt-6 inline-flex items-center gap-2 text-emerald-400 text-sm border border-emerald-400/25 rounded-full px-4 py-1.5">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Garantia de 30 dias incluída em todos os serviços</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </Section>
+      {/* 7. DÚVIDAS / PERGUNTAS FREQUENTES */}
+      <SecaoFaq waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
+
+      {/* 8. FALE COM A GENTE / TEM ALGUMA DÚVIDA? (FORMULÁRIO INTERATIVO + CONTATO) */}
+      <SecaoContato waLink={WA_DEFAULT} phoneTel={PHONE_TEL} />
 
       {/* ═══════════════════════════════ FOOTER ═════════════════════════ */}
       <footer className="border-t border-white/5 py-14">
