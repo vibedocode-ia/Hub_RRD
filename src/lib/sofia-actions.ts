@@ -186,14 +186,14 @@ export type SofiaDomainAction =
   | 'list_teams' | 'create_team' | 'update_team'
   | 'list_equipment' | 'create_equipment' | 'update_equipment'
   | 'list_agenda' | 'list_service_requests' | 'update_service_request'
-  | 'list_documents' | 'update_document' | 'archive_document'
+  | 'list_documents' | 'update_document' | 'archive_document' | 'delete_document'
   | 'create_catalog_service' | 'update_catalog_service' | 'archive_catalog_service'
 
 const DOMAIN_ACTIONS = new Set<SofiaDomainAction>([
   'list_stock', 'adjust_stock', 'create_financial_entry', 'list_financial_entries', 'get_financial_summary', 'update_financial_entry',
   'list_vehicles', 'create_vehicle', 'update_vehicle', 'archive_vehicle',
   'list_teams', 'create_team', 'update_team', 'list_equipment', 'create_equipment', 'update_equipment',
-  'list_agenda', 'list_service_requests', 'update_service_request', 'list_documents', 'update_document', 'archive_document',
+  'list_agenda', 'list_service_requests', 'update_service_request', 'list_documents', 'update_document', 'archive_document', 'delete_document',
   'create_catalog_service', 'update_catalog_service', 'archive_catalog_service',
 ])
 const isUuid = (value: unknown) => /^[0-9a-f-]{36}$/i.test(clean(value, 40))
@@ -266,6 +266,8 @@ export function parseSofiaDomainAction(raw: unknown): { ok: true; action: SofiaD
   if (action === 'list_documents' && data.docType !== undefined && !['ORCAMENTO', 'ORCAMENTO_TECNICO', 'RECIBO_GARANTIA', 'LAUDO_TECNICO'].includes(clean(data.docType, 32))) return { ok: false, error: 'Tipo de documento inválido.' }
   if (action === 'update_document' && (!isUuid(data.documentId) || !['status', 'paymentMethod', 'warrantyTerms', 'technicalNotes'].some(key => data[key] !== undefined))) return { ok: false, error: 'Documento inválido.' }
   if (action === 'archive_document' && !isUuid(data.documentId)) return { ok: false, error: 'Documento inválido.' }
+  if (action === 'delete_document' && !isUuid(data.documentId)) return { ok: false, error: 'Documento inválido.' }
+  if (action === 'delete_document' && data.force !== undefined && typeof data.force !== 'boolean') return { ok: false, error: 'Confirmação de exclusão inválida.' }
   return { ok: true, action, data }
 }
 

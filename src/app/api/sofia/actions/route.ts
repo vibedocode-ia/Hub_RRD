@@ -15,6 +15,7 @@ import { archiveOfficialDocument, supersedeOfficialDocument } from '@/lib/offici
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
 import { clientPurgeCounts, clientPurgeHasHistory, purgeClientRecords } from '@/lib/client-purge'
+import { documentPurgeCounts, purgeDocumentRecord } from '@/lib/document-purge'
 import { VERSION } from '@/lib/version'
 import { isNativePeopleAccessRead, listNativePeopleAccesses } from '@/lib/native-people-accesses'
 import { executeSofiaPersonProfile, SofiaPersonProfileRequest, SofiaManagedPersonProfileRequest } from '@/lib/sofia-person-profile'
@@ -393,6 +394,21 @@ export async function POST(req: NextRequest) {
         if (!archived.ok) return reply({ success: false, error: archived.error }, archived.status, correlationId)
         await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, documentId }, intentDetected: 'document_archive', status: 'PROCESSED' })
         return reply({ success: true, action, document: archived.document }, 200, correlationId)
+      }
+      if (action === 'delete_document') {
+        const documentId = String(data.documentId)
+        const [doc] = await db.select({ id: officialDocuments.id }).from(officialDocuments).where(eq(officialDocuments.id, documentId)).limit(1)
+        if (!doc) return reply({ success: false, error: 'Documento não encontrado.' }, 404, correlationId)
+        const blockers = await documentPurgeCounts(documentId)
+        if (blockers.attachments > 0 && data.force !== true) {
+          return reply({ success: false, action, error: 'Documento tem anexos vinculados. Confirme com force=true para excluir tudo.', blockers }, 409, correlationId)
+        }
+        const [localActor] = externalAuthor ? [] : await db.select({ id: users.id }).from(users).where(eq(users.phone, normalizeRrdPhone(envelope.senderPhone)!)).limit(1)
+        if (!externalAuthor && !localActor) return reply({ success: false, error: 'Autor não identificado.' }, 403, correlationId)
+        const removed = await purgeDocumentRecord(documentId, { actorUserId: externalAuthor ? null : localActor!.id, reason: 'sofia-delete-document' })
+        if (!removed.document) return reply({ success: false, error: 'Documento não encontrado.' }, 404, correlationId)
+        await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, documentId, removed }, intentDetected: 'document_delete', status: 'PROCESSED' })
+        return reply({ success: true, action, removed }, 200, correlationId)
       }
       const vehicleName = clean(data.vehicleName, 160)
       const matches = data.vehicleId
