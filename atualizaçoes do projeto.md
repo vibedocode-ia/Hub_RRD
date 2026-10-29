@@ -1,3 +1,9 @@
+### V0.15.04 (2026-10-18) - Hardening de dependências e validação da proposta visual RR
+- **Segurança:** fixado Ajv 8.20.0 e Next.js 16.4.3; `npm audit --audit-level=low` reportou 0 vulnerabilidades.
+- **Site:** preparado pacote visual `rr-novosite` com 21 WebP; quatro pares antes/depois usam as imagens fornecidas e legendas neutras; removidas alegações quantitativas de desobstrução no bloco comparativo e claims químicos do hidrojateamento.
+- **Validação local:** `npx tsc --noEmit`, `npm run build`, `npm run test:unit` (322 pass, 0 fail, 2 skipped), e `git diff --check` passaram.
+- **Gate pendente:** `npm run test:security` em PostgreSQL descartável tem 2 falhas E2E (347 pass, 2 fail, 1 skipped); faltam migrações versionadas de autoria documental preparadas fora do journal. A mesma falha foi reproduzida em `origin/main` limpo. Sem migration de produção, commit, push ou deploy até resolver/aprovar o gate.
+
 ### V0.15.02 (2026-10-18) - Transporte Access V1 privado: config read-only e redes dedicadas, Access desativado
 - **Release:** Site + Hub RRD.
 

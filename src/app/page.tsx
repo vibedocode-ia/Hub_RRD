@@ -310,7 +310,6 @@ export default function LandingPage() {
                   alt="Hidrojateamento Profissional RR Desentupidora"
                   width={900} height={700}
                   className="w-full h-[420px] object-cover rounded-2xl"
-                  unoptimized
                 />
                 <div className="absolute bottom-6 left-6 right-6 flex flex-wrap items-center justify-between gap-3">
                   <div className="glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-cyan-300/20">
@@ -323,8 +322,8 @@ export default function LandingPage() {
                   <div className="glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-emerald-400/20">
                     <ShieldCheck className="h-5 w-5 text-emerald-400" />
                     <div>
-                      <div className="text-xs font-bold text-emerald-300">100% Ecológico</div>
-                      <div className="text-[11px] text-white/70">Sem Química Nociva</div>
+                      <div className="text-xs font-bold text-emerald-300">Operação com água</div>
+                      <div className="text-[11px] text-white/70">Pressão controlada</div>
                     </div>
                   </div>
                 </div>
@@ -373,6 +372,7 @@ export default function LandingPage() {
                 <a
                   href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Gostaria de solicitar um orçamento para Hidrojateamento Profissional na minha propriedade.')}`}
                   target="_blank" rel="noreferrer"
+                  onClick={() => trackWhatsAppConversion()}
                   className="btn-cyan text-white px-6 py-3.5 rounded-full font-semibold text-sm inline-flex items-center gap-2 shadow-lg shadow-cyan-500/20"
                 >
                   <PhoneCall className="h-4 w-4" /> Orçamento Hidrojato
@@ -386,73 +386,86 @@ export default function LandingPage() {
       {/* ═══════════════════════════════ ESPECIALISTAS EM CAIXA DE GORDURA ════════════════════════ */}
       <Section id="caixa-de-gordura" className="py-24 bg-[#050c18]">
         <div className="mx-auto max-w-7xl px-5">
-          <motion.div variants={fade} className="text-center max-w-3xl mx-auto mb-16">
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1 text-xs font-bold text-amber-300 tracking-wider uppercase mb-3">
-              <ShieldAlert className="h-3.5 w-3.5" /> Proteção Sanitária & Descarte INEA
-            </span>
-            <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
-              Especialistas em <span className="grad-text">Caixa de Gordura</span>
-            </h2>
-            <p className="mt-3 text-white/70 text-base">
-              Limpeza técnica especializada, sucção a vácuo completa e destinação ecológica homologada para residências, condomínios e estabelecimentos comerciais.
-            </p>
-          </motion.div>
-
-          {/* Grid: Sinais de Alerta */}
-          <div className="mb-14">
-            <h3 className="text-lg font-bold text-white/90 mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-outfit)' }}>
-              <AlertTriangle className="h-5 w-5 text-amber-400" /> Sinais de que sua caixa de gordura precisa de limpeza urgente:
-            </h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                { t: 'Transbordamento & Refluxo', d: 'Água voltando pela pia da cozinha ou vazando pela tampa da caixa de gordura.', badge: 'Risco Crítico' },
-                { t: 'Mau Cheiro Recorrente', d: 'Odor forte e desagradável impregnando a cozinha ou área externa mesmo limpa.', badge: 'Atenção' },
-                { t: 'Escoamento Muito Lento', d: 'Água da cuba demorando minutos para descer após lavagem de utensílios.', badge: 'Alerta' },
-                { t: 'Presença de Pragas', d: 'Surgimento frequente de baratas e moscas atraídas pela gordura acumulada.', badge: 'Sanitário' },
-              ].map((s, i) => (
-                <motion.div key={i} variants={fade} custom={i} className="glass glass-hover rounded-2xl p-6 border border-amber-500/15 relative">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20 mb-3 inline-block">
-                    {s.badge}
-                  </span>
-                  <h4 className="font-semibold text-white text-base" style={{ fontFamily: 'var(--font-outfit)' }}>{s.t}</h4>
-                  <p className="mt-2 text-xs text-white/60 leading-relaxed">{s.d}</p>
-                </motion.div>
-              ))}
+          <div className="grid lg:grid-cols-2 gap-14 items-center">
+            <div className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-black/30 p-2">
+              <Image
+                src="/assets/rr-novosite/16_servico_caixa_gordura.webp"
+                alt="Caixa de gordura para apresentação da seção de serviço"
+                width={1122} height={1402}
+                className="h-[420px] w-full rounded-2xl object-cover"
+                unoptimized
+              />
             </div>
-          </div>
-
-          {/* Processo Técnico 4 Etapas */}
-          <div className="glass-strong rounded-3xl p-8 border border-cyan-400/20">
-            <h3 className="text-xl font-extrabold text-white mb-8 text-center" style={{ fontFamily: 'var(--font-outfit)' }}>
-              Nosso Processo de Sucção & Limpeza Técnica em 4 Passos
-            </h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { step: '01', t: 'Inspeção Técnica', d: 'Diagnóstico preciso da camada de gordura e capacidade da caixa.' },
-                { step: '02', t: 'Sucção a Vácuo', d: 'Remoção total da crosta pastosa e resíduos sem sujeira no local.' },
-                { step: '03', t: 'Rasparia & Hidro', d: 'Raspagem das paredes internas e jato d\'água nas tubulações.' },
-                { step: '04', t: 'Descarte INEA', d: 'Destinação final autorizada em estação de tratamento ambiental.' },
-              ].map((p, i) => (
-                <div key={i} className="relative p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="text-2xl font-black text-[#10acf0] mb-2" style={{ fontFamily: 'var(--font-outfit)' }}>{p.step}</div>
-                  <div className="font-bold text-sm text-white">{p.t}</div>
-                  <div className="mt-1 text-xs text-white/60 leading-relaxed">{p.d}</div>
+            <div>
+              <motion.div variants={fade} className="text-center lg:text-left max-w-3xl mx-auto lg:mx-0 mb-10">
+                <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1 text-xs font-bold text-amber-300 tracking-wider uppercase mb-3">
+                  <ShieldAlert className="h-3.5 w-3.5" /> Proteção Sanitária & Descarte INEA
+                </span>
+                <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+                  Especialistas em <span className="grad-text">Caixa de Gordura</span>
+                </h2>
+                <p className="mt-3 text-white/70 text-base">
+                  Limpeza técnica especializada, sucção a vácuo completa e destinação ecológica homologada para residências, condomínios e estabelecimentos comerciais.
+                </p>
+              </motion.div>
+              {/* Grid: Sinais de Alerta */}
+              <div className="mb-14">
+                <h3 className="text-lg font-bold text-white/90 mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-outfit)' }}>
+                  <AlertTriangle className="h-5 w-5 text-amber-400" /> Sinais de que sua caixa de gordura precisa de limpeza urgente:
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {[
+                    { t: 'Transbordamento & Refluxo', d: 'Água voltando pela pia da cozinha ou vazando pela tampa da caixa de gordura.', badge: 'Risco Crítico' },
+                    { t: 'Mau Cheiro Recorrente', d: 'Odor forte e desagradável impregnando a cozinha ou área externa mesmo limpa.', badge: 'Atenção' },
+                    { t: 'Escoamento Muito Lento', d: 'Água da cuba demorando minutos para descer após lavagem de utensílios.', badge: 'Alerta' },
+                    { t: 'Presença de Pragas', d: 'Surgimento frequente de baratas e moscas atraídas pela gordura acumulada.', badge: 'Sanitário' },
+                  ].map((s, i) => (
+                    <motion.div key={i} variants={fade} custom={i} className="glass glass-hover rounded-2xl p-6 border border-amber-500/15 relative">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20 mb-3 inline-block">
+                        {s.badge}
+                      </span>
+                      <h4 className="font-semibold text-white text-base" style={{ fontFamily: 'var(--font-outfit)' }}>{s.t}</h4>
+                      <p className="mt-2 text-xs text-white/60 leading-relaxed">{s.d}</p>
+                    </motion.div>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            {/* Rodapé da Seção com Manutenção Preventiva & CTA */}
-            <div className="mt-10 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-sm text-white/70 max-w-xl">
-                <strong className="text-white">Manutenção Preventiva vs Emergencial:</strong> Evite multas da Vigilância Sanitária em restaurantes e paradas inesperadas. Atendemos residências, condomínios e comércios com contratos periódicos sob medida.
               </div>
-              <a
-                href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Preciso de limpeza e sucção técnica de Caixa de Gordura.')}`}
-                target="_blank" rel="noreferrer"
-                className="btn-cyan text-white px-7 py-4 rounded-full font-semibold text-sm inline-flex items-center gap-2 shrink-0 shadow-lg shadow-cyan-500/20"
-              >
-                <PhoneCall className="h-4 w-4" /> Agendar Limpeza de Caixa
-              </a>
+
+              {/* Processo Técnico 4 Etapas */}
+              <div className="glass-strong rounded-3xl p-8 border border-cyan-400/20">
+                <h3 className="text-xl font-extrabold text-white mb-8 text-center" style={{ fontFamily: 'var(--font-outfit)' }}>
+                  Nosso Processo de Sucção & Limpeza Técnica em 4 Passos
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { step: '01', t: 'Inspeção Técnica', d: 'Diagnóstico preciso da camada de gordura e capacidade da caixa.' },
+                    { step: '02', t: 'Sucção a Vácuo', d: 'Remoção total da crosta pastosa e resíduos sem sujeira no local.' },
+                    { step: '03', t: 'Rasparia & Hidro', d: `Raspagem das paredes internas e jato d'água nas tubulações.` },
+                    { step: '04', t: 'Descarte INEA', d: 'Destinação final autorizada em estação de tratamento ambiental.' },
+                  ].map((p, i) => (
+                    <div key={i} className="relative p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="text-2xl font-black text-[#10acf0] mb-2" style={{ fontFamily: 'var(--font-outfit)' }}>{p.step}</div>
+                      <div className="font-bold text-sm text-white">{p.t}</div>
+                      <div className="mt-1 text-xs text-white/60 leading-relaxed">{p.d}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Rodapé da Seção com Manutenção Preventiva & CTA */}
+                <div className="mt-10 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="text-sm text-white/70 max-w-xl">
+                    <strong className="text-white">Manutenção Preventiva vs Emergencial:</strong> Evite multas da Vigilância Sanitária em restaurantes e paradas inesperadas. Atendemos residências, condomínios e comércios com contratos periódicos sob medida.
+                  </div>
+                  <a
+                    href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Preciso de limpeza e sucção técnica de Caixa de Gordura.')}`}
+                    target="_blank" rel="noreferrer"
+                    onClick={() => trackWhatsAppConversion()}
+                    className="btn-cyan text-white px-7 py-4 rounded-full font-semibold text-sm inline-flex items-center gap-2 shrink-0 shadow-lg shadow-cyan-500/20"
+                  >
+                    <PhoneCall className="h-4 w-4" /> Agendar Limpeza de Caixa
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -462,21 +475,31 @@ export default function LandingPage() {
       <Section id="vacol-compacto" className="py-24 bg-[#061022] border-t border-cyan-500/10">
         <div className="mx-auto max-w-7xl px-5">
           <div className="grid lg:grid-cols-12 gap-10 items-center">
-            {/* Esquerda (5 cols) */}
-            <motion.div variants={fade} className="lg:col-span-5">
+            <div className="lg:col-span-5">
               <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-1 text-xs font-bold text-cyan-300 tracking-wider uppercase mb-3">
                 <Truck className="h-3.5 w-3.5" /> Frota Própria Especializada
               </span>
               <h2 className="text-3xl md:text-5xl font-extrabold leading-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
                 VACOL <span className="grad-text">Compacto</span>
               </h2>
+              <div className="relative mt-6">
+                <div className="absolute -inset-1 rounded-3xl bg-gradient-to-tr from-cyan-500/20 to-transparent blur-xl" />
+                <div className="glass-strong relative rounded-3xl overflow-hidden border border-cyan-400/20 p-2">
+                  <Image
+                    src="/assets/rr-novosite/19_vacol_compacto_reutilizado.webp"
+                    alt="Veículo compacto no bloco VACOL"
+                    width={1672} height={941}
+                    className="h-[260px] w-full rounded-2xl object-cover"
+                    unoptimized
+                  />
+                </div>
+              </div>
               <p className="mt-2 text-cyan-300 font-semibold text-lg">Solução Ágil em Qualquer Lugar</p>
               <p className="mt-4 text-white/70 text-base leading-relaxed">
                 Desentupimento e limpeza em locais de difícil acesso, com a praticidade de uma caminhonete customizada e a mesma potência de sucção de um caminhão grande.
               </p>
 
               <div className="mt-6 p-4 rounded-2xl glass border border-cyan-300/20">
-                <div className="text-xs font-bold text-white/90 uppercase tracking-wider mb-2">Por que o VACOL Compacto é imbatível?</div>
                 <p className="text-xs text-white/65 leading-relaxed">
                   Caminhões tradicionais de grande porte não conseguem entrar em garagens subterrâneas com teto baixo nem manobrar em ruas estreitas de Niterói e São Gonçalo. O VACOL Compacto resolve no local exato sem bloquear a rua.
                 </p>
@@ -485,11 +508,12 @@ export default function LandingPage() {
               <a
                 href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Preciso de atendimento com o VACOL Compacto para local de difícil acesso.')}`}
                 target="_blank" rel="noreferrer"
+                onClick={() => trackWhatsAppConversion()}
                 className="mt-8 btn-cyan text-white px-7 py-4 rounded-full font-semibold text-sm inline-flex items-center gap-2 shadow-lg shadow-cyan-500/20"
               >
                 <PhoneCall className="h-4 w-4" /> Chamar VACOL Compacto 24h
               </a>
-            </motion.div>
+            </div>
 
             {/* Direita (7 cols) — Grid de Vantagens */}
             <motion.div variants={fade} custom={1} className="lg:col-span-7 grid sm:grid-cols-2 gap-4">
@@ -529,7 +553,6 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Grid de Fotos Reais */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { src: '/assets/clean/photo_1_2026-07-18_11-27-37_clean.webp', t: 'Caminhões de Sucção Heavy-Duty', d: 'Grande capacidade de vácuo para fossas residenciais, industriais e caixas de gordura condominiais.' },
@@ -554,7 +577,6 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Destaque de Garantia de Qualidade da Frota */}
           <div className="mt-12 p-6 rounded-2xl glass border border-cyan-400/20 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center">
@@ -568,6 +590,7 @@ export default function LandingPage() {
             <a
               href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Vi as fotos da frota da RR e gostaria de solicitar um orçamento para o meu imóvel.')}`}
               target="_blank" rel="noreferrer"
+              onClick={() => trackWhatsAppConversion()}
               className="btn-cyan text-white px-6 py-3 rounded-full font-semibold text-xs inline-flex items-center gap-2"
             >
               <PhoneCall className="h-4 w-4" /> Solicitar Atendimento

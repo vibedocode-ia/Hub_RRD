@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@napi-rs/canvas": "0.1.100",
-    "ajv": "8.17.1",
+    "ajv": "8.20.0",
     "bcryptjs": "3.0.3",
     "canonicalize": "2.1.0",
     "drizzle-orm": "^0.45.2",
@@ -32,7 +32,7 @@
     "jsonc-parser": "3.3.1",
     "libphonenumber-js": "1.12.24",
     "lucide-react": "^1.41.0",
-    "next": "^16.3.5",
+    "next": "16.4.3",
     "parse5": "7.3.0",
     "pdfjs-dist": "5.4.624",
     "playwright-core": "1.58.2",
