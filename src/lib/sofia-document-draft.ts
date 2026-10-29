@@ -101,9 +101,15 @@ const optionalFields: Array<{ field: string; label: string; required: boolean }>
 ]
 
 /** Stable Hub contract: confirmed values, missing fields, whether omission was explicitly consented, and the next action. */
+/** Consentimento explícito do operador: emitir mesmo com dados mínimos ausentes. */
+export function missingDataAcknowledged(payload: Record<string, unknown>) {
+  return payload.missingDataAcknowledged === true
+}
+
 export function documentDraftContract(payload: Record<string, unknown>) {
+  const acknowledged = missingDataAcknowledged(payload)
   const consent = Object.fromEntries(Object.entries(record(payload.optionalFieldConsent)).filter(([, value]) => value === OPTIONAL_FIELD_CONSENT))
-  const missing = requiredDocumentDraftFields(payload)
+  const missing = acknowledged ? [] : requiredDocumentDraftFields(payload)
   const missingRequiredFields = missing.map(({ field, label }) => ({ field, label, required: true }))
   const missingOptionalFields: typeof optionalFields = []
   const confirmedValues: Record<string, unknown> = {}
@@ -114,7 +120,7 @@ export function documentDraftContract(payload: Record<string, unknown>) {
     if (!item.required) { if (supplied(value) !== '') confirmedValues[item.field] = value; else missingOptionalFields.push(item) }
     else if (supplied(value) !== '') confirmedValues[item.field] = value
   }
-  const unconsentedOptionalFields = missingOptionalFields.filter(item => consent[item.field] !== OPTIONAL_FIELD_CONSENT)
+  const unconsentedOptionalFields = acknowledged ? [] : missingOptionalFields.filter(item => consent[item.field] !== OPTIONAL_FIELD_CONSENT)
   const nextAction = missingRequiredFields.length ? 'collect_missing_fields' : unconsentedOptionalFields.length ? 'confirm_optional_omissions' : 'review_draft'
   return {
     confirmedValues, missingRequiredFields, missingOptionalFields, unconsentedOptionalFields,

@@ -7,7 +7,7 @@ import {
 } from '@/db'
 import { resolveDocumentIdentity } from '@/lib/document-identity'
 import { supersedeOfficialDocument } from '@/lib/official-document-lifecycle'
-import { documentDraftContract, requiredDocumentDraftFields, conflictingDocumentAliases } from '@/lib/sofia-document-draft'
+import { documentDraftContract, requiredDocumentDraftFields, conflictingDocumentAliases, missingDataAcknowledged } from '@/lib/sofia-document-draft'
 import { renderRegisteredTemplate } from '@/lib/documents/registered-template'
 import { selectSofiaDocumentTemplate, unknownDocumentFields } from '@/lib/sofia-document-template'
 import { moneyToWords } from '@/lib/documents/money-to-words'
@@ -71,13 +71,26 @@ export function resolveIssueRecipient(payload: Record<string, unknown>, leadRows
   return matches.length === 1 ? { kind: matches[0].kind, id: matches[0].row.id } : null
 }
 
+/** Marcador único para dados ausentes: nunca inventa conteúdo, apenas declara a ausência. */
+export const MISSING_DATA_PLACEHOLDER = 'Não informado'
+
 /** Validate the five document minimums before building anything that can be persisted. */
 export function prepareIssueDraft(payload: Record<string, unknown>, changes: { amount?: string; paymentMethod?: string }) {
   const next: Record<string, unknown> = { ...payload }
-  const missing = requiredDocumentDraftFields(next)
+  const acknowledged = missingDataAcknowledged(next)
+  // Consentimento explícito: dados ausentes são emitidos como "Não informado"/valor zerado.
+  if (acknowledged) {
+    if (!text(next.customerName, 160)) next.customerName = MISSING_DATA_PLACEHOLDER
+    if (!text(next.customerDocument, 32)) next.customerDocument = MISSING_DATA_PLACEHOLDER
+    if (!text(next.amount, 32)) next.amount = '0,00'
+    if (!text(next.documentDate, 10)) next.documentDate = new Date().toISOString().slice(0, 10)
+    if (!text(next.problemReported)) next.problemReported = MISSING_DATA_PLACEHOLDER
+  }
+  const missing = acknowledged ? [] : requiredDocumentDraftFields(next)
   const contract = documentDraftContract(next)
   if (changes.amount !== undefined || changes.paymentMethod !== undefined || missing.length || contract.nextAction !== 'review_draft') return { ok: false as const, missing: [...missing, ...contract.unconsentedOptionalFields.map(item => ({ field: item.field, label: item.label, requiredFor: 'document_issue' }))] }
-  const identity = resolveDocumentIdentity(text(next.customerDocument, 32))!
+  const identity = resolveDocumentIdentity(text(next.customerDocument, 32)) ?? (acknowledged ? { document: text(next.customerDocument, 32), type: 'PF' as const } : null)
+  if (!identity) return { ok: false as const, missing: [{ field: 'customer.document', label: 'CPF ou CNPJ válido', requiredFor: 'document_issue' }] }
   const rawAmount = text(next.amount, 32).replace(/^R\$\s*/, '')
   const numericAmount = Number(rawAmount.includes(',') || /^\d{1,3}(?:\.\d{3})+$/.test(rawAmount) ? rawAmount.replace(/\./g, '').replace(',', '.') : rawAmount)
   const amount = numericAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -216,18 +229,38 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
   const prepared = prepareIssueDraft(payload, input)
   if (!prepared.ok) return { ok: false, status: 422, error: 'O rascunho ainda precisa de dados antes da emissão.', pendingFields: prepared.missing.map(item => ({ key: item.field, label: item.label })) }
 
-  const identity = resolveDocumentIdentity(text(payload.customerDocument, 32))!
+  const acknowledged = missingDataAcknowledged(payload)
+  const identity = resolveDocumentIdentity(text(payload.customerDocument, 32))
+  if (!identity && !acknowledged) return { ok: false, status: 422, error: 'CPF ou CNPJ do cliente inválido.' }
   const customerPhone = digits(payload.customerPhone)
   const explicitLead = payload.leadId
   const explicitClient = payload.clientId
   if ((explicitLead !== undefined && !uuid(explicitLead)) || (explicitClient !== undefined && !uuid(explicitClient)) || (explicitLead && explicitClient)) return { ok: false, status: 422, error: 'Destinatário inválido.' }
-  const matchingLeads = await db.select({ id: leads.id, name: leads.name, normalizedPhone: leads.normalizedPhone, normalizedDocument: leads.normalizedDocument, convertedClientId: leads.convertedClientId }).from(leads).where(
-    explicitLead ? eq(leads.id, explicitLead as string) : customerPhone ? or(eq(leads.normalizedDocument, identity.document), eq(leads.normalizedPhone, customerPhone)) : eq(leads.normalizedDocument, identity.document),
-  ).limit(3)
-  const matchingClients = await db.select({ id: clients.id, name: clients.name, normalizedPhone: clients.normalizedPhone, document: clients.document, isActive: clients.isActive }).from(clients).where(
-    explicitClient ? eq(clients.id, explicitClient as string) : sql`regexp_replace(${clients.document}, '[^0-9]', '', 'g') = ${digits(identity.document)}`,
-  ).limit(3)
-  const recipient = resolveIssueRecipient(payload, matchingLeads, matchingClients)
+  const matchingLeads = identity || explicitLead
+    ? await db.select({ id: leads.id, name: leads.name, normalizedPhone: leads.normalizedPhone, normalizedDocument: leads.normalizedDocument, convertedClientId: leads.convertedClientId }).from(leads).where(
+        explicitLead ? eq(leads.id, explicitLead as string) : customerPhone ? or(eq(leads.normalizedDocument, identity!.document), eq(leads.normalizedPhone, customerPhone)) : eq(leads.normalizedDocument, identity!.document),
+      ).limit(3)
+    : []
+  const matchingClients = identity || explicitClient
+    ? await db.select({ id: clients.id, name: clients.name, normalizedPhone: clients.normalizedPhone, document: clients.document, isActive: clients.isActive }).from(clients).where(
+        explicitClient ? eq(clients.id, explicitClient as string) : sql`regexp_replace(${clients.document}, '[^0-9]', '', 'g') = ${digits(identity!.document)}`,
+      ).limit(3)
+    : []
+  let recipient = resolveIssueRecipient(payload, matchingLeads, matchingClients)
+  if (!recipient && acknowledged) {
+    // Emissão consentida sem CPF/CNPJ: vincula ao cadastro existente de mesmo nome, sem criar CRM aqui.
+    const wanted = text(payload.customerName, 160).toLocaleLowerCase('pt-BR')
+    const namedLeads = customerPhone
+      ? await db.select({ id: leads.id, name: leads.name, convertedClientId: leads.convertedClientId }).from(leads).where(and(sql`lower(${leads.name}) = ${wanted}`, eq(leads.normalizedPhone, customerPhone))).limit(3)
+      : []
+    const namedClients = await db.select({ id: clients.id, name: clients.name, isActive: clients.isActive }).from(clients).where(sql`lower(${clients.name}) = ${wanted}`).limit(3)
+    const ordered = [
+      ...namedLeads.filter(row => !row.convertedClientId).map(row => ({ kind: 'lead' as const, id: row.id })),
+      ...namedClients.filter(row => row.isActive !== false).map(row => ({ kind: 'client' as const, id: row.id })),
+    ]
+    if (ordered.length === 1) recipient = ordered[0]
+    else if (ordered.length > 1) return { ok: false, status: 422, error: 'Mais de um cadastro com esse nome; informe o CPF para emitir.' }
+  }
   if (!recipient) return { ok: false, status: 422, error: 'Destinatário existente não identificado de forma única; confirme o ID, nome e CPF/CNPJ no CRM.' }
 
   const selected = await selectSofiaDocumentTemplate(docType as DocType, boundTemplateId || undefined)
@@ -246,8 +279,12 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
   const values = resolveTemplateValues(documentPayload.data, confirmed)
   // Canonical reviewed values and their aliases satisfy the schema too.
   const templateRequired = schemaFields.filter(field => field.required && !String(values[field.key] ?? field.defaultValue ?? '').trim())
-  if (templateRequired.length) return { ok: false, status: 422, error: 'O modelo selecionado exige dados adicionais antes da emissão.', pendingFields: templateRequired.map(({ key, label }) => ({ key, label })) }
-  const rendered = await renderRegisteredTemplate(selected, documentPayload.data, confirmed)
+  if (templateRequired.length && !acknowledged) return { ok: false, status: 422, error: 'O modelo selecionado exige dados adicionais antes da emissão.', pendingFields: templateRequired.map(({ key, label }) => ({ key, label })) }
+  // Campos exigidos pelo modelo sem dado real recebem o marcador de ausência, nunca conteúdo inventado.
+  const effectiveConfirmed = templateRequired.length
+    ? { ...confirmed, ...Object.fromEntries(templateRequired.map(({ key }) => [key, MISSING_DATA_PLACEHOLDER])) }
+    : confirmed
+  const rendered = await renderRegisteredTemplate(selected, documentPayload.data, effectiveConfirmed)
   if (!rendered.ok) return { ok: false, status: 422, error: rendered.error.message }
 
   const validateLockedIssue = async (tx: Parameters<Parameters<NonNullable<typeof db>['transaction']>[0]>[0]) => {
@@ -260,6 +297,10 @@ async function issueBoundDraftDocument(input: IssueDraftInput, portalActor?: Por
     if (externalAuthor && draftReviewVersion(payload, current) !== input.reviewVersion) return false
     const lockedLeads = recipient.kind === 'lead' ? await tx.select().from(leads).where(eq(leads.id, recipient.id)).for('update').limit(1) : []
     const lockedClients = recipient.kind === 'client' ? await tx.select().from(clients).where(eq(clients.id, recipient.id)).for('update').limit(1) : []
+    if (missingDataAcknowledged(payload)) {
+      const bound = recipient.kind === 'lead' ? lockedLeads[0] : lockedClients[0]
+      return Boolean(bound && bound.id === recipient.id)
+    }
     const currentRecipient = resolveIssueRecipient(payload, lockedLeads, lockedClients)
     return currentRecipient?.id === recipient.id && currentRecipient.kind === recipient.kind
   }

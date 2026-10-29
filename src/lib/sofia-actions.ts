@@ -57,6 +57,8 @@ const createDraftFields = z.object({
   problemReported: z.string().trim().min(1).max(2000).optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
+  // Consentimento explícito: emitir mesmo com dados ausentes (preenchidos como "Não informado").
+  missingDataAcknowledged: z.literal(true).optional(),
 }).strict()
 export const SofiaCreateDraftRequest = z.union([central.extend(createDraftFields.shape), godAdminCentral.extend(createDraftFields.shape).extend({ centralContactId: z.undefined().optional(), centralClientId: z.undefined().optional() })]).refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
 
@@ -79,6 +81,8 @@ const updateDraftFields = z.object({
   problemReported: z.string().trim().min(1).max(2000).optional(),
   priority: z.enum(['NORMAL', 'URGENTE_24H']).optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
+  // Consentimento explícito: emitir mesmo com dados ausentes (preenchidos como "Não informado").
+  missingDataAcknowledged: z.literal(true).optional(),
 }).strict()
 export const SofiaUpdateDraftRequest = z.union([central.extend(updateDraftFields.shape), godAdminCentral.extend(updateDraftFields.shape).extend({ centralContactId: z.undefined().optional(), centralClientId: z.undefined().optional() })]).refine(exclusiveRecipient, 'Selecione apenas um destinatário.')
 const documentTemplateFields = {
@@ -100,12 +104,16 @@ const issueDraftFields = z.object({
   documentFields: SofiaDocumentFields.optional(),
   supersedesDocumentId: z.string().uuid().optional(),
   conversationSummary: z.string().trim().min(1).max(4000),
+  // Consentimento explícito: emitir mesmo com dados ausentes (preenchidos como "Não informado").
+  missingDataAcknowledged: z.literal(true).optional(),
 }).strict()
 export const SofiaIssueDraftRequest = z.union([central.extend(issueDraftFields.shape), godAdminCentral.extend(issueDraftFields.shape).extend({ centralContactId: z.undefined().optional(), centralClientId: z.undefined().optional() })])
 export const SofiaActionRequest = z.union([SofiaGetDocumentTemplateRequest, SofiaListServicesRequest, SofiaListActiveTeamsRequest, SofiaCreateDraftRequest, SofiaUpdateDraftRequest, SofiaIssueDraftRequest])
 export type SofiaActionRequest = z.infer<typeof SofiaActionRequest>
 
 export function pendingDraftFields(input: z.infer<typeof SofiaCreateDraftRequest>) {
+  // Consentimento explícito de emissão com dados ausentes dispensa a coleta prévia.
+  if (input.missingDataAcknowledged === true) return []
   // CPF ou CNPJ and the other document minimums are owned by the Hub contract.
   return requiredDocumentDraftFields(input)
 }

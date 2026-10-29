@@ -66,6 +66,35 @@ test('recipient must match explicit UUID or unique document/phone identity; send
   assert.equal(resolveIssueRecipient({ ...complete, clientId: client.id, leadId: id }, [lead], [client]), null)
 })
 
+test('explicit missing-data acknowledgement issues a document with declared absences', () => {
+  const acknowledged = { customerName: '', customerDocument: '', amount: '', documentDate: '', problemReported: '', missingDataAcknowledged: true }
+  const result = prepareIssueDraft(acknowledged, {})
+  assert.equal(result.ok, true)
+  if (!result.ok) return
+  assert.equal(result.customerName, 'Não informado')
+  assert.equal(result.totalValue, '0.00')
+  assert.equal(result.amountInWords, 'zero reais')
+  const { data } = result.documentPayloadFor('ORCAMENTO_TECNICO', 'ORCT-2026-0001')
+  assert.equal(data.contractorName, 'Não informado')
+  assert.equal(data.contractorDocument, 'Não informado')
+  assert.equal(data.totalAmount, '0,00')
+  assert.match(String(data.issueDate), /^\d{2}\/\d{2}\/\d{4}$/)
+  // Sem consentimento, os mesmos dados vazios continuam bloqueando a emissão.
+  const blocked = prepareIssueDraft({ customerName: '', customerDocument: '', amount: '', documentDate: '', problemReported: '' }, {})
+  assert.equal(blocked.ok, false)
+})
+
+test('missing-data acknowledgement keeps real values that were supplied', () => {
+  const result = prepareIssueDraft({ ...complete, customerDocument: '', missingDataAcknowledged: true }, {})
+  assert.equal(result.ok, true)
+  if (!result.ok) return
+  const { data } = result.documentPayloadFor('ORCAMENTO_TECNICO', 'ORCT-2026-0002')
+  assert.equal(data.contractorName, 'Ana Exemplo')
+  assert.equal(data.contractorDocument, 'Não informado')
+  assert.equal(data.totalAmount, '350,50')
+  assert.equal(data.issueDate, '15/10/2026')
+})
+
 test('issuer never inserts clients, addresses or requests as a side-effect', () => {
   const source = readFileSync('src/lib/sofia-issue-draft.ts', 'utf8')
   assert.doesNotMatch(source, /\.insert\((?:clients|clientAddresses|serviceRequests|leads|leadAddresses|leadServiceRequests)\)/)
