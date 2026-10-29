@@ -306,9 +306,9 @@ export default function LandingPage() {
               <div className="absolute -inset-2 rounded-[2.5rem] bg-gradient-to-tr from-cyan-500/20 via-blue-600/10 to-transparent blur-2xl pointer-events-none" />
               <div className="glass-strong relative rounded-3xl overflow-hidden border border-cyan-400/25 p-2">
                 <Image
-                  src="/assets/hidro.png"
+                  src="/assets/rr-novosite/15_servico_hidrojateamento.webp"
                   alt="Hidrojateamento Profissional RR Desentupidora"
-                  width={900} height={700}
+                  width={1122} height={1402}
                   className="w-full h-[420px] object-cover rounded-2xl"
                   unoptimized
                 />
@@ -398,6 +398,16 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
+          <div className="my-8 overflow-hidden rounded-3xl border border-cyan-400/20 bg-black/30 p-2">
+            <Image
+              src="/assets/rr-novosite/16_servico_caixa_gordura.webp"
+              alt="Caixa de gordura para apresentação da seção de serviço"
+              width={1122} height={1402}
+              className="h-[420px] w-full rounded-2xl object-cover"
+              unoptimized
+            />
+          </div>
+
           {/* Grid: Sinais de Alerta */}
           <div className="mb-14">
             <h3 className="text-lg font-bold text-white/90 mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-outfit)' }}>
@@ -482,6 +492,14 @@ export default function LandingPage() {
                 </p>
               </div>
 
+              <Image
+                src="/assets/rr-novosite/19_vacol_compacto_reutilizado.webp"
+                alt="VACOL Compacto"
+                width={1672} height={941}
+                className="mt-6 h-[280px] w-full rounded-2xl object-cover"
+                unoptimized
+              />
+
               <a
                 href={`${WHATSAPP_BASE}&text=${encodeURIComponent('Olá! Preciso de atendimento com o VACOL Compacto para local de difícil acesso.')}`}
                 target="_blank" rel="noreferrer"
@@ -532,12 +550,12 @@ export default function LandingPage() {
           {/* Grid de Fotos Reais */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { src: '/assets/clean/photo_1_2026-07-18_11-27-37_clean.webp', t: 'Caminhões de Sucção Heavy-Duty', d: 'Grande capacidade de vácuo para fossas residenciais, industriais e caixas de gordura condominiais.' },
-              { src: '/assets/clean/photo_17_2026-07-18_11-27-37_clean.webp', t: 'Equipe Técnica Uniformizada', d: 'Profissionais experientes, treinados e certificados pelas normas NR-33 e NR-35.' },
-              { src: '/assets/clean/photo_24_2026-07-18_11-27-38_clean.webp', t: 'Unidade de Hidrojateamento HD', d: 'Pressão ajustável computadorizada para desobstrução sem danificar as redes subterrâneas.' },
-              { src: '/assets/clean/photo_27_2026-07-18_11-27-38_clean.webp', t: 'Pronta Resposta 24h/7d', d: 'Veículos posicionados estrategicamente em Niterói para atendimento imediato.' },
-              { src: '/assets/clean/photo_22_2026-07-18_11-27-37_clean.webp', t: 'Equipamentos de Sucção Limpa', d: 'Operação higiênica e sem vazamentos para residências, restaurantes e hospitais.' },
-              { src: '/assets/clean/photo_20_2026-07-18_11-27-37_clean.webp', t: 'Atendimento Comercial e Predial', d: 'Contratos de manutenção preventiva periódica para condomínios e estabelecimentos.' },
+              { src: '/assets/rr-novosite/01_caminhao.webp', t: 'Caminhões de Sucção', d: 'Grande capacidade de vácuo para fossas residenciais, industriais e caixas de gordura condominiais.' },
+              { src: '/assets/rr-novosite/02_preparacao_equipe.webp', t: 'Equipe Técnica Uniformizada', d: 'Profissionais experientes, treinados e certificados pelas normas NR-33 e NR-35.' },
+              { src: '/assets/rr-novosite/03_operacao_com_mangueira.webp', t: 'Unidade de Hidrojateamento HD', d: 'Pressão ajustável computadorizada para desobstrução sem danificar as redes subterrâneas.' },
+              { src: '/assets/rr-novosite/04_veiculo_compacto.webp', t: 'Pronta Resposta 24h/7d', d: 'Veículos posicionados estrategicamente em Niterói para atendimento imediato.' },
+              { src: '/assets/rr-novosite/05_conexoes_equipamento.webp', t: 'Equipamentos de Sucção Limpa', d: 'Operação higiênica e sem vazamentos para residências, restaurantes e hospitais.' },
+              { src: '/assets/rr-novosite/06_atendimento_condominial.webp', t: 'Atendimento Comercial e Predial', d: 'Contratos de manutenção preventiva periódica para condomínios e estabelecimentos.' },
             ].map((f, i) => (
               <motion.div key={i} variants={fade} custom={i} className="glass glass-hover rounded-3xl overflow-hidden border border-white/10 flex flex-col">
                 <div className="relative h-56 w-full overflow-hidden bg-black/40">
