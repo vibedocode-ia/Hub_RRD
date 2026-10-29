@@ -144,7 +144,8 @@ export function prepareIssueDraft(payload: Record<string, unknown>, changes: { a
 
 function issueDocumentNumber(docType: string, date: string, draftId: string) {
   const prefix = docType === 'RECIBO_GARANTIA' ? 'REC' : docType === 'LAUDO_TECNICO' ? 'OS' : docType === 'ORCAMENTO_TECNICO' ? 'ORCT' : 'ORC'
-  return `${prefix}-${date.slice(-4)}-${draftId.replace(/-/g, '').toUpperCase()}`
+  // Sufixo curto: o retângulo do número no modelo aprovado não comporta um UUID completo.
+  return `${prefix}-${date.slice(-4)}-${draftId.replace(/-/g, '').slice(0, 6).toUpperCase()}`
 }
 
 /** Server-owned effective review; uses the issuance renderer, never a second renderer. */
