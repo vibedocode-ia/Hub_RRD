@@ -145,7 +145,8 @@ export function prepareIssueDraft(payload: Record<string, unknown>, changes: { a
 function issueDocumentNumber(docType: string, date: string, draftId: string) {
   const prefix = docType === 'RECIBO_GARANTIA' ? 'REC' : docType === 'LAUDO_TECNICO' ? 'OS' : docType === 'ORCAMENTO_TECNICO' ? 'ORCT' : 'ORC'
   // Sufixo curto: o retângulo do número no modelo aprovado não comporta um UUID completo.
-  return `${prefix}-${date.slice(-4)}-${draftId.replace(/-/g, '').slice(0, 6).toUpperCase()}`
+  // Formato ORCT-26-1A2B3C: mede no máximo 106pt a 12px, dentro dos 113pt do modelo.
+  return `${prefix}-${date.slice(-2)}-${draftId.replace(/-/g, '').slice(0, 6).toUpperCase()}`
 }
 
 /** Server-owned effective review; uses the issuance renderer, never a second renderer. */
