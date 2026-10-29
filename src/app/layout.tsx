@@ -102,6 +102,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       style={{ fontFamily: 'var(--font-jakarta), system-ui, sans-serif' }}
     >
       <head>
+        {/* Google Tag (gtag.js) - Google Ads */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-16945572339"
+        />
+        <Script
+          id="google-ads-tag"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-16945572339');
+            `,
+          }}
+        />
         {/* Google Tag Manager */}
         <Script
           id="gtm-base"

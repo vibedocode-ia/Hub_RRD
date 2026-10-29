@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Phone, MessageCircle } from 'lucide-react';
+import { trackWhatsAppConversion } from '@/lib/tracking';
 
 interface StickyMobileCtaProps {
   waLink?: string;
@@ -44,6 +45,7 @@ export default function StickyMobileCta({
           href={waLink}
           target="_blank"
           rel="noreferrer"
+          onClick={() => trackWhatsAppConversion()}
           className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#25D366] text-white font-bold text-sm shadow-[0_0_15px_rgba(37,211,102,0.35)] active:scale-95 transition-transform"
           aria-label="Chamar no WhatsApp"
         >

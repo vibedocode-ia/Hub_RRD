@@ -2,7 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { PhoneCall, Mail, MapPin, Send, ArrowRight, Clock, MessageSquare } from 'lucide-react';
+import { PhoneCall, MapPin, Clock, Send, MessageSquare } from 'lucide-react';
+import { trackWhatsAppConversion } from '@/lib/tracking';
 
 export default function SecaoContato({
   waLink,
@@ -27,6 +28,7 @@ export default function SecaoContato({
     }
     setErro('');
     const msg = `Olá! Meu nome é ${nome.trim()}. Meu telefone é ${tel.trim()}. Gostaria de um orçamento para: ${problema.trim()}`;
+    trackWhatsAppConversion();
     window.open(`https://api.whatsapp.com/send?phone=5521996699191&text=${encodeURIComponent(msg)}`, '_blank');
   };
 

@@ -19,6 +19,7 @@ import {
   Home as HomeIcon, Factory, AlertTriangle, Gauge, Waves, ShieldAlert, Check, ChevronRight,
 } from 'lucide-react';
 import { VERSION } from '@/lib/version';
+import { trackWhatsAppConversion } from '@/lib/tracking';
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const WHATSAPP_BASE = 'https://api.whatsapp.com/send?phone=5521996699191';
@@ -192,6 +193,7 @@ export default function LandingPage() {
               <a key={l.href} href={l.href} className="hover:text-[#10acf0] transition-colors">{l.label}</a>
             ))}
             <a href={WA_DEFAULT} target="_blank" rel="noreferrer"
+              onClick={() => trackWhatsAppConversion()}
               className="btn-cyan text-white px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-1.5"
               aria-label="Chamar RR Desentupidora 24h no WhatsApp">
               <PhoneCall className="h-4 w-4" /> Chamar 24h
@@ -245,6 +247,7 @@ export default function LandingPage() {
               </nav>
               <div className="mt-auto flex flex-col gap-3">
                 <a href={WA_DEFAULT} target="_blank" rel="noreferrer"
+                  onClick={() => trackWhatsAppConversion()}
                   className="btn-cyan text-white px-5 py-3 rounded-full font-semibold inline-flex items-center justify-center gap-2">
                   <PhoneCall className="h-5 w-5" /> Chamar 24h
                 </a>
@@ -726,6 +729,7 @@ export default function LandingPage() {
             )}
 
             <a href={buildWaLink()} target="_blank" rel="noreferrer"
+              onClick={() => trackWhatsAppConversion()}
               className="btn-cyan text-white w-full py-4 rounded-2xl font-semibold inline-flex items-center justify-center gap-3 text-base"
               aria-label="Solicitar orçamento grátis no WhatsApp">
               <PhoneCall className="h-5 w-5" /> Solicitar Orçamento Grátis
@@ -762,7 +766,7 @@ export default function LandingPage() {
             <span className="text-white/15">|</span>
             <a href={INSTAGRAM} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="Instagram RR Desentupidora">Instagram</a>
             <span className="text-white/15">|</span>
-            <a href={WA_DEFAULT} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="WhatsApp RR Desentupidora">WhatsApp</a>
+            <a href={WA_DEFAULT} target="_blank" rel="noreferrer" className="hover:text-[#10acf0] transition-colors" aria-label="WhatsApp RR Desentupidora" onClick={() => trackWhatsAppConversion()}>WhatsApp</a>
           </div>
         </div>
         <div className="mx-auto max-w-7xl px-5 mt-10 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-white/40 gap-3">
@@ -813,6 +817,7 @@ export default function LandingPage() {
         {showFloat && (
           <motion.a
             href={WA_DEFAULT} target="_blank" rel="noreferrer"
+            onClick={() => trackWhatsAppConversion()}
             initial={{ opacity: 0, scale: .8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 22 }}
             className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 btn-cyan text-white rounded-full shadow-xl"

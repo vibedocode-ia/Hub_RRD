@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Phone, MessageCircle } from 'lucide-react';
+import { trackWhatsAppConversion } from '@/lib/tracking';
 
 const TOTAL_FRAMES = 240;
 const FASES = [
@@ -264,6 +265,7 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
             href={waLink}
             target="_blank"
             rel="noreferrer"
+            onClick={() => trackWhatsAppConversion()}
             className="flex items-center justify-center gap-2.5 rounded-xl bg-[#25D366] px-7 py-4 text-base font-bold text-white shadow-[0_0_20px_rgba(37,211,102,0.35)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(37,211,102,0.6)] active:scale-95"
           >
             <MessageCircle className="h-5 w-5 fill-white text-white" />
