@@ -120,9 +120,9 @@ export function pendingDraftFields(input: z.infer<typeof SofiaCreateDraftRequest
 
 
 // CRM Sofia: contrato fechado para clientes, separado das ações operacionais.
-export type SofiaClientAction = 'list_clients' | 'get_client_profile' | 'create_client' | 'update_client' | 'archive_client'
+export type SofiaClientAction = 'list_clients' | 'get_client_profile' | 'create_client' | 'update_client' | 'archive_client' | 'delete_client'
 
-const ACTIONS = new Set<SofiaClientAction>(['list_clients', 'get_client_profile', 'create_client', 'update_client', 'archive_client'])
+const ACTIONS = new Set<SofiaClientAction>(['list_clients', 'get_client_profile', 'create_client', 'update_client', 'archive_client', 'delete_client'])
 const clean = (value: unknown, limit: number) => typeof value === 'string' ? value.trim().slice(0, limit) : ''
 
 export function digits(value: unknown) { return clean(value, 32).replace(/\D/g, '') }
@@ -172,6 +172,8 @@ export function parseSofiaClientAction(raw: unknown): { ok: true; action: SofiaC
     if (data.document && !validCpf(data.document)) return { ok: false, error: 'CPF inválido. Corrija o documento antes de atualizar.' }
   }
   if (action === 'archive_client' && !/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
+  if (action === 'delete_client' && !/^[0-9a-f-]{36}$/i.test(clean(data.clientId, 40))) return { ok: false, error: 'Cliente inválido.' }
+  if (action === 'delete_client' && data.force !== undefined && typeof data.force !== 'boolean') return { ok: false, error: 'Confirmação de exclusão inválida.' }
   return { ok: true, action, data }
 }
 

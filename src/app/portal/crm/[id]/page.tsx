@@ -121,6 +121,13 @@ export default async function ClientDetailPage({ params }: PageProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/portal/crm/${client.id}/editar`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-cyan-300 transition hover:bg-slate-700">Editar Cliente</Link>
           <DeleteResourceButton endpoint={`/api/crm/${client.id}`} redirectTo="/portal/crm" label="Arquivar cliente" confirmText="Arquivar este cliente? O histórico e os documentos serão preservados." />
+          <DeleteResourceButton
+            endpoint={`/api/crm/${client.id}?hard=1`}
+            redirectTo="/portal/crm"
+            label="Excluir definitivamente"
+            confirmText="Excluir definitivamente este cliente? Endereços e vínculos saem junto. Se houver documentos, chamados ou propostas, será pedida uma segunda confirmação."
+            confirmPhrase="EXCLUIR"
+          />
           <Link
             href={`/portal/chamados/novo?clientId=${client.id}`}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-cyan-600/20 transition hover:bg-cyan-500"

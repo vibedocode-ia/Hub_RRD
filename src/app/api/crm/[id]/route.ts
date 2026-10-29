@@ -3,6 +3,7 @@ import { and, eq, isNull, or } from 'drizzle-orm';
 import { db, clients, clientAddresses, contacts } from '@/db';
 import { requireLocalPermission } from '../../../../lib/require-local-permission';
 import { normalizeCrmInput } from '../../../../lib/crm-profile';
+import { clientPurgeCounts, clientPurgeHasHistory, purgeClientRecords } from '../../../../lib/client-purge';
 
 type Params = { params: Promise<{ id: string }> };
 class ContactUnavailableError extends Error {}
@@ -58,13 +59,43 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ success: true, clientId: id });
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const authorized = await requireLocalPermission('crm.write');
-  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para arquivar cliente' }, { status: 403 });
+  if (!authorized) return NextResponse.json({ error: 'Permissão insuficiente para excluir cliente' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'Banco de dados não disponível' }, { status: 500 });
   const { id } = await params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return NextResponse.json({ error: 'Cliente inválido.' }, { status: 422 });
-  const [archived] = await db.update(clients).set({ isActive: false, updatedAt: new Date() }).where(eq(clients.id, id)).returning({ id: clients.id });
-  if (!archived) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
-  return NextResponse.json({ success: true, archived: true, clientId: id });
+
+  const query = req.nextUrl.searchParams;
+  const truthy = (value: string | null) => value === '1' || value?.toLowerCase() === 'true';
+  const hard = truthy(query.get('hard'));
+  const force = truthy(query.get('force'));
+
+  // Sem `hard`: comportamento histórico — apenas arquiva, preservando todo o histórico.
+  if (!hard) {
+    const [archived] = await db.update(clients).set({ isActive: false, updatedAt: new Date() }).where(eq(clients.id, id)).returning({ id: clients.id });
+    if (!archived) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
+    return NextResponse.json({ success: true, archived: true, clientId: id });
+  }
+
+  const [existing] = await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.id, id)).limit(1);
+  if (!existing) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
+
+  const blockers = await clientPurgeCounts(id);
+  if (clientPurgeHasHistory(blockers) && !force) {
+    return NextResponse.json({
+      error: 'Este cliente tem histórico vinculado (documentos, chamados, propostas ou anexos). Confirme a exclusão definitiva para apagar tudo.',
+      blockers,
+      hint: 'Repita com force=1 para excluir o histórico junto, ou use o arquivamento para preservá-lo.',
+    }, { status: 409 });
+  }
+
+  try {
+    const removed = await purgeClientRecords(id, { actorUserId: authorized.access.id, reason: 'portal-crm-delete' });
+    if (!removed.client) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
+    return NextResponse.json({ success: true, deleted: true, clientId: id, removed });
+  } catch (error) {
+    console.error('Falha ao excluir cliente', error);
+    return NextResponse.json({ error: 'Não foi possível excluir o cliente; nada foi apagado.' }, { status: 500 });
+  }
 }

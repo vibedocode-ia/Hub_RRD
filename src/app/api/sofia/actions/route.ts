@@ -14,6 +14,7 @@ import { issueDraftDocument } from '@/lib/sofia-issue-draft'
 import { archiveOfficialDocument, supersedeOfficialDocument } from '@/lib/official-document-lifecycle'
 import { authorizeRrdCentralEnvelope } from '@/lib/sofia-godadmin-policy'
 import { buildCrmProfile } from '@/lib/crm-profile'
+import { clientPurgeCounts, clientPurgeHasHistory, purgeClientRecords } from '@/lib/client-purge'
 import { VERSION } from '@/lib/version'
 import { isNativePeopleAccessRead, listNativePeopleAccesses } from '@/lib/native-people-accesses'
 import { executeSofiaPersonProfile, SofiaPersonProfileRequest, SofiaManagedPersonProfileRequest } from '@/lib/sofia-person-profile'
@@ -450,6 +451,18 @@ export async function POST(req: NextRequest) {
       if (!archived) return reply({ success: false, error: 'Cliente ativo não encontrado.' }, 404, correlationId)
       await db.insert(sofiaEvents).values({ senderPhone: String((rawBody as Record<string, unknown>).senderPhone), idempotencyKey: correlationId, rawPayload: { action, clientId: id }, intentDetected: 'crm_archive_client', status: 'PROCESSED' })
       return reply({ success: true, action, client: safeClientSummary(archived) }, 200, correlationId)
+    }
+    if (action === 'delete_client') {
+      const blockers = await clientPurgeCounts(id)
+      if (clientPurgeHasHistory(blockers) && data.force !== true) {
+        return reply({ success: false, action, error: 'Cliente tem histórico vinculado (documentos, chamados, propostas ou anexos). Confirme com force=true para excluir tudo.', blockers }, 409, correlationId)
+      }
+      const sender = String((rawBody as Record<string, unknown>).senderPhone)
+      const [actor] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, normalizeRrdPhone(sender) ?? sender.replace(/\D/g, '')), eq(users.isActive, true))).limit(1)
+      const removed = await purgeClientRecords(id, { actorUserId: actor?.id ?? null, reason: 'sofia-delete-client' })
+      if (!removed.client) return reply({ success: false, error: 'Cliente não encontrado.' }, 404, correlationId)
+      await db.insert(sofiaEvents).values({ senderPhone: sender, idempotencyKey: correlationId, rawPayload: { action, clientId: id, removed }, intentDetected: 'crm_delete_client', status: 'PROCESSED' })
+      return reply({ success: true, action, client: { id, name: client.name }, removed }, 200, correlationId)
     }
     const updates: Record<string, unknown> = { updatedAt: new Date() }
     if (data.name !== undefined) updates.name = clean(data.name, 160)
