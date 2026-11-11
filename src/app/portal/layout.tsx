@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import LogoutButton from './components/LogoutButton';
 import MobileBottomNav from './components/MobileBottomNav';
+import { VERSION } from '@/lib/version';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,6 +107,7 @@ export default async function PortalLayout({
           <div className="p-3 bg-slate-950/60 border border-slate-800/60 rounded-xl text-xs text-slate-400">
             <div className="font-semibold text-slate-200 mb-1">Operação RR 24h</div>
             <div className="text-[11px] text-slate-400">Niterói e Região Metropolitana</div>
+            <div className="mt-1.5 font-mono text-[10px] text-slate-400/55">{VERSION}</div>
           </div>
         </aside>
 

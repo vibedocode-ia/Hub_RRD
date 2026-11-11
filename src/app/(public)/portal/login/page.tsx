@@ -135,7 +135,7 @@ function LoginForm() {
         <Link href="/" className="hover:text-cyan-400 transition">
           ← Voltar ao site público
         </Link>
-        <span>{VERSION}</span>
+        <span className="font-mono opacity-60">{VERSION}</span>
       </div>
     </div>
   );

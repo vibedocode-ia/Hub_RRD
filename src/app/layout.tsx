@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 
 const schemaOrgData = {
   '@context': 'https://schema.org',
-  '@type': 'PlumbingService',
+  '@type': 'Plumber',
   name: 'RR Desentupidora e Dedetizadora LTDA',
   alternateName: 'RR Desentupidora Niterói',
   image: 'https://www.rrdesentupidora.com.br/assets/logo-horizontal.png',
@@ -49,8 +49,8 @@ const schemaOrgData = {
   priceRange: '$$',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Rua Santos Moreira, 40',
-    addressLocality: 'Santa Rosa, Niterói',
+    streetAddress: 'Rua Santos Moreira, 40 - Santa Rosa',
+    addressLocality: 'Niterói',
     addressRegion: 'RJ',
     postalCode: '24240-000',
     addressCountry: 'BR',
@@ -76,11 +76,6 @@ const schemaOrgData = {
       closes: '23:59',
     },
   ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '5.0',
-    reviewCount: '55',
-  },
   areaServed: [
     'Niterói',
     'São Gonçalo',

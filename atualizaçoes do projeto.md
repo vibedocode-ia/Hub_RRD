@@ -1,3 +1,9 @@
+### V1.00.00 (2026-11-11) - Marco oficial de lançamento (baseline Hub RRD + ajustes críticos do site)
+- **Versionamento:** Alinhamento oficial para `V1.00.00` em `package.json`, `package-lock.json` e `src/lib/version.ts`, consolidando os commits anteriores até `V0.15.07` (`92a0b48`) e exibindo a versão em fonte mono no rodapé do site, sidebar do portal e tela de login.
+- **Hero / UX (`HeroInterativo.tsx`):** Preservado o efeito de scrub por scroll, adicionado `<picture>` poster imediato (`0001.webp`), detecção automática de frames mobile (`hero-mobile`), carregamento em ondas priorizadas com fallback ao frame carregado mais próximo e indicador não bloqueante de progresso (`Carregando cena interativa · X%`).
+- **SEO / Schema.org (`layout.tsx`):** Corrigido `@type` de `PlumbingService` para `Plumber`, separado bairro (`Rua Santos Moreira, 40 - Santa Rosa`) de cidade (`Niterói`) em `PostalAddress` e removido `aggregateRating` auto-hospedado do JSON-LD.
+- **LGPD / Privacidade (`/privacidade`):** Adicionados `canonical` e `openGraph` próprios, transparência de cookies/medição/segurança (`Google Tag Manager`, `Google Ads`, `Meta Pixel`, `Cloudflare`), critério de retenção e contato restrito a telefone/WhatsApp `(21) 99669-9191`.
+
 ### V0.15.04 (2026-10-18) - Hardening de dependências e validação da proposta visual RR
 - **Segurança:** fixado Ajv 8.20.0 e Next.js 16.4.3; `npm audit --audit-level=low` reportou 0 vulnerabilidades.
 - **Site:** preparado pacote visual `rr-novosite` com 21 WebP; quatro pares antes/depois usam as imagens fornecidas e legendas neutras; removidas alegações quantitativas de desobstrução no bloco comparativo e claims químicos do hidrojateamento.

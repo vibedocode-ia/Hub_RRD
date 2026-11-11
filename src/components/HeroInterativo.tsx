@@ -6,11 +6,56 @@ import { Phone, MessageCircle } from 'lucide-react';
 import { trackWhatsAppConversion } from '@/lib/tracking';
 
 const TOTAL_FRAMES = 240;
+const FRAME_LOAD_CONCURRENCY = 6;
 const FASES = [
   { from: 0, ate: 0.3, linha1: 'Seu encanamento entupiu?', linha2: 'A gente resolve sem transtorno.' },
   { from: 0.3, ate: 0.65, linha1: 'Chegamos em 30 a 40 min', linha2: 'Plantão 24h em Niterói e Região.' },
   { from: 0.65, ate: 1.001, linha1: '+7 anos de experiência técnica', linha2: '5,0 ⭐ avaliações máximas no Google.' },
 ];
+
+function getFrameSrc(baseDir: string, index1Based: number): string {
+  return `${baseDir}/${String(index1Based).padStart(4, '0')}.webp`;
+}
+
+/**
+ * Orders frames 2..N in progressive waves so the first scroll frames and evenly
+ * spaced keyframes arrive first instead of saturating the browser connection pool.
+ */
+function buildPriorityFrameOrder(total: number): number[] {
+  const seen = new Uint8Array(total + 1);
+  seen[1] = 1;
+  const order: number[] = [];
+  const push = (idx: number) => {
+    if (idx < 1 || idx > total || seen[idx]) return;
+    seen[idx] = 1;
+    order.push(idx);
+  };
+
+  for (let i = 2; i <= Math.min(12, total); i++) push(i);
+  for (let i = 11; i <= total; i += 10) push(i);
+  push(total);
+  for (let i = 3; i <= total; i += 3) push(i);
+  for (let i = 2; i <= total; i++) push(i);
+
+  return order;
+}
+
+function findNearestLoadedFrame(
+  list: (HTMLImageElement | undefined)[],
+  idx: number
+): HTMLImageElement | null {
+  const exact = list[idx];
+  if (exact?.complete && exact.naturalWidth > 0) return exact;
+
+  const maxOffset = Math.max(idx, list.length - 1 - idx);
+  for (let offset = 1; offset <= maxOffset; offset++) {
+    const prev = list[idx - offset];
+    if (prev?.complete && prev.naturalWidth > 0) return prev;
+    const next = list[idx + offset];
+    if (next?.complete && next.naturalWidth > 0) return next;
+  }
+  return null;
+}
 
 interface HeroInterativoProps {
   waLink: string;
@@ -26,6 +71,8 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
   const [faseIdx, setFaseIdx] = useState(0);
   const [scrubAtivo, setScrubAtivo] = useState(true);
   const [assets, setAssets] = useState<'frames' | 'video' | 'poster' | 'nenhum'>('nenhum');
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [framesReady, setFramesReady] = useState(false);
 
   const scrubAtivoRef = useRef(true);
   const targetRef = useRef(0);
@@ -33,43 +80,103 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
   const ultimaFase = useRef(-1);
   const acumulo = useRef(0);
   const touchY = useRef<number | null>(null);
-  const frames = useRef<HTMLImageElement[]>([]);
-  const carregados = useRef(0);
+  const frames = useRef<(HTMLImageElement | undefined)[]>([]);
 
   useEffect(() => { scrubAtivoRef.current = scrubAtivo; }, [scrubAtivo]);
 
-  // ---- detectar assets ----
+  // ---- detectar assets e carregar frames em ondas prioritárias ----
   useEffect(() => {
     let vivo = true;
-    const testar = async () => {
-      const img = new Image();
-      const okFrames = await new Promise<boolean>((res) => {
-        img.onload = () => res(true);
-        img.onerror = () => res(false);
-        img.src = '/frames/hero/0001.webp';
+
+    const carregarImagem = (src: string) =>
+      new Promise<HTMLImageElement | null>((resolve) => {
+        const im = new Image();
+        im.onload = () => resolve(im.naturalWidth > 0 ? im : null);
+        im.onerror = () => resolve(null);
+        im.src = src;
       });
-      if (!vivo) return;
-      if (okFrames) {
-        setAssets('frames');
-        const arr: HTMLImageElement[] = [];
-        for (let i = 1; i <= TOTAL_FRAMES; i++) {
-          const im = new Image();
-          im.src = `/frames/hero/${String(i).padStart(4, '0')}.webp`;
-          if (i <= 48) im.onload = () => { carregados.current++; };
-          arr.push(im);
+
+    const testar = async () => {
+      const preferMobile = window.innerWidth < 768 || window.innerHeight > window.innerWidth;
+      const candidatos = preferMobile ? ['/frames/hero-mobile', '/frames/hero'] : ['/frames/hero'];
+
+      let baseDir = '';
+      let primeiroFrame: HTMLImageElement | null = null;
+      for (const dir of candidatos) {
+        primeiroFrame = await carregarImagem(getFrameSrc(dir, 1));
+        if (!vivo) return;
+        if (primeiroFrame) {
+          baseDir = dir;
+          break;
         }
-        frames.current = arr;
+      }
+
+      if (primeiroFrame && baseDir) {
+        const buffer: (HTMLImageElement | undefined)[] = new Array(TOTAL_FRAMES);
+        buffer[0] = primeiroFrame;
+        frames.current = buffer;
+        setAssets('frames');
+        setLoadProgress(1);
+
+        const queue = buildPriorityFrameOrder(TOTAL_FRAMES);
+        let cursor = 0;
+        let settled = 1;
+        let lastPct = 1;
+
+        const worker = async () => {
+          while (vivo) {
+            const pos = cursor++;
+            if (pos >= queue.length) return;
+            const frameNum = queue[pos];
+            const im = await carregarImagem(getFrameSrc(baseDir, frameNum));
+            if (!vivo) return;
+            if (im) frames.current[frameNum - 1] = im;
+            settled++;
+            const pct = Math.min(100, Math.round((settled / TOTAL_FRAMES) * 100));
+            if (pct >= lastPct + 4 || settled === TOTAL_FRAMES) {
+              lastPct = pct;
+              setLoadProgress(pct);
+            }
+            if (settled === TOTAL_FRAMES) setFramesReady(true);
+          }
+        };
+
+        for (let w = 0; w < FRAME_LOAD_CONCURRENCY; w++) {
+          void worker();
+        }
         return;
       }
+
       const okVideo = await fetch('/videos/hero.mp4', { method: 'HEAD' })
-        .then((r) => r.ok).catch(() => false);
+        .then((r) => r.ok)
+        .catch(() => false);
       if (!vivo) return;
-      if (okVideo) { setAssets('video'); return; }
+      if (okVideo) {
+        setAssets('video');
+        setFramesReady(true);
+        return;
+      }
       setAssets('nenhum');
+      setFramesReady(true);
     };
-    testar();
+
+    void testar();
     return () => { vivo = false; };
   }, []);
+
+  // ---- resize canvas ----
+  useEffect(() => {
+    if (assets !== 'frames') return;
+    const c = canvasRef.current;
+    if (!c) return;
+    const resize = () => {
+      c.width = window.innerWidth;
+      c.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, [assets]);
 
   // ---- loop de render do canvas ----
   useEffect(() => {
@@ -80,19 +187,17 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
 
     const desenhar = (p: number) => {
       const f = frames.current;
-      if (!f.length) return;
+      if (!f.length || !canvas.width || !canvas.height) return;
       const idx = Math.min(f.length - 1, Math.max(0, Math.floor(p * (f.length - 1))));
-      const img = f[idx];
-      if (!img?.complete || !img.naturalWidth) return;
+      const img = findNearestLoadedFrame(f, idx);
+      if (!img) return;
       const escala = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
       const w = img.naturalWidth * escala;
       const h = img.naturalHeight * escala;
       ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
     };
 
-    const primeiro = frames.current[0];
-    if (primeiro?.complete && primeiro.naturalWidth) desenhar(0);
-    else if (primeiro) primeiro.onload = () => desenhar(0);
+    desenhar(0);
 
     const tick = () => {
       currentRef.current += (targetRef.current - currentRef.current) * 0.08;
@@ -163,20 +268,6 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
     };
   }, []);
 
-  // ---- resize canvas ----
-  useEffect(() => {
-    if (assets !== 'frames') return;
-    const c = canvasRef.current;
-    if (!c) return;
-    const resize = () => {
-      c.width = window.innerWidth;
-      c.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, [assets]);
-
   const fase = FASES[faseIdx];
 
   const avancarScrubOuRolar = () => {
@@ -192,6 +283,26 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
 
   return (
     <section id="topo" className="relative h-[100dvh] w-full overflow-hidden bg-[#050d1a]">
+      {/* Fundo base + poster imediato enquanto frames/canvas carregam */}
+      {assets !== 'video' && (
+        <>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#050d1a] via-[#092244] to-[#01142a]" />
+          <picture className="pointer-events-none absolute inset-0 h-full w-full">
+            <source media="(max-width: 767px)" srcSet="/frames/hero-mobile/0001.webp" />
+            <img
+              src="/frames/hero/0001.webp"
+              alt=""
+              aria-hidden="true"
+              fetchPriority="high"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+              className="h-full w-full object-cover"
+            />
+          </picture>
+        </>
+      )}
+
       {/* Fundo Interativo: Frames ou Vídeo */}
       {assets === 'frames' && <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />}
       {assets === 'video' && (
@@ -202,7 +313,6 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
           autoPlay muted loop playsInline preload="auto"
         />
       )}
-      {assets === 'nenhum' && <div className="absolute inset-0 bg-gradient-to-br from-[#050d1a] via-[#092244] to-[#01142a]" />}
 
       {/* Overlays em tons azulados */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050d1a] via-[#050d1a]/50 to-transparent" />
@@ -288,10 +398,27 @@ export default function HeroInterativo({ waLink, phoneTel }: HeroInterativoProps
       </div>
 
       {/* Botão Interativo de Rolagem estilo Roller / Mouse Pill */}
-      <div className="absolute inset-x-0 bottom-8 z-20 flex flex-col items-center justify-center gap-2">
+      <div className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex flex-col items-center justify-center gap-2 sm:bottom-8">
+        {!framesReady && assets !== 'video' && (
+          <div
+            aria-live="polite"
+            className="pointer-events-none mb-1 flex items-center gap-2.5 rounded-full border border-cyan-400/25 bg-[#050d1a]/75 px-3.5 py-1.5 backdrop-blur-md shadow-[0_0_16px_rgba(16,172,240,0.18)]"
+          >
+            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#10acf0]" />
+            <span className="font-mono text-[0.68rem] font-semibold tracking-wider text-cyan-200/90 tabular-nums">
+              Carregando cena interativa · {loadProgress}%
+            </span>
+            <span className="h-1 w-12 overflow-hidden rounded-full bg-white/15">
+              <span
+                className="block h-full bg-gradient-to-r from-cyan-400 to-blue-400 transition-[width] duration-200"
+                style={{ width: `${loadProgress}%` }}
+              />
+            </span>
+          </div>
+        )}
         <button
           onClick={avancarScrubOuRolar}
-          className="group flex flex-col items-center gap-2 focus:outline-none cursor-pointer"
+          className="pointer-events-auto group flex flex-col items-center gap-2 focus:outline-none cursor-pointer"
           aria-label="Rolar para ver mais"
         >
           <div className="relative flex h-11 w-6 items-start justify-center rounded-full border-2 border-cyan-400/50 bg-[#050d1a]/80 p-1 shadow-[0_0_16px_rgba(16,172,240,0.4)] backdrop-blur-md transition-all group-hover:border-cyan-300 group-hover:scale-105 group-hover:shadow-[0_0_22px_rgba(16,172,240,0.7)]">

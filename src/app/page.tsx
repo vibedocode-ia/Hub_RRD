@@ -793,7 +793,11 @@ export default function LandingPage() {
         </div>
         <div className="mx-auto max-w-7xl px-5 mt-10 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-white/40 gap-3">
           <p>© {new Date().getFullYear()} RR Desentupidora e Dedetizadora LTDA · Todos os direitos reservados.</p>
-          <p className="text-[11px] text-white/30">Plantão emergencial 24h em Niterói, São Gonçalo, Maricá e Região Metropolitana</p>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-white/30">
+            <span>Plantão emergencial 24h em Niterói, São Gonçalo, Maricá e Região Metropolitana</span>
+            <span className="text-white/15">·</span>
+            <span className="font-mono text-white/45" aria-label="Versão da aplicação">{VERSION}</span>
+          </div>
         </div>
       </footer>
 

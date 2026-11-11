@@ -1,10 +1,24 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Shield, ArrowLeft, Lock, FileText, CheckCircle2 } from 'lucide-react';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Política de Privacidade | RR Desentupidora Niterói',
-  description: 'Conheça nossa política de privacidade, tratamento de dados (LGPD) e segurança da informação.',
+  description:
+    'Política de privacidade, cookies, medição de tráfego e tratamento de dados (LGPD) da RR Desentupidora Niterói.',
+  alternates: {
+    canonical: 'https://www.rrdesentupidora.com.br/privacidade',
+  },
+  openGraph: {
+    title: 'Política de Privacidade | RR Desentupidora Niterói',
+    description:
+      'Política de privacidade, cookies, medição de tráfego e tratamento de dados (LGPD) da RR Desentupidora Niterói.',
+    url: 'https://www.rrdesentupidora.com.br/privacidade',
+    siteName: 'RR Desentupidora',
+    locale: 'pt_BR',
+    type: 'website',
+  },
 };
 
 export default function PoliticaPrivacidade() {
@@ -57,13 +71,22 @@ export default function PoliticaPrivacidade() {
                 <li>Descrição do problema relatado (para direcionamento do maquinário adequado).</li>
               </ul>
               <p className="mt-2">
-                Não compartilhamos, vendemos ou repassamos seus dados a terceiros para fins publicitários.
+                Não vendemos nem comercializamos seus dados pessoais. As informações de contato informadas voluntariamente são utilizadas exclusivamente para atendimento técnico e emissão de orçamento.
               </p>
             </section>
 
             <section>
               <h2 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> 3. Atendimento e Redirecionamento ao WhatsApp
+                <Shield className="h-4 w-4 text-cyan-400" /> 3. Cookies, Medição de Conversões e Segurança
+              </h2>
+              <p>
+                Utilizamos ferramentas técnicas de medição, conversão e proteção de rede — incluindo Google Tag Manager, Google Ads, Meta Pixel e Cloudflare — para mensurar o desempenho de campanhas, proteger o site contra acessos automatizados abusivos e melhorar a experiência de navegação. Você pode gerenciar ou bloquear cookies diretamente nas configurações do seu navegador.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> 4. Atendimento e Redirecionamento ao WhatsApp
               </h2>
               <p>
                 Ao utilizar o formulário ou botão de contato, os dados preenchidos são formatados para facilitar a abertura do chamado técnico via aplicativo oficial WhatsApp. Você possui controle total sobre o envio da mensagem diretamente ao nosso plantão técnico.
@@ -72,14 +95,14 @@ export default function PoliticaPrivacidade() {
 
             <section>
               <h2 className="text-base font-bold text-white mb-2">
-                4. Seus Direitos e Contato do Encarregado (DPO)
+                5. Prazo de Retenção, Seus Direitos e Contato (DPO)
               </h2>
               <p>
-                Você pode, a qualquer momento, solicitar a confirmação, correção ou exclusão definitiva dos seus dados de nossos registros operacionais entrando em contato pelo e-mail oficial ou pelo telefone (21) 99669-9191.
+                Os registros de atendimento são armazenados apenas pelo período necessário para execução do serviço contratado, vigência da garantia correspondente e cumprimento de obrigações legais ou fiscais. Você pode, a qualquer momento, solicitar confirmação, correção ou exclusão dos seus dados entrando em contato exclusivamente pelo telefone ou WhatsApp (21) 99669-9191.
               </p>
               <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-white/60">
-                Endereço: Rua Santos Moreira, 40 · Santa Rosa, Niterói - RJ, 24240-000<br />
-                Plantão Técnico e Administrativo: (21) 99669-9191
+                Endereço: Rua Santos Moreira, 40 - Santa Rosa, Niterói - RJ, 24240-000<br />
+                Plantão Técnico, Administrativo e Encarregado (LGPD): (21) 99669-9191
               </div>
             </section>
           </div>
