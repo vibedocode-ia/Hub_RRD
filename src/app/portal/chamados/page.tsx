@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import DeleteResourceButton from '@/components/DeleteResourceButton';
-import { db, serviceRequests, clients, clientAddresses } from '@/db';
+import { db, serviceRequests, clients, clientAddresses, teams } from '@/db';
 import { eq, desc, isNull } from 'drizzle-orm';
-import { ClipboardList, PlusCircle, AlertTriangle, CheckCircle, Clock, FileText } from 'lucide-react';
+import { ClipboardList, PlusCircle, AlertTriangle, CheckCircle, Clock, FileText, Users } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +23,7 @@ export default async function ChamadosPage() {
     clientName: string;
     clientPhone: string;
     neighborhood: string | null;
+    teamName: string | null;
   }> = [];
 
   if (db) {
@@ -40,10 +41,12 @@ export default async function ChamadosPage() {
           clientName: clients.name,
           clientPhone: clients.phone,
           neighborhood: clientAddresses.neighborhood,
+          teamName: teams.name,
         })
         .from(serviceRequests)
         .innerJoin(clients, eq(serviceRequests.clientId, clients.id))
         .leftJoin(clientAddresses, eq(serviceRequests.addressId, clientAddresses.id))
+        .leftJoin(teams, eq(serviceRequests.assignedTeamId, teams.id))
         .where(isNull(serviceRequests.archivedAt))
         .orderBy(desc(serviceRequests.createdAt));
 
@@ -106,6 +109,11 @@ export default async function ChamadosPage() {
                       {req.code}
                     </span>
                     <span className="text-sm font-bold text-slate-100">{req.clientName}</span>
+                    {req.teamName && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded">
+                        <Users className="w-2.5 h-2.5" /> {req.teamName}
+                      </span>
+                    )}
                     {req.priority === 'URGENTE_24H' && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-800 px-2 py-0.5 rounded-full">
                         <AlertTriangle className="w-3 h-3" /> URGENTE 24H

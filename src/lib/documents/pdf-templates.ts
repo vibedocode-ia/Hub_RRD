@@ -35,6 +35,9 @@ export interface OrdemServicoData {
   technicianName: string;
   warrantyDays: number;
   warrantyTerms?: string;
+  teamName?: string;
+  vehiclePlate?: string;
+  technicianNames?: string;
 }
 
 const PAGE_CSS = `
@@ -119,6 +122,12 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
   const identityLabel = docLabel(data.clientDoc);
   const firstItem = data.items[0] || { description: data.serviceDescription, quantity: 1, unitPrice: data.totalAmount, subtotal: data.totalAmount };
 
+  const accessDetails: string[] = [];
+  if (data.teamName) accessDetails.push(`Equipe: ${escapeHtml(data.teamName)}`);
+  if (data.vehiclePlate) accessDetails.push(`Veículo/Placa: ${escapeHtml(data.vehiclePlate)}`);
+  if (data.technicianNames) accessDetails.push(`Técnicos Autorizados: ${escapeHtml(data.technicianNames)}`);
+  const accessInfoHtml = accessDetails.length > 0 ? `<div><strong>Liberação / Portaria:</strong> ${accessDetails.join(' &nbsp;|&nbsp; ')}</div>` : '';
+
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ordem de Serviço / Relatório Técnico</title>
 <style>${PAGE_CSS}
@@ -144,7 +153,7 @@ export function generateOrdemServicoHTML(data: OrdemServicoData): string {
   <div class="field white o-row"><span class="o-desc">${escapeHtml(firstItem.description)}</span><span class="o-qty">${escapeHtml(firstItem.quantity)}</span><span class="o-unit">R$ ${escapeHtml(firstItem.unitPrice)}</span><span class="o-subtotal">R$ ${escapeHtml(firstItem.subtotal)}</span></div>
   <div class="field white o-total">R$ ${totalAmount}</div>
   <div class="field white o-payment-top">Forma de pagamento informada: ${paymentMethod}</div>
-  <div class="field white o-report"><div><strong>Serviço executado:</strong> ${serviceDescription}.</div><div><strong>Observações técnicas do atendimento:</strong> ${technicalNotes}</div></div>
+  <div class="field white o-report"><div><strong>Serviço executado:</strong> ${serviceDescription}.</div>${accessInfoHtml}<div><strong>Observações técnicas do atendimento:</strong> ${technicalNotes}</div></div>
   <div class="field white o-compliance"><div>Empresa licenciada pelo INEA para transporte e descarte de resíduos.</div><div>Equipe técnica certificada em NR-33 (Espaço Confinado) e NR-35 (Trabalho em Altura).</div><div>Garantia de ${warrantyDays} dias,${warrantyTerms}</div><div>Forma de pagamento: ${paymentMethod}.</div></div>
   <div class="field white o-tech"><span class="sig-name">${technicianName}</span><span>Responsável Técnico</span></div>
   <div class="field white o-client-sign"><span class="sig-name">${clientName}</span><span>Ciência e aceite do serviço</span></div>

@@ -10,7 +10,7 @@ test('release retains 0022 recipient migration but excludes WhatsApp schema/jour
   assert.doesNotMatch(schema, /rrdWaControl|rrdWaRpcNonces|rrd_wa_/)
   const journal = JSON.parse(readFileSync('src/db/migrations/meta/_journal.json', 'utf8'))
   assert.ok(journal.entries.some((entry: { tag: string }) => entry.tag.startsWith('0022_')))
-  assert.ok(!journal.entries.some((entry: { tag: string }) => entry.tag.startsWith('0023_')))
+  assert.ok(!journal.entries.some((entry: { tag: string }) => entry.tag.startsWith('0023_wa_') || entry.tag.includes('whatsapp')))
   const button = readFileSync('src/app/portal/documentos/preview/[id]/PrinterButton.tsx', 'utf8')
   assert.doesNotMatch(button, /RrWhatsAppDelivery/)
   assert.match(button, /prepareOfficialPdfDownload/)

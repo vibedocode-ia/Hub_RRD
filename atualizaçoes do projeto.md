@@ -1,3 +1,12 @@
+### V1.01.00 (2026-11-12) - Módulo Operacional: Cadastro de Colaboradores, Equipes Dinâmicas e Controle Interno de Custos por OS
+- **Colaboradores & Profissionais:** Nova tabela `collaborators` e tela de gestão em `/portal/operacional`. Cadastro completo de profissionais de campo (técnicos, encanadores, operadores de hidrojato, ajudantes, motoristas), com opção de criação de login restrito ao Hub RRD (perfil `TEAM`).
+- **Equipes Dinâmicas (Presets Flexíveis):** Atualização da tabela `teams` com `leader_id`, `default_vehicle_id` e `member_ids`. A criação de equipes agora utiliza seleção de colaboradores cadastrados e veículo padrão, servindo como preset rápido sem engessar a operação.
+- **Despacho Operacional na OS:** Seleção de equipe no formulário de abertura e edição de chamados pré-carrega automaticamente o veículo e os colaboradores daquela equipe, permitindo ao Rafael trocar o veículo ou ajustar individualmente os técnicos de cada atendimento.
+- **Controle Interno de Custos vs OS do Cliente (Zero-Leakage):**
+  - **Interno (Rafael):** Registro de materiais consumidos (vinculados aos insumos com alerta para manter o estoque em dia), despesas operacionais de campo (combustível, pedágios, taxas de vazadouro, diárias extras), cálculo automático de lucro e margem (`Cobrado - Custos = Lucro`) e notas internas confidenciais.
+  - **Cliente (OS/Laudo Público):** Identificação clara da equipe, veículo/placa (para liberação em portarias/condomínios) e técnicos autorizados, com garantia escrita e zero vazamento de custos de estoque, notas internas ou margens de lucro.
+- **Banco de Dados & Migração:** Adicionada migração `0023_collaborators_teams_and_service_orders.sql` e atualizado `meta/_journal.json` de forma aditiva e sequencial.
+
 ### V1.00.00 (2026-11-11) - Marco oficial de lançamento (baseline Hub RRD + ajustes críticos do site)
 - **Versionamento:** Alinhamento oficial para `V1.00.00` em `package.json`, `package-lock.json` e `src/lib/version.ts`, consolidando os commits anteriores até `V0.15.07` (`92a0b48`) e exibindo a versão em fonte mono no rodapé do site, sidebar do portal e tela de login.
 - **Hero / UX (`HeroInterativo.tsx`):** Preservado o efeito de scrub por scroll, adicionado `<picture>` poster imediato (`0001.webp`), detecção automática de frames mobile (`hero-mobile`), carregamento em ondas priorizadas com fallback ao frame carregado mais próximo e indicador não bloqueante de progresso (`Carregando cena interativa · X%`).

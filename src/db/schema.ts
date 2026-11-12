@@ -367,13 +367,32 @@ export const leadAuditEvents = pgTable('lead_audit_events', {
   index('lead_audit_events_target_created_idx').on(table.targetType, table.targetId, table.createdAt),
 ]);
 
-// 5. Cadastros de Apoio Operacional (Equipes, Veículos e Equipamentos)
+// 5. Cadastros de Apoio Operacional (Colaboradores, Equipes, Veículos e Equipamentos)
+export const collaborators = pgTable('collaborators', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  role: text('role').notNull(), // 'Técnico de Desentupimento', 'Operador de Hidrojato', 'Ajudante', 'Motorista', 'Encanador', etc.
+  phone: text('phone'),
+  document: text('document'), // CPF ou documento de identificação
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  isActive: boolean('is_active').default(true).notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('collaborators_is_active_idx').on(table.isActive),
+  index('collaborators_user_id_idx').on(table.userId),
+]);
+
 export const teams = pgTable('teams', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(), // Ex: 'Equipe Alpha (Hidrojato)'
+  leaderId: uuid('leader_id').references(() => collaborators.id, { onDelete: 'set null' }),
   leaderName: text('leader_name'),
   phone: text('phone'),
   description: text('description'),
+  defaultVehicleId: uuid('default_vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
+  memberIds: jsonb('member_ids').$type<string[]>().default([]).notNull(),
   participants: jsonb('participants').$type<string[]>().default([]).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -419,6 +438,7 @@ export const serviceRequests = pgTable('service_requests', {
   scheduledAt: timestamp('scheduled_at'),
   completedAt: timestamp('completed_at'),
   assignedTeamId: uuid('assigned_team_id').references(() => teams.id),
+  assignedCollaboratorIds: jsonb('assigned_collaborator_ids').$type<string[]>().default([]).notNull(),
   vehicleId: uuid('vehicle_id').references(() => vehicles.id),
   equipmentId: uuid('equipment_id').references(() => equipment.id),
   totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).default('0.00'),
@@ -442,6 +462,35 @@ export const serviceRequests = pgTable('service_requests', {
 export const agendaEvents = pgTable('agenda_events', {
   id: uuid('id').primaryKey().defaultRandom(), title: text('title').notNull(), description: text('description'), startsAt: timestamp('starts_at').notNull(), endsAt: timestamp('ends_at').notNull(), location: text('location'), status: text('status').notNull().default('SCHEDULED'), contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }), clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }), serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'set null' }), teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }), vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }), googleEventId: text('google_event_id'), googleSyncStatus: text('google_sync_status').notNull().default('NOT_CONNECTED'), googleSyncedAt: timestamp('google_synced_at'), createdById: uuid('created_by_id').references(() => users.id), createdAt: timestamp('created_at').defaultNow().notNull(), updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [index('agenda_events_starts_at_idx').on(table.startsAt), index('agenda_events_contact_idx').on(table.contactId), index('agenda_events_client_idx').on(table.clientId)])
+
+// 6c. Materiais e Insumos consumidos na Ordem de Serviço
+export const serviceRequestMaterials = pgTable('service_request_materials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'cascade' }).notNull(),
+  insumoId: uuid('insumo_id').references((): any => insumos.id, { onDelete: 'set null' }),
+  description: text('description').notNull(),
+  quantity: numeric('quantity', { precision: 10, scale: 2 }).default('1.00').notNull(),
+  unit: text('unit').default('Unidade').notNull(),
+  unitCost: numeric('unit_cost', { precision: 10, scale: 2 }).default('0.00').notNull(),
+  totalCost: numeric('total_cost', { precision: 10, scale: 2 }).default('0.00').notNull(),
+  stockDeducted: boolean('stock_deducted').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('sr_materials_sr_id_idx').on(table.serviceRequestId),
+  index('sr_materials_insumo_id_idx').on(table.insumoId),
+]);
+
+// 6d. Despesas Operacionais da Ordem de Serviço (Combustível, Pedágio, Vazadouro, etc.)
+export const serviceRequestExpenses = pgTable('service_request_expenses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  serviceRequestId: uuid('service_request_id').references(() => serviceRequests.id, { onDelete: 'cascade' }).notNull(),
+  category: text('category').default('OUTRO').notNull(), // 'COMBUSTIVEL', 'PEDAGIO', 'DESCARTE_VAZADOURO', 'DIARIA_EXTRA', 'ALIMENTACAO', 'OUTRO'
+  description: text('description').notNull(),
+  amount: numeric('amount', { precision: 10, scale: 2 }).default('0.00').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('sr_expenses_sr_id_idx').on(table.serviceRequestId),
+]);
 
 // 7. Documentos Oficiais Gerados (Orçamentos, Recibos e Laudos)
 export const officialDocuments = pgTable('official_documents', {
@@ -684,3 +733,12 @@ export const financeiroLancamentos = pgTable('financeiro_lancamentos', {
 }, (table) => [
   index('financeiro_lancamentos_client_id_idx').on(table.clientId),
 ]);
+
+export type Collaborator = typeof collaborators.$inferSelect;
+export type NewCollaborator = typeof collaborators.$inferInsert;
+export type Team = typeof teams.$inferSelect;
+export type ServiceRequest = typeof serviceRequests.$inferSelect;
+export type ServiceRequestMaterial = typeof serviceRequestMaterials.$inferSelect;
+export type NewServiceRequestMaterial = typeof serviceRequestMaterials.$inferInsert;
+export type ServiceRequestExpense = typeof serviceRequestExpenses.$inferSelect;
+export type NewServiceRequestExpense = typeof serviceRequestExpenses.$inferInsert;
