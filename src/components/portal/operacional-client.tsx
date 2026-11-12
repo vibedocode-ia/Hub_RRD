@@ -39,7 +39,7 @@ type Vehicle = {
   isActive: boolean
 }
 
-const inputClass = 'w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none'
+const inputClass = 'w-full rounded-md border border-white/[0.08] bg-zinc-900/60 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20'
 
 const COMMON_ROLES = [
   'Técnico de Desentupimento',
@@ -449,14 +449,19 @@ export function OperacionalClient({
   const activeVehicles = vehicles.filter((v) => v.isActive)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-black text-slate-100">
-            Gestão Operacional <Settings2 className="h-6 w-6 text-cyan-400" />
+          <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+            <span>Operação RR</span>
+            <span>/</span>
+            <span className="text-zinc-300">Recursos de Campo</span>
+          </div>
+          <h1 className="mt-1 flex items-center gap-2 text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">
+            Gestão Operacional
           </h1>
-          <p className="text-sm text-slate-400">
+          <p className="mt-0.5 text-xs text-zinc-400">
             Colaboradores, equipes dinâmicas, veículos e controle de campo.
           </p>
         </div>
@@ -464,58 +469,58 @@ export function OperacionalClient({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setEditor({ kind: 'collaborator' })}
-            className="flex items-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-cyan-500 transition"
+            className="flex items-center gap-1.5 rounded-md bg-cyan-500 px-3 py-1.5 text-xs font-medium text-zinc-950 hover:bg-cyan-400 transition shadow-[0_0_15px_rgba(6,182,212,0.3)]"
           >
-            <Plus className="h-4 w-4" /> Novo colaborador
+            <Plus className="h-3.5 w-3.5 stroke-[2.5]" /> Novo colaborador
           </button>
           <button
             onClick={() => setEditor({ kind: 'team' })}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-700 transition"
+            className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900/80 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-white/[0.2] hover:bg-zinc-800 transition"
           >
-            <Plus className="h-4 w-4" /> Nova equipe
+            <Plus className="h-3.5 w-3.5" /> Nova equipe
           </button>
           <button
             onClick={() => setEditor({ kind: 'vehicle' })}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-700 transition"
+            className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900/80 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-white/[0.2] hover:bg-zinc-800 transition"
           >
-            <Plus className="h-4 w-4" /> Novo veículo
+            <Plus className="h-3.5 w-3.5" /> Novo veículo
           </button>
         </div>
       </header>
 
       {/* Tabs navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+      <div className="flex items-center rounded-md border border-white/[0.08] bg-zinc-950/80 p-0.5 w-fit">
         <button
           onClick={() => setActiveTab('colaboradores')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all ${
             activeTab === 'colaboradores'
-              ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <HardHat className="w-4 h-4" /> Colaboradores & Profissionais ({activeCollabs.length})
+          <HardHat className="w-3.5 h-3.5" /> Colaboradores ({activeCollabs.length})
         </button>
 
         <button
           onClick={() => setActiveTab('equipes')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all ${
             activeTab === 'equipes'
-              ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <Users className="w-4 h-4" /> Equipes ({activeTeams.length})
+          <Users className="w-3.5 h-3.5" /> Equipes ({activeTeams.length})
         </button>
 
         <button
           onClick={() => setActiveTab('frotas')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all ${
             activeTab === 'frotas'
-              ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <Truck className="w-4 h-4" /> Frotas & Veículos ({activeVehicles.length})
+          <Truck className="w-3.5 h-3.5" /> Frotas & Veículos ({activeVehicles.length})
         </button>
       </div>
 

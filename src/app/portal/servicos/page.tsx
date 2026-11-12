@@ -1,24 +1,37 @@
-import Link from 'next/link'
-import { asc, eq } from 'drizzle-orm'
-import { AlertTriangle, Clock3, Plus, Search, ShieldCheck, Wrench, Zap } from 'lucide-react'
-import { db, serviceCatalog } from '@/db'
-import { DEFAULT_SERVICE_CATALOG } from '@/lib/rr-defaults'
-import DeleteResourceButton from '@/components/DeleteResourceButton'
+import { asc, eq } from 'drizzle-orm';
+import { db, serviceCatalog } from '@/db';
+import { DEFAULT_SERVICE_CATALOG } from '@/lib/rr-defaults';
+import ServicosClient, { ServiceCatalogItem } from './ServicosClient';
 
-export const dynamic='force-dynamic'
-export const metadata={title:'Catálogo de Serviços · Hub RR'}
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Catálogo de Serviços · Hub RR' };
 
-async function loadServices(){
-  if(!db)return []
-  for(const item of DEFAULT_SERVICE_CATALOG){const existing=await db.select({id:serviceCatalog.id}).from(serviceCatalog).where(eq(serviceCatalog.name,item.name)).limit(1);if(!existing.length)await db.insert(serviceCatalog).values(item)}
-  return db.select().from(serviceCatalog).orderBy(asc(serviceCatalog.displayOrder),asc(serviceCatalog.name))
+async function loadServices(): Promise<ServiceCatalogItem[]> {
+  if (!db) return [];
+
+  // Garante que o catálogo padrão exista no banco
+  for (const item of DEFAULT_SERVICE_CATALOG) {
+    const existing = await db
+      .select({ id: serviceCatalog.id })
+      .from(serviceCatalog)
+      .where(eq(serviceCatalog.name, item.name))
+      .limit(1);
+
+    if (!existing.length) {
+      await db.insert(serviceCatalog).values(item);
+    }
+  }
+
+  const rows = await db
+    .select()
+    .from(serviceCatalog)
+    .orderBy(asc(serviceCatalog.displayOrder), asc(serviceCatalog.name));
+
+  return rows as ServiceCatalogItem[];
 }
 
-export default async function ServicesPage(){
-  const services=await loadServices();const active=services.filter(s=>s.status==='ACTIVE');const emergency=active.filter(s=>s.isEmergencyEligible).length;const inspection=active.filter(s=>s.requiresInspection).length;const configured=active.filter(s=>Number(s.basePrice||0)>0).length
-  return <div className="space-y-6"><header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-cyan-400">Operação RR</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-black text-slate-100">Catálogo de Serviços <Wrench className="h-5 w-5 text-cyan-400"/></h1><p className="mt-1 text-sm text-slate-400">Serviços usados pela Sofia, chamados, propostas, agenda e financeiro.</p></div><Link href="/portal/servicos/novo" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-500"><Plus className="h-4 w-4"/>Novo Serviço</Link></header>
-  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Serviços ativos" value={active.length} icon={<Wrench/>} color="cyan"/><Metric label="Emergência 24h" value={emergency} icon={<Zap/>} color="amber"/><Metric label="Exigem avaliação" value={inspection} icon={<AlertTriangle/>} color="rose"/><Metric label="Com preço configurado" value={configured} icon={<ShieldCheck/>} color="emerald"/></div>
-  <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500"/><input placeholder="Buscar serviço ou categoria" className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 pl-9 pr-3 text-sm text-slate-100 outline-none focus:border-cyan-500"/></div><span className="text-xs text-slate-500">{services.length} serviços no catálogo · {active.length} ativos</span></div>
-  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{services.map(s=><article key={s.id} className={`rounded-2xl border bg-slate-900/60 p-5 ${s.status==='ACTIVE'?'border-slate-800 hover:border-cyan-500/40':'border-slate-800/60 opacity-60'}`}><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400"><Wrench className="h-5 w-5"/></div><div><h2 className="font-bold text-slate-100">{s.name}</h2><p className="text-xs text-slate-500">{s.category}</p></div></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${s.status==='ACTIVE'?'bg-emerald-500/10 text-emerald-300':'bg-slate-700 text-slate-400'}`}>{s.status==='ACTIVE'?'Ativo':'Inativo'}</span></div><p className="mt-4 min-h-10 text-sm leading-5 text-slate-400">{s.description||'Sem descrição cadastrada.'}</p><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-slate-950/70 p-3"><p className="text-slate-500">Preço base</p><p className="mt-1 font-bold text-emerald-300">{Number(s.basePrice||0)>0?new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(s.basePrice)):'A configurar'}</p></div><div className="rounded-xl bg-slate-950/70 p-3"><p className="text-slate-500">Garantia</p><p className="mt-1 font-bold text-slate-200">{s.warrantyDays} dias</p></div></div><div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wide"><span className="inline-flex items-center gap-1 text-slate-400"><Clock3 className="h-3 w-3"/>{s.defaultDurationMinutes} min</span>{s.isEmergencyEligible&&<span className="text-amber-300">24h</span>}{s.requiresInspection&&<span className="text-rose-300">Avaliação</span>}</div><div className="mt-5 flex gap-2 border-t border-slate-800 pt-4"><Link href={`/portal/servicos/${s.id}/editar`} className="flex-1 rounded-xl border border-cyan-800/70 px-3 py-2 text-center text-xs font-bold text-cyan-300 hover:bg-cyan-950/50">Editar serviço</Link><DeleteResourceButton endpoint={`/api/services/${s.id}`} confirmText={`Arquivar o serviço ${s.name}?`}/></div></article>)}</div></div>
+export default async function ServicesPage() {
+  const services = await loadServices();
+
+  return <ServicosClient initialServices={services} />;
 }
-function Metric({label,value,icon,color}:{label:string,value:number,icon:React.ReactNode,color:'cyan'|'amber'|'rose'|'emerald'}){const classes={cyan:'bg-cyan-500/10 text-cyan-400',amber:'bg-amber-500/10 text-amber-400',rose:'bg-rose-500/10 text-rose-400',emerald:'bg-emerald-500/10 text-emerald-400'};return <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4"><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${classes[color]}`}>{icon}</div><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-2xl font-black text-slate-100">{value}</p></div>}

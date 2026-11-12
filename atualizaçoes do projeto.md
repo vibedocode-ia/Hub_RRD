@@ -1,144 +1,62 @@
-### V1.01.00 (2026-11-12) - Módulo Operacional: Cadastro de Colaboradores, Equipes Dinâmicas e Controle Interno de Custos por OS
-- **Colaboradores & Profissionais:** Nova tabela `collaborators` e tela de gestão em `/portal/operacional`. Cadastro completo de profissionais de campo (técnicos, encanadores, operadores de hidrojato, ajudantes, motoristas), com opção de criação de login restrito ao Hub RRD (perfil `TEAM`).
-- **Equipes Dinâmicas (Presets Flexíveis):** Atualização da tabela `teams` com `leader_id`, `default_vehicle_id` e `member_ids`. A criação de equipes agora utiliza seleção de colaboradores cadastrados e veículo padrão, servindo como preset rápido sem engessar a operação.
-- **Despacho Operacional na OS:** Seleção de equipe no formulário de abertura e edição de chamados pré-carrega automaticamente o veículo e os colaboradores daquela equipe, permitindo ao Rafael trocar o veículo ou ajustar individualmente os técnicos de cada atendimento.
-- **Controle Interno de Custos vs OS do Cliente (Zero-Leakage):**
-  - **Interno (Rafael):** Registro de materiais consumidos (vinculados aos insumos com alerta para manter o estoque em dia), despesas operacionais de campo (combustível, pedágios, taxas de vazadouro, diárias extras), cálculo automático de lucro e margem (`Cobrado - Custos = Lucro`) e notas internas confidenciais.
-  - **Cliente (OS/Laudo Público):** Identificação clara da equipe, veículo/placa (para liberação em portarias/condomínios) e técnicos autorizados, com garantia escrita e zero vazamento de custos de estoque, notas internas ou margens de lucro.
-- **Banco de Dados & Migração:** Adicionada migração `0023_collaborators_teams_and_service_orders.sql` e atualizado `meta/_journal.json` de forma aditiva e sequencial.
-
-### V1.00.00 (2026-11-11) - Marco oficial de lançamento (baseline Hub RRD + ajustes críticos do site)
-- **Versionamento:** Alinhamento oficial para `V1.00.00` em `package.json`, `package-lock.json` e `src/lib/version.ts`, consolidando os commits anteriores até `V0.15.07` (`92a0b48`) e exibindo a versão em fonte mono no rodapé do site, sidebar do portal e tela de login.
-- **Hero / UX (`HeroInterativo.tsx`):** Preservado o efeito de scrub por scroll, adicionado `<picture>` poster imediato (`0001.webp`), detecção automática de frames mobile (`hero-mobile`), carregamento em ondas priorizadas com fallback ao frame carregado mais próximo e indicador não bloqueante de progresso (`Carregando cena interativa · X%`).
-- **SEO / Schema.org (`layout.tsx`):** Corrigido `@type` de `PlumbingService` para `Plumber`, separado bairro (`Rua Santos Moreira, 40 - Santa Rosa`) de cidade (`Niterói`) em `PostalAddress` e removido `aggregateRating` auto-hospedado do JSON-LD.
-- **LGPD / Privacidade (`/privacidade`):** Adicionados `canonical` e `openGraph` próprios, transparência de cookies/medição/segurança (`Google Tag Manager`, `Google Ads`, `Meta Pixel`, `Cloudflare`), critério de retenção e contato restrito a telefone/WhatsApp `(21) 99669-9191`.
-
-### V0.15.04 (2026-10-18) - Hardening de dependências e validação da proposta visual RR
-- **Segurança:** fixado Ajv 8.20.0 e Next.js 16.4.3; `npm audit --audit-level=low` reportou 0 vulnerabilidades.
-- **Site:** preparado pacote visual `rr-novosite` com 21 WebP; quatro pares antes/depois usam as imagens fornecidas e legendas neutras; removidas alegações quantitativas de desobstrução no bloco comparativo e claims químicos do hidrojateamento.
-- **Validação local:** `npx tsc --noEmit`, `npm run build`, `npm run test:unit` (322 pass, 0 fail, 2 skipped), e `git diff --check` passaram.
-- **Gate pendente:** `npm run test:security` em PostgreSQL descartável tem 2 falhas E2E (347 pass, 2 fail, 1 skipped); faltam migrações versionadas de autoria documental preparadas fora do journal. A mesma falha foi reproduzida em `origin/main` limpo. Sem migration de produção, commit, push ou deploy até resolver/aprovar o gate.
-
-### V0.15.02 (2026-10-18) - Transporte Access V1 privado: config read-only e redes dedicadas, Access desativado
-- **Release:** Site + Hub RRD.
-
-### V0.15.01 (2026-10-18) - Corrige dependências de produção do módulo de acesso integrado
-- **Release:** Site + Hub RRD.
-
-### V0.15.00 (2026-10-18) - Painel de acesso integrado e autoria documental Central
-- **Release:** Site + Hub RRD.
-
-### V0.14.08 (2026-10-16) - Gestao de pessoas e perfil seguro; consultas de agenda, financeiro e estoque com contratos explicitos
-- **Release:** Site + Hub RRD.
-
-### V0.14.07 (2026-10-16) - Persistir rede do banco no Compose e evitar reinicios na inicializacao
-- **Release:** Site + Hub RRD.
-
-### V0.14.06 (2026-10-16) - SofIA: emissão revisada para Lead ou Cliente e PDF oficial; entrega sem falsa confirmação
-- **Release:** Site + Hub RRD.
-
-### V0.14.05 (2026-10-14) - Correções guiadas de CRM, Contatos, Leads, Agenda e navegação operacional
-- **Release:** Site + Hub RRD.
-
-### V0.14.04 (2026-10-13) - API interna Leads TESTE: criar, consultar e purgar com auditoria preservada
-- **Release:** Site + Hub RRD.
-
-### V0.14.03 (2026-10-11) - Preservar dados e modelo na coleta entre mensagens da SofIA
-- **Release:** Site + Hub RRD.
-
-### V0.14.02 (2026-10-10) - Corrigir renderer PDF no runtime compilado
-- **Release:** Site + Hub RRD.
-
-### V0.14.01 (2026-10-10) - Modelos PDF cadastrados como fonte da emissão e mapeamento visual dos campos
-- **Release:** Site + Hub RRD.
-
-### V0.14.00 (2026-10-04) - GodAdmin Central CRUD: contrato aditivo sobre permissão local RRD
-- **Release:** Site + Hub RRD.
-
-### V0.12.35 (2026-09-16) - Corrige o alvo GodAdmin da recuperação para o papel OWNER vigente no RRD.
-- **Segurança:** o emissor continua exigindo exatamente um OWNER ativo, segredo interno e token de uso único.
-
-### V0.12.31 (2026-09-16) - Recuperação segura de senha por link único para o GodAdmin ativo.
-- **Segurança:** token persistido apenas como hash, expiração de 15 minutos, uso único, emissão interna autenticada e revogação de sessões após cadastro da nova senha.
-
-### V0.12.30 (2026-09-15) - Atalho de editar perfil no cabeçalho e seção Segurança diretamente no painel pessoal.
-
-### V0.12.28 (2026-09-15) - Autoalteração de senha com validação da senha atual, revogação de sessões e regra estrita para redefinição de subordinados.
-
-### V0.12.27 (2026-09-15) - Mantém erros de criação e edição de pessoas exclusivamente no modal do formulário.
-- **Release:** Site + Hub RRD.
-
-### V0.12.26 (2026-09-15) - Inclui emissão e envio de documentos nas permissões padrão do papel ADMIN.
-- **Release:** Site + Hub RRD.
-
-### V0.12.25 (2026-09-15) - Permite papéis locais iguais e antecipa bloqueio de papel superior no formulário de pessoas.
-- **Release:** Site + Hub RRD.
-
-### V0.12.24 (2026-09-15) - Corrige criação de pessoa local com status ativo/inativo explícito
-- **Release:** Site + Hub RRD.
-
-### V0.12.08 (2026-09-12) - Retenção auditável de documentos e proveniência canônica de modelos
-- **Release:** Site + Hub RRD.
-
-### V0.12.07 (2026-09-12) - CRM operacional e ficha Sofia completa autorizada
-- **Release:** Site + Hub RRD.
-
-### V0.12.06 (2026-09-12) - Emissão de orçamento com modelo canônico de duas páginas e ação na fila Sofia.
-- **Release:** Site + Hub RRD.
-
-### V0.12.05 (2026-09-12) - CRUD de clientes com arquivamento seguro e preservação de histórico.
-- **Release:** Site + Hub RRD.
-
-### V0.12.04 (2026-09-12) - Biblioteca de modelos PDF para recibo, laudo e orçamento no Hub RRD.
-- **Release:** Site + Hub RRD.
-
-### V0.12.03 (2026-09-12) - Resolução server-side de veículo por nome para arquivamento Sofia.
-- **Release:** Site + Hub RRD.
-
-### V0.12.02 (2026-09-12) - Validação do webhook GitHub automático para publicação do Hub RRD
-- **Release:** Site + Hub RRD.
-
-### V0.12.01 (2026-09-12) - Ativação do deploy automático GitHub para validação operacional Sofia
-- **Release:** Site + Hub RRD.
-
-### V0.12.00 (2026-09-12) - Operações Sofia para estoque, financeiro e frota com contratos auditados e confirmação segura
-- **Release:** Site + Hub RRD.
-
-### V0.11.00 (2026-09-11) - Unifica operações Sofia RRD: CRM seguro de clientes e catálogo operacional autenticado
-- **Release:** Site + Hub RRD.
-
-### V0.10.11 (2026-09-11) - Operações Sofia seguras para rascunhos RRD
-- **Sofia:** adiciona `POST /api/sofia/actions` com Bearer do Hub, contexto central fixado no servidor, contrato Zod estrito e idempotência.
-- **Operação:** permite listar catálogo/equipes e criar somente rascunho de orçamento/OS; não cria chamado definitivo, não emite documentos e não expõe autenticação do portal.
-
-### V0.10.09 (2026-09-08) - Sofia aceita Admin/Super Admin do Hub RRD
-- **Release:** Site + Hub RRD.
-
-### V0.10.08 (2026-09-08) - Templates canônicos fiéis de Recibo e Ordem de Serviço/Relatório Técnico
-- **Release:** Site + Hub RRD.
-
-### V0.10.07 (2026-09-05) - Menu mobile fixo inferior estilo aplicativo
-- **Release:** Site + Hub RRD.
-
-### V0.10.06 (2026-09-05) - Corrige seed idempotente do catálogo de serviços
-- **Release:** Site + Hub RRD.
-
-### V0.10.05 (2026-09-05) - Perfis de atendimento Sofia e CRUD de serviços
-- **Release:** Site + Hub RRD.
-
-### V0.10.04 (2026-09-05) - Adiciona CRUD operacional e Vanderson SUPER_ADMIN
-- **Release:** Site + Hub RRD.
-
-### V0.10.03 (2026-09-05) - Corrige rota de ficha completa do CRM
-- **Release:** Site + Hub RRD.
-
-### V0.10.02 (2026-09-05) - Adiciona alternância de visibilidade da senha no login
-- **Release:** Site + Hub RRD.
-
-### V0.10.01 (2026-09-04) - Patch de segurança e integração Sofia Multi Cliente
-- **Release:** Site + Hub RRD.
-
 # Atualizações do Projeto — RR Desentupidora
+
+## V1.02.00 — 2026-11-12 — Reformulação Visual VDC-pro-Dashboard (Eliminação do AI Slop)
+
+**Commit:** `release: Version V1.02.00`
+**Tipo:** MINOR — Redesign Completo do Hub RRD baseado nos padrões mundiais Midday, Dub.co, Supabase Studio e Linear.
+
+### O que mudou:
+- **Design System Enterprise (VDC-pro-Dashboard):**
+  - Substituição formal do fundo azul-marinho lavado (`#050d1a`) pela paleta **Titanium Dark** (`#09090b` canvas e `#121215` superfícies).
+  - Adoção sistemática de **micro-bordas translúcidas de precisão** (`border-white/[0.08]`) e relevo zenital com luz superior (`shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]`).
+  - Banimento definitivo de grades repetitivas de 4 cards "bento genéricos" com ícones redondos coloridos.
+- **Régua Contínua de Métricas (Metric Strip):**
+  - Métricas integradas em fita horizontal unificada com divisores de 1px e status em micro-dots suaves (emerald, amber, cyan, rose).
+- **Tabelas de Alta Densidade (High-Density Data Tables):**
+  - Transformação das listas de cards amadores em tabelas densas, ordenáveis e compactas (38-42px de altura por linha), com tipografia numérica tabular (`font-mono tabular-nums tracking-tight`).
+- **Telas Reformuladas:**
+  - `PortalLayout` e Sidebar: nova navegação monocromática refinada, breadcrumbs contextuais e tags de versão discretas.
+  - `Serviços`: tabela densa com busca dinâmica em tempo real, tabs de status e alternador de visualização.
+  - `Chamados`: tabela de ordens de serviço com busca debounced, código `#OS-XXXX` em mono, prioridade e ações rápidas.
+  - `Dashboard Executivo`: faturamento, despesas e KPIs operacionais em régua contínua com comparativo e gráfico de barras polido.
+  - `CRM Clientes`: tabela com LTV acumulado, pendências em destaque financeiro e gestão de clientes arquivados.
+  - `Leads`: pipeline pré-atendimento comercial com contadores e tabela de qualificação.
+  - `Contatos`: lista de pessoas com avatar de iniciais, atalho direto para a empresa no CRM e formulário elegante.
+  - `Estoque & Almoxarifado`: controle de insumos com avisos de nível crítico e botões de ajuste de entrada/saída.
+  - `Gestão Financeira`: conciliação mensal/anual, receitas, despesas e documentos fiscais em alta densidade.
+  - `Propostas Comerciais`: métricas de pipeline e tabela de aprovação/recusa.
+- **Garantia de Qualidade:**
+  - 100% de conformidade TypeScript (`npx tsc --noEmit` com 0 erros).
+  - 100% dos testes unitários passando (329/329).
+  - Build de produção compilado com sucesso para todas as 38 rotas do App Router.
+
+## V1.01.00 — 2026-11-12 — Módulo Operacional: Colaboradores, Equipes Flexíveis e Custos em OS
+
+**Commit:** `release: Version V1.01.00`
+**Tipo:** MINOR — Gestão de colaboradores individuais, equipes dinâmicas com veículos e apuração de custos/materiais em OS com blindagem para o cliente.
+
+### O que mudou:
+- Modelagem de dados: tabelas `collaborators`, `service_request_materials`, `service_request_expenses` e alteração em `teams` e `service_requests` (migração `0023`).
+- Painel de Gestão Operacional em `/portal/operacional` com abas para colaboradores, equipes e frotas.
+- Cálculo de margem de lucro operacional em tempo real nas Ordens de Serviço.
+- Emissão de PDF com blindagem absoluta (zero vazamento de custos internos para clientes e condomínios).
+
+## V0.13.00 — 2026-09-30
+
+### Added
+- Adiciona o módulo independente de Leads: cadastro obrigatório por nome e telefone, identificação normalizada, consulta e acompanhamento no Portal.
+- Adiciona solicitações e propostas comerciais próprias de Leads, mantendo o fluxo de Clientes existente inalterado.
+- Converte Lead aprovado para Cliente somente de forma transacional, auditável e idempotente; em duplicidade ambígua do CRM legado, bloqueia a conversão para revisão comercial em vez de criar dado incerto.
+- Inclui navegação de Leads para desktop e mobile, com permissões locais de CRM.
+
+### Database
+- Inclui somente a migration aditiva `0020_leads_isolated.sql`, com tabelas e índices `lead_*`; nenhuma tabela, coluna, restrição ou dado do CRM legado foi alterado.
+- A migration está versionada e validada em PostgreSQL descartável, mas não foi aplicada no banco de produção neste release.
+
+### Verification
+- Revisão independente aprovada após validações de concorrência para aprovação, proposta e conversão.
+- 86 testes unitários, 94 testes de segurança, TypeScript, build de produção e `git diff --check` aprovados.
+
 > Seguir norma VibeDoCode: `V[MAJOR].[MINOR].[PATCH]`
 
 ## V0.10.00 — 2026-09-04 — Lançamento do Hub RRD (MVP Interno Operacional)

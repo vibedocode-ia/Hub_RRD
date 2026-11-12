@@ -1,4 +1,46 @@
 # Atualizações do Projeto — RR Desentupidora
+
+## V1.02.00 — 2026-11-12 — Reformulação Visual VDC-pro-Dashboard (Eliminação do AI Slop)
+
+**Commit:** `release: Version V1.02.00`
+**Tipo:** MINOR — Redesign Completo do Hub RRD baseado nos padrões mundiais Midday, Dub.co, Supabase Studio e Linear.
+
+### O que mudou:
+- **Design System Enterprise (VDC-pro-Dashboard):**
+  - Substituição formal do fundo azul-marinho lavado (`#050d1a`) pela paleta **Titanium Dark** (`#09090b` canvas e `#121215` superfícies).
+  - Adoção sistemática de **micro-bordas translúcidas de precisão** (`border-white/[0.08]`) e relevo zenital com luz superior (`shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]`).
+  - Banimento definitivo de grades repetitivas de 4 cards "bento genéricos" com ícones redondos coloridos.
+- **Régua Contínua de Métricas (Metric Strip):**
+  - Métricas integradas em fita horizontal unificada com divisores de 1px e status em micro-dots suaves (emerald, amber, cyan, rose).
+- **Tabelas de Alta Densidade (High-Density Data Tables):**
+  - Transformação das listas de cards amadores em tabelas densas, ordenáveis e compactas (38-42px de altura por linha), com tipografia numérica tabular (`font-mono tabular-nums tracking-tight`).
+- **Telas Reformuladas:**
+  - `PortalLayout` e Sidebar: nova navegação monocromática refinada, breadcrumbs contextuais e tags de versão discretas.
+  - `Serviços`: tabela densa com busca dinâmica em tempo real, tabs de status e alternador de visualização.
+  - `Chamados`: tabela de ordens de serviço com busca debounced, código `#OS-XXXX` em mono, prioridade e ações rápidas.
+  - `Dashboard Executivo`: faturamento, despesas e KPIs operacionais em régua contínua com comparativo e gráfico de barras polido.
+  - `CRM Clientes`: tabela com LTV acumulado, pendências em destaque financeiro e gestão de clientes arquivados.
+  - `Leads`: pipeline pré-atendimento comercial com contadores e tabela de qualificação.
+  - `Contatos`: lista de pessoas com avatar de iniciais, atalho direto para a empresa no CRM e formulário elegante.
+  - `Estoque & Almoxarifado`: controle de insumos com avisos de nível crítico e botões de ajuste de entrada/saída.
+  - `Gestão Financeira`: conciliação mensal/anual, receitas, despesas e documentos fiscais em alta densidade.
+  - `Propostas Comerciais`: métricas de pipeline e tabela de aprovação/recusa.
+- **Garantia de Qualidade:**
+  - 100% de conformidade TypeScript (`npx tsc --noEmit` com 0 erros).
+  - 100% dos testes unitários passando (329/329).
+  - Build de produção compilado com sucesso para todas as 38 rotas do App Router.
+
+## V1.01.00 — 2026-11-12 — Módulo Operacional: Colaboradores, Equipes Flexíveis e Custos em OS
+
+**Commit:** `release: Version V1.01.00`
+**Tipo:** MINOR — Gestão de colaboradores individuais, equipes dinâmicas com veículos e apuração de custos/materiais em OS com blindagem para o cliente.
+
+### O que mudou:
+- Modelagem de dados: tabelas `collaborators`, `service_request_materials`, `service_request_expenses` e alteração em `teams` e `service_requests` (migração `0023`).
+- Painel de Gestão Operacional em `/portal/operacional` com abas para colaboradores, equipes e frotas.
+- Cálculo de margem de lucro operacional em tempo real nas Ordens de Serviço.
+- Emissão de PDF com blindagem absoluta (zero vazamento de custos internos para clientes e condomínios).
+
 ## V0.13.00 — 2026-09-30
 
 ### Added

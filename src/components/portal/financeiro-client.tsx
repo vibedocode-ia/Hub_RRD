@@ -2,7 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { CircleDollarSign, TrendingUp, TrendingDown, FileText, Plus, Wallet, Lock } from 'lucide-react';
+import { 
+  CircleDollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  FileText, 
+  Plus, 
+  Wallet, 
+  Lock,
+  ArrowUpRight,
+  ShieldCheck,
+  Calendar
+} from 'lucide-react';
 import { ModalNovoLancamento } from './ModalNovoLancamento';
 import { summarizeFinancialEntries } from '@/lib/financial-summary';
 
@@ -27,10 +38,12 @@ export function FinanceiroClient({
 }) {
   const [lancamentos, setLancamentos] = useState(initialLancamentos);
   const [isNovoLancamentoOpen, setIsNovoLancamentoOpen] = useState(false);
-  const monthEntries = lancamentos.filter(l => { const d = new Date(l.data); return d.getFullYear() === selectedYear && (annualView || d.getMonth() + 1 === selectedMonth); });
+  const monthEntries = lancamentos.filter(l => { 
+    const d = new Date(l.data); 
+    return d.getFullYear() === selectedYear && (annualView || d.getMonth() + 1 === selectedMonth); 
+  });
   const visibleLancamentos = monthEntries.filter(l => (!initialType || l.tipo === initialType) && (!initialStatus || l.status === initialStatus));
 
-  // Totais financeiros: realizados, pendentes e previsão são conjuntos distintos.
   const summary = summarizeFinancialEntries(lancamentos, { month: selectedMonth, year: selectedYear, annual: annualView });
   const entradas = summary.receivedRevenue;
   const saidas = summary.effectiveExpenses;
@@ -41,103 +54,202 @@ export function FinanceiroClient({
   const previsao = summary.forecast;
   const periodQuery = `mes=${selectedMonth}&ano=${selectedYear}`;
 
-  const alertDocumentLock = (docNumber: string) => {
-    alert(`DOCUMENTO TRAVADO (${docNumber})\n\nEste Recibo/OS Fiscal já foi emitido e assinado digitalmente. Para estornar ou alterar, é necessário gerar um evento de cancelamento oficial.\n\nProteção contra fraude financeira ativa.`);
-  };
+  const formatMoney = (val: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-5">
+      {/* 1. Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">
-            Gestão Financeira <CircleDollarSign className="w-5 h-5 text-emerald-400" />
-          </h1>
-          <p className="text-sm text-slate-400">
-            Fluxo de Caixa, Contas a Pagar/Receber e Emissões
+          <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+            <span>Gestão Operacional</span>
+            <span>/</span>
+            <span className="text-zinc-300">Contabilidade & Fluxo</span>
+          </div>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-100">
+              Gestão Financeira
+            </h1>
+            <span className="inline-flex items-center rounded-md border border-white/[0.08] bg-zinc-900/80 px-2 py-0.5 text-xs font-mono text-zinc-400">
+              {annualView ? `Ano ${selectedYear}` : `${selectedMonth}/${selectedYear}`}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-zinc-400">
+            Fluxo de caixa, conciliação de recebíveis, contas a pagar e emissões fiscais.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/portal/financeiro/contas" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold text-xs border border-slate-700/80 transition">Conta da Empresa →</Link>
+
+        <div className="flex items-center gap-2">
+          <Link 
+            href="/portal/financeiro/contas" 
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/[0.08] bg-zinc-900/80 px-3 text-xs font-medium text-zinc-300 hover:border-white/[0.2] hover:bg-zinc-800 hover:text-white transition-colors"
+          >
+            <span>Conta Bancária</span>
+            <ArrowUpRight className="size-3 text-zinc-500" />
+          </Link>
           <button 
             onClick={() => setIsNovoLancamentoOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700/80 transition"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-cyan-500 px-3.5 text-xs font-medium text-zinc-950 transition-all hover:bg-cyan-400 active:scale-[0.98] shadow-[0_0_15px_rgba(6,182,212,0.3)]"
           >
-            <Plus className="w-4 h-4" /> Novo Lançamento
+            <Plus className="size-3.5 stroke-[2.5]" />
+            <span>Novo Lançamento</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Período</span>
-        <select aria-label="Selecionar mês" value={selectedMonth} onChange={(e) => { window.location.href = `/portal/financeiro?mes=${e.target.value}&ano=${selectedYear}`; }} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100">
-          {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map((name,index)=><option key={name} value={index+1}>{name}</option>)}
-        </select>
-        <select aria-label="Selecionar ano" value={selectedYear} onChange={(e) => { window.location.href = `/portal/financeiro?mes=${selectedMonth}&ano=${e.target.value}`; }} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100">
-          {[selectedYear-2,selectedYear-1,selectedYear,selectedYear+1].map(year=><option key={year} value={year}>{year}</option>)}
-        </select>
-        <span className="text-xs text-slate-500">Os cards e listas abaixo respeitam este período.</span>
+      {/* 2. Barra de Controle de Período */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.08] bg-zinc-950/70 p-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+        <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
+          <Calendar className="size-3.5 text-zinc-500" />
+          <span>Competência:</span>
+          <select 
+            aria-label="Selecionar mês" 
+            value={selectedMonth} 
+            onChange={(e) => { window.location.href = `/portal/financeiro?mes=${e.target.value}&ano=${selectedYear}`; }} 
+            className="h-7 rounded border border-white/[0.08] bg-zinc-900 px-2 text-xs text-zinc-200 outline-none"
+          >
+            {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map((name, index) => (
+              <option key={name} value={index + 1}>{name}</option>
+            ))}
+          </select>
+          <select 
+            aria-label="Selecionar ano" 
+            value={selectedYear} 
+            onChange={(e) => { window.location.href = `/portal/financeiro?mes=${selectedMonth}&ano=${e.target.value}`; }} 
+            className="h-7 rounded border border-white/[0.08] bg-zinc-900 px-2 text-xs text-zinc-200 outline-none"
+          >
+            {[selectedYear - 2, selectedYear - 1, selectedYear, selectedYear + 1].map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/portal/financeiro?${periodQuery}&visao=${annualView ? 'MES' : 'ANO'}`}
+            className={`rounded px-2.5 py-1 text-xs font-mono transition-colors border ${
+              annualView 
+                ? 'border-cyan-500/40 bg-cyan-950/40 text-cyan-300' 
+                : 'border-white/[0.08] bg-zinc-900 text-zinc-400 hover:text-white'
+            }`}
+          >
+            {annualView ? 'Visão Anual Ativa' : 'Ver Acumulado Anual'}
+          </Link>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Saldo Realizado" value={saldo} tone="cyan" icon={<Wallet className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}&tipo=RECEITA`} label="Receitas Recebidas" value={entradas} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}&tipo=DESPESA`} label="Despesas" value={saidas} tone="red" icon={<TrendingDown className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}&status=PENDENTE&tipo=RECEITA`} label="A Receber" value={aReceber} tone="amber" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}&status=ATRASADO&tipo=RECEITA`} label="Valores em Atraso" value={emAtraso} tone="red" icon={<CircleDollarSign className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Previsão de Caixa" value={previsao} tone="blue" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}&visao=ANO&tipo=RECEITA`} label="Receita Anual" value={receitaAnual} tone="emerald" icon={<TrendingUp className="w-5 h-5" />} />
-        <FinanceMetric href={`/portal/financeiro?${periodQuery}`} label="Resultado Mensal" value={saldo} tone={saldo >= 0 ? 'cyan' : 'red'} icon={<Wallet className="w-5 h-5" />} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href={`/portal/financeiro?${periodQuery}&tipo=RECEITA`} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/50 transition">
-          <TrendingUp className="absolute right-4 top-4 h-16 w-16 text-emerald-500 opacity-10"/><p className="text-sm font-medium text-slate-400 mb-1">Entradas (Mês)</p><p className="text-2xl font-black text-emerald-400">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(entradas)}</p><p className="mt-2 text-[10px] font-bold uppercase text-cyan-400">Abrir receitas →</p>
-        </Link>
-        <Link href={`/portal/financeiro?${periodQuery}&tipo=DESPESA`} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-red-500/50 transition">
-          <TrendingDown className="absolute right-4 top-4 h-16 w-16 text-red-500 opacity-10"/><p className="text-sm font-medium text-slate-400 mb-1">Saídas (Mês)</p><p className="text-2xl font-black text-red-400">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(saidas)}</p><p className="mt-2 text-[10px] font-bold uppercase text-cyan-400">Abrir despesas →</p>
-        </Link>
-        <Link href={`/portal/financeiro?${periodQuery}`} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-cyan-500/50 transition">
-          <Wallet className="absolute right-4 top-4 h-16 w-16 text-cyan-500 opacity-10"/><p className="text-sm font-medium text-slate-400 mb-1">Saldo Líquido</p><p className={`text-2xl font-black ${saldo >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(saldo)}</p><p className="mt-2 text-[10px] font-bold uppercase text-cyan-400">Abrir composição →</p>
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Lançamentos (Contas a Pagar/Receber) */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <CircleDollarSign className="w-5 h-5 text-emerald-400" /> Movimentações Recentes
-            </h2>
-            <Link href={`/portal/financeiro?${periodQuery}`} className="text-xs text-emerald-400 hover:underline">Ver Todas →</Link>
+      {/* 3. Metric Strip Contínua (Midday / Tremor Style) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/[0.08] rounded-lg border border-white/[0.08] bg-zinc-950/70 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+        {/* Saldo Realizado */}
+        <Link href={`/portal/financeiro?${periodQuery}`} className="p-3.5 hover:bg-white/[0.02] transition-colors">
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+            <span>Saldo Realizado</span>
+            <Wallet className="size-3.5 text-cyan-400" />
           </div>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-xs uppercase text-slate-500 bg-slate-950/30">
-                  <th className="py-3 px-6 font-semibold">Descrição</th>
-                  <th className="py-3 px-6 font-semibold">Data</th>
-                  <th className="py-3 px-6 font-semibold text-right">Valor</th>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className={`text-xl font-semibold font-mono tracking-tight ${saldo >= 0 ? 'text-cyan-300' : 'text-rose-400'}`}>
+              {formatMoney(saldo)}
+            </span>
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block">caixa efetivado</span>
+        </Link>
+
+        {/* Receitas Recebidas */}
+        <Link href={`/portal/financeiro?${periodQuery}&tipo=RECEITA`} className="p-3.5 hover:bg-white/[0.02] transition-colors">
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+            <span>Receitas Recebidas</span>
+            <TrendingUp className="size-3.5 text-emerald-400" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-semibold font-mono tracking-tight text-emerald-400">
+              {formatMoney(entradas)}
+            </span>
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block">entradas do período</span>
+        </Link>
+
+        {/* Despesas */}
+        <Link href={`/portal/financeiro?${periodQuery}&tipo=DESPESA`} className="p-3.5 hover:bg-white/[0.02] transition-colors">
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+            <span>Despesas Pagas</span>
+            <TrendingDown className="size-3.5 text-rose-400" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-semibold font-mono tracking-tight text-rose-400">
+              {formatMoney(saidas)}
+            </span>
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block">custos operacionais</span>
+        </Link>
+
+        {/* A Receber */}
+        <Link href={`/portal/financeiro?${periodQuery}&status=PENDENTE&tipo=RECEITA`} className="p-3.5 hover:bg-white/[0.02] transition-colors">
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+            <span>A Receber / Pendente</span>
+            <CircleDollarSign className="size-3.5 text-amber-400" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-semibold font-mono tracking-tight text-amber-300">
+              {formatMoney(aReceber)}
+            </span>
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block">
+            {emAtraso > 0 ? `${formatMoney(emAtraso)} em atraso` : 'em dia'}
+          </span>
+        </Link>
+      </div>
+
+      {/* 4. Grade Dupla de Tabelas de Alta Densidade */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Movimentações Recentes */}
+        <div className="rounded-lg border border-white/[0.08] bg-zinc-950/70 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-300">
+              <CircleDollarSign className="size-3.5 text-emerald-400" />
+              <span>Movimentações do Período</span>
+            </div>
+            <Link href={`/portal/financeiro?${periodQuery}`} className="text-[11px] font-mono text-zinc-400 hover:text-white">
+              Todas ({visibleLancamentos.length}) →
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-white/[0.04] bg-zinc-900/30 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                <tr>
+                  <th className="py-2 px-3.5">Descrição</th>
+                  <th className="py-2 px-3">Data</th>
+                  <th className="py-2 px-3 text-right">Valor</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody className="divide-y divide-white/[0.04]">
                 {visibleLancamentos.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-8 px-6 text-center text-slate-400">
-                      Nenhuma movimentação registrada.
+                    <td colSpan={3} className="py-8 text-center text-xs text-zinc-500 font-mono">
+                      Nenhuma movimentação neste período.
                     </td>
                   </tr>
                 ) : (
-                  visibleLancamentos.map((l) => (
-                    <tr key={l.id} onClick={() => { window.location.href = `/portal/financeiro?tipo=${l.tipo}&status=${l.status}`; }} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer">
-                      <td className="py-3 px-6 text-slate-200">
-                        <div className="font-medium">{l.descricao}</div>
-                        <div className="text-xs text-slate-500">{l.categoria} • <span className={l.status === 'EFETIVADO' ? 'text-emerald-400/80' : 'text-amber-400/80'}>{l.status}</span></div>
+                  visibleLancamentos.slice(0, 8).map((l) => (
+                    <tr
+                      key={l.id}
+                      onClick={() => { window.location.href = `/portal/financeiro?tipo=${l.tipo}&status=${l.status}`; }}
+                      className="group cursor-pointer transition-colors hover:bg-white/[0.02]"
+                    >
+                      <td className="py-2 px-3.5">
+                        <div className="font-medium text-zinc-200 group-hover:text-white truncate max-w-[200px]">
+                          {l.descricao}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          {l.categoria} · <span className={l.status === 'EFETIVADO' ? 'text-emerald-400' : 'text-amber-400'}>{l.status}</span>
+                        </div>
                       </td>
-                      <td className="py-3 px-6 text-slate-400">
+                      <td className="py-2 px-3 whitespace-nowrap font-mono text-zinc-400 text-[11px]">
                         {new Date(l.data).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className={`py-3 px-6 text-right font-bold ${l.tipo === 'RECEITA' ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {l.tipo === 'RECEITA' ? '+' : '-'} {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(l.valor)}
+                      <td className={`py-2 px-3 text-right whitespace-nowrap font-mono font-medium ${l.tipo === 'RECEITA' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {l.tipo === 'RECEITA' ? '+' : '-'} {formatMoney(Number(l.valor))}
                       </td>
                     </tr>
                   ))
@@ -147,51 +259,59 @@ export function FinanceiroClient({
           </div>
         </div>
 
-        {/* Documentos Fiscais / OS Emitidas */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-cyan-400" /> Emissões Recentes
-            </h2>
+        {/* Emissões Recentes */}
+        <div className="rounded-lg border border-white/[0.08] bg-zinc-950/70 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-300">
+              <FileText className="size-3.5 text-cyan-400" />
+              <span>Emissões Fiscais & OS</span>
+            </div>
+            <Link href="/portal/documentos" className="text-[11px] font-mono text-zinc-400 hover:text-white">
+              Ver Documentos →
+            </Link>
           </div>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-xs uppercase text-slate-500 bg-slate-950/30">
-                  <th className="py-3 px-6 font-semibold">Documento</th>
-                  <th className="py-3 px-6 font-semibold">Valor</th>
-                  <th className="py-3 px-6 font-semibold text-right">Status</th>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-white/[0.04] bg-zinc-900/30 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                <tr>
+                  <th className="py-2 px-3.5">Documento</th>
+                  <th className="py-2 px-3">Valor</th>
+                  <th className="py-2 px-3 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody className="divide-y divide-white/[0.04]">
                 {initialDocumentos.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-8 px-6 text-center text-slate-400">
-                      Nenhum documento emitido.
+                    <td colSpan={3} className="py-8 text-center text-xs text-zinc-500 font-mono">
+                      Nenhum documento emitido recentemente.
                     </td>
                   </tr>
                 ) : (
-                  initialDocumentos.map((doc) => (
-                    <tr 
-                      key={doc.id} 
+                  initialDocumentos.slice(0, 8).map((doc) => (
+                    <tr
+                      key={doc.id}
                       onClick={() => { window.location.href = `/portal/documentos/preview/${doc.id}`; }}
-                      className="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer group"
+                      className="group cursor-pointer transition-colors hover:bg-white/[0.02]"
                     >
-                      <td className="py-3 px-6 text-slate-200">
-                        <div className="font-medium text-cyan-400 group-hover:underline flex items-center gap-2">
-                          {doc.docNumber} <Lock className="w-3 h-3 text-slate-500" />
+                      <td className="py-2 px-3.5">
+                        <div className="font-mono text-cyan-300 group-hover:underline flex items-center gap-1.5 font-medium">
+                          {doc.docNumber} <Lock className="size-2.5 text-zinc-500" />
                         </div>
-                        <div className="text-xs text-slate-400">{doc.docType.replace('_', ' ')}</div>
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          {doc.docType.replace('_', ' ')}
+                        </div>
                       </td>
-                      <td className="py-3 px-6 text-slate-200 font-medium">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(doc.totalValue)}
+                      <td className="py-2 px-3 whitespace-nowrap font-mono font-medium text-zinc-200">
+                        {formatMoney(Number(doc.totalValue))}
                       </td>
-                      <td className="py-3 px-6 text-right">
-                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded uppercase ${
-                          doc.status === 'EMITIDO' || doc.status === 'ENVIADO' 
-                            ? 'bg-emerald-500/10 text-emerald-400' 
-                            : 'bg-amber-500/10 text-amber-400'
+                      <td className="py-2 px-3 text-right whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-medium border ${
+                          doc.status === 'EMITIDO' || doc.status === 'ENVIADO'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
                         }`}>
+                          <span className={`size-1 rounded-full ${doc.status === 'EMITIDO' || doc.status === 'ENVIADO' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                           {doc.status}
                         </span>
                       </td>
@@ -204,9 +324,11 @@ export function FinanceiroClient({
         </div>
       </div>
 
-      <ModalNovoLancamento isOpen={isNovoLancamentoOpen} onClose={() => setIsNovoLancamentoOpen(false)} clientOptions={clientOptions} />
+      <ModalNovoLancamento 
+        isOpen={isNovoLancamentoOpen} 
+        onClose={() => setIsNovoLancamentoOpen(false)} 
+        clientOptions={clientOptions} 
+      />
     </div>
   );
 }
-
-function FinanceMetric({href,label,value,tone,icon}:{href:string,label:string,value:number,tone:'cyan'|'emerald'|'red'|'amber'|'blue',icon:React.ReactNode}){const colors={cyan:'bg-cyan-500/10 text-cyan-400',emerald:'bg-emerald-500/10 text-emerald-400',red:'bg-red-500/10 text-red-400',amber:'bg-amber-500/10 text-amber-400',blue:'bg-blue-500/10 text-blue-400'};return <Link href={href} className="block bg-slate-900/60 border border-slate-800 rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"><div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${colors[tone]}`}>{icon}</div><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-100">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value)}</p><p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-cyan-400">Abrir detalhes →</p></Link>}
